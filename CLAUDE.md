@@ -4,6 +4,8 @@ Mobile-first (later PC) roguelike prototype in Godot 4.7, GDScript only, placeho
 You drive a vehicle automatically along a path through biomes; weapons auto-fire at hordes; the
 player steers and picks upgrades. Boss fights happen in a ring arena. See README.md for gameplay,
 content tables and project layout; this file is the design intent and working agreements.
+**The full vision, decisions and idea backlog are in docs/DESIGN.md. Read it, and add any new idea or
+decision the owner gives you there (mark owner's words vs your suggestions).**
 
 ## Design goals (from the owner, keep these in mind for every change)
 - Satisfying, simple, scalable. Vampire Survivors feel: play "without thinking", no complex builds,
