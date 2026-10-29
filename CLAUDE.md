@@ -47,3 +47,33 @@ Parse errors that mention `Sfx`/`Save` only occur when scripts are checked stand
 - Never tested on a real phone yet: check touch feel, FPS, pacing, balance (War Rig and Interceptor
   bots die before the first boss, Juggernaut clears it).
 - More classes, enemy types and biomes; real art/audio; online leaderboard; PC controls polish.
+
+## How we work (agreed with the owner)
+docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 = done list** (since v1.0).
+1. When an item from section 9 is completed, **move it to section 8** (remove it from 9).
+2. In section 8 write an accurate description of what was actually implemented and how it behaves.
+   If it differs from the proposal (different approach, changed number, dropped/added part, limitation),
+   say so explicitly and say why. Keep the owner's original wording if it helps, then add what really happened.
+3. Describe real behavior, not intentions. Check the code; don't claim something works if it wasn't verified.
+4. If an item can't be done as proposed, don't silently change it: tell the owner, explain options, wait.
+5. New ideas/decisions the owner gives in chat go into docs/DESIGN.md (section 9 for improvements, plus the
+   relevant section for decisions), marked as the owner's. Claude's own suggestions are marked "(suggested)".
+   Anything marked "Decided" stays unless the owner says otherwise.
+6. Update README.md and CLAUDE.md when something they describe changes (controls, content, commands, gaps).
+7. Keep entries concise, dated, in the style of the rest of the file.
+8. Git: small, clearly named commits. Run `git pull` before starting work (the owner may edit on GitHub).
+   Don't push unless asked (owner pushes about daily). Ask before force-pushing/rewriting history.
+   Don't commit export_presets.cfg changes (e.g. "Signed" on) unless asked. Ask before anything destructive,
+   anything that costs money, or anything that changes a "Decided" item.
+
+## Local setup (owner's Windows machine)
+- Godot 4.7.2 lives in the folder `C:\Users\Denis\Desktop\Repos\GAMES\Godot_v4.7.2-stable_win64.exe\`
+  (the folder name ends in .exe). Binaries inside: `Godot_v4.7.2-stable_win64.exe` (GUI) and
+  `Godot_v4.7.2-stable_win64_console.exe` (use this one for headless runs so output reaches the terminal).
+  It is not on PATH. In Git Bash:
+  `G="/c/Users/Denis/Desktop/Repos/GAMES/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe"`
+  then `"$G" --headless --path . --import` and `"$G" --headless --path . -- --autotest --quit-after-sec=60`.
+- Android Studio is installed; the Android SDK and Java are set in the Godot editor, so APKs can be exported
+  from the editor (Project > Export). `tools/android/build_apk.sh` and `tools/web/build_web.sh` call `godot`
+  from PATH, so they need a `godot` alias/shim to the console exe in Git Bash (bash itself is available).
+- `icon.svg.import` shows as modified after imports (line endings); ignore it, don't commit it.
