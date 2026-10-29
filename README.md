@@ -63,6 +63,10 @@ headers are required). `tools/web/build_web.sh` produces:
   gzipped to about 10 MB and unpacked in the browser. Use this for hosts that cap file size.
 
 Every CI run uploads the itch.io-ready folder as the `mms-web-itch-io` artifact.
+
+**GitHub Pages (auto-deploy):** with the repo public and Settings → Pages → Source set to
+"GitHub Actions", every push to the default branch publishes the web build at
+`https://<user>.github.io/<repo>/`.
 Browsers need WebGL 2: current Chrome, Edge, Firefox and Safari all qualify, on desktop and phone.
 
 ## Installing the APK on Android
