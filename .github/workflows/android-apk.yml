@@ -45,8 +45,15 @@ jobs:
           sudo ln -s ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
           pip install cryptography
 
+      - name: Import project
+        # A fresh checkout has no .godot/ cache; without it global class names don't resolve.
+        run: timeout 300 godot --headless --path . --import || true
+
       - name: Smoke test
-        run: godot --headless --path . -- --autotest --quit-after-sec=30 2>&1 | tee smoke.log && ! grep -q "SCRIPT ERROR" smoke.log
+        run: |
+          timeout 180 godot --headless --path . -- --autotest --quit-after-sec=30 2>&1 | tee smoke.log
+          grep -q "AUTOTEST DONE" smoke.log
+          ! grep -q "SCRIPT ERROR" smoke.log
 
       - name: Build APK
         run: tools/android/build_apk.sh
