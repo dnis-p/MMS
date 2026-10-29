@@ -1,0 +1,57 @@
+name: Android APK
+
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-android
+
+      - name: Download Godot and Android templates
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          set -e
+          V=${GODOT_VERSION}-stable
+          mkdir -p ~/godot
+          curl -sSL -o godot.zip https://github.com/godotengine/godot/releases/download/$V/Godot_v${V}_linux.x86_64.zip
+          unzip -q godot.zip -d ~/godot
+          curl -sSL -o templates.tpz https://github.com/godotengine/godot/releases/download/$V/Godot_v${V}_export_templates.tpz
+          T=~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mkdir -p $T
+          unzip -q -j templates.tpz templates/android_release.apk templates/android_debug.apk templates/version.txt -d $T
+          rm godot.zip templates.tpz
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install tools
+        run: |
+          sudo ln -s ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          pip install cryptography
+
+      - name: Smoke test
+        run: godot --headless --path . -- --autotest --quit-after-sec=30 2>&1 | tee smoke.log && ! grep -q "SCRIPT ERROR" smoke.log
+
+      - name: Build APK
+        run: tools/android/build_apk.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mms-prototype-apk
+          path: build/mms-prototype.apk
