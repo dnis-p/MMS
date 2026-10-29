@@ -1,4 +1,4 @@
-name: Android APK
+name: Builds
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
           path: |
             ~/godot
             ~/.local/share/godot/export_templates
-          key: godot-${{ env.GODOT_VERSION }}-android
+          key: godot-${{ env.GODOT_VERSION }}-android-web
 
       - name: Download Godot and Android templates
         if: steps.cache.outputs.cache-hit != 'true'
@@ -33,7 +33,7 @@ jobs:
           curl -sSL -o templates.tpz https://github.com/godotengine/godot/releases/download/$V/Godot_v${V}_export_templates.tpz
           T=~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
           mkdir -p $T
-          unzip -q -j templates.tpz templates/android_release.apk templates/android_debug.apk templates/version.txt -d $T
+          unzip -q -j templates.tpz templates/android_release.apk templates/android_debug.apk templates/web_nothreads_release.zip templates/version.txt -d $T
           rm godot.zip templates.tpz
 
       - uses: actions/setup-python@v5
@@ -62,3 +62,11 @@ jobs:
         with:
           name: mms-prototype-apk
           path: build/mms-prototype.apk
+
+      - name: Build web version
+        run: tools/web/build_web.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mms-web-itch-io
+          path: build/web/
