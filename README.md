@@ -50,6 +50,21 @@ iOS, Windows, macOS, Linux and Web.
 
 All numbers live in [`scripts/data/defs.gd`](scripts/data/defs.gd), so balancing means editing that file.
 
+## Playing in a browser
+
+The Web export needs no code changes (it uses the single-threaded template, so no special server
+headers are required). `tools/web/build_web.sh` produces:
+
+- `build/web/` and `build/mms-web.zip`: the standard export. Upload the zip to **itch.io** as an HTML
+  game (Kind of project: HTML, "This file will be played in the browser", viewport 1280×720, enable
+  the mobile-friendly and fullscreen-button options). It can stay a draft or restricted page with a
+  secret link.
+- `build/web-packed/`: the same game started by `tools/web/launcher.html`, with the 39 MB engine
+  gzipped to about 10 MB and unpacked in the browser. Use this for hosts that cap file size.
+
+Every CI run uploads the itch.io-ready folder as the `mms-web-itch-io` artifact.
+Browsers need WebGL 2: current Chrome, Edge, Firefox and Safari all qualify, on desktop and phone.
+
 ## Installing the APK on Android
 
 1. Copy `mms-prototype.apk` to the phone and open it.
@@ -75,6 +90,7 @@ scripts/autoload/sfx.gd   procedurally synthesized placeholder sounds
 scripts/autoload/save.gd  local leaderboard
 tests/ui_shots.tscn       dev tool: screenshots every screen
 tools/android/            APK build + v2 signing scripts, debug signing key
+tools/web/                web build script and the gzip launcher page
 ```
 
 Enemies, bullets and pickups are plain data drawn with MultiMesh (no node or physics body per
@@ -90,6 +106,7 @@ godot --path .                                         # play on desktop
 godot --headless --path . -- --autotest --quit-after-sec=60    # unattended smoke test (god mode, short stages)
 godot --headless --path . -- --autotest --fair --class=interceptor --quit-after-sec=120   # balance check
 tools/android/build_apk.sh                             # signed arm64 APK -> build/mms-prototype.apk
+tools/web/build_web.sh                                 # browser build -> build/web, build/mms-web.zip
 ```
 
 To export from the Godot editor instead, install the Android export templates, set the Android SDK
