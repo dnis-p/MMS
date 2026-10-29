@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   GODOT_VERSION: 4.7.2
 
@@ -70,3 +73,25 @@ jobs:
         with:
           name: mms-web-itch-io
           path: build/web/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web/
+
+  # Publishes the web build at https://<user>.github.io/<repo>/ on every push to the default branch.
+  # One-time setup: make the repo public and set Settings > Pages > Source to "GitHub Actions".
+  # Until then this job fails harmlessly (continue-on-error) and the APK/web artifacts above still build.
+  deploy-pages:
+    needs: build
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
