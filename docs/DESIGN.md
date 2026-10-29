@@ -100,3 +100,14 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Are the pacing, difficulty and touch controls right? Not yet tested on a phone.
 - Final name, art direction and sound direction.
 - Which of the section 6 ideas does the owner want first?
+
+## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+
+## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
+- Zoom out camera so you have a better view of the enemies that are coming. For enemies that come from behind im not sure if it would be better to have the camera placed a bit more aback or if that would leave too little camera space on the front to see incoming enemies, bu i say this because when enemies come from the back usually u can't see very far.
+- Balance the different classes. Juggernaut is too op for example. Interceptor is the weakest of all, speaking in terms of playability. So choosing juggernaut always has an advantage right now.
+- Enemies should scale in difficulty with the player's level.
+- The pace of the game has to get faster at higher levels. (speed, either through upgrades or just normal game progression, and enemy scaling)
+- In boss fights maybe its better if the dash makes the vehicle change direction too instead of always going in the same direction. Also the attack of the balls that come out in a ring from the boss is imposible to dodge unless the opening spawns close to you. If the opening spawn on the other side of the arena then you always get hit by the ring, or at least I haven't been able to dodge it in any way.
+- Also regarding gems, when you kill enemies outside of the road if they are far away its impossible to get their gems, you can't get as close as needed, we should fix that somehow.
+- The mine upgrade throws mines towards the back but since there's so little space between the vehicle and the camera frame u can't really see if they will explode on an enemy or not. I've thought about making it throw mines in any direction instead of just towards the back. In the future I may change this upgrade to another thing.
