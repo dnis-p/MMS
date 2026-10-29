@@ -1,4 +1,4 @@
-# MMS (working title) — gameplay prototype
+# Motorhead Madness Survival (working title) — gameplay prototype
 
 A test of the core gameplay loop with placeholder art and sound. Your vehicle drives itself along a set
 path through biomes and auto-fires at hordes of enemies. You steer, pick upgrades, and dodge bosses
