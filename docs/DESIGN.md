@@ -88,6 +88,14 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - (saved for later review, owner 2026-10-30) Burnout ring: the car leaves a burning trail; closing a loop around enemies blasts everything inside.
 - (saved for later review, owner 2026-10-30) Roads as fast lanes: driving on a road gives a speed bonus, so map layout matters.
 
+**Food-chain flip (suggested 2026-10-30, reaction to the owner's monster idea in section 9)**
+- Anything smaller than you is eaten by touching it; bigger things hurt you. Auto attacks weaken big ones until they glow, then
+  you drive into them to finish. One input stays one input. Today's threat becomes tomorrow's snack as you grow.
+- Test the rule in the current project with placeholders before choosing a theme. Raccoon that eats its way up from dumpster to
+  city suits the escalation best. Car version: ram wrecks and weld them on.
+- Boss length: aim for a target fight time and set boss HP from it, and check level pace first, since level 25 by 90-150 s is one
+  level every 4-6 s.
+
 **Enemies**
 - Boarders that climb on the vehicle until rammed off, chasers from behind, roadblocks, enemy rammer cars,
   flying drones, roadside artillery, swarms that slow the vehicle, environmental kills (explosive barrels,
@@ -270,3 +278,16 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 
 **Future, not to be implemented yet (owner, 2026-10-30)**
 - Upgrades specific to each vehicle class, both in runs and in the permanent upgrades between runs.
+
+**Owner feedback after playing, 2026-10-30 (ideas only, nothing decided or implemented)**
+- Works: evolved minigun killing a lot of enemies; kills that make satisfying sounds, explode into bits and show damage
+  numbers, flashes and a colour-coded combo.
+- Boss maybe sooner: the owner reaches it at about level 25 and it dies in 5 seconds or less.
+- Dash in boss arenas is too strong. Either make it less strong, or drop arenas and spawn bosses in the world like VS (the
+  owner was going to do that for some or all bosses anyway), which also removes the dash.
+- Willing to change most of the game or start over for something addictive with some originality.
+- Twist idea: play a monster that attacks and absorbs NPCs, agar.io style. Bigger ones are fought by circling, VS style, with
+  auto attacks; the player picks when to absorb. Absorbing grows you; when strong enough you can destroy the environment.
+  Absorbed bosses change your appearance and give new attacks. People run, some fight back; this part needs more thought.
+- Theme ideas: a dragonfly eating insects and evolving (like Cell in DBZ or the ants in HxH); or something absurd, like a raccoon
+  in a garbage container whose food runs away, with other animals attacking, or a raccoon in a lab eating mutated animals.
