@@ -25,6 +25,10 @@ const FILLER_SCORE := 500
 const COMBO_WINDOW := 2.5
 const BOSS_KILL_SCORE := 5000
 
+## Enemies hit by an attack are pushed away and stagger (walk slower) until the push fades.
+## Each enemy type has its own "knock" factor; the push strength is set per weapon.
+const KNOCK := {"decay": 18.0, "stagger": 0.35, "max": 22.0, "ram": 16.0, "blast": 12.0}
+
 ## Road camera, relative to the car: metres back, metres up, look-ahead metres.
 const ROAD_CAMERA := {"back": 13.0, "up": 24.0, "look": 3.0, "fov": 60.0}
 
@@ -99,7 +103,7 @@ const WEAPONS := {
 		"up": ["", "+40% damage", "+1 barrel", "+30% fire rate", "+1 barrel, bullets pierce"],
 		"evo": "hot", "evo_name": "Shredder Minigun", "evo_desc": "A piercing storm of lead.",
 		"color": Color(1.0, 0.85, 0.3),
-		"range": 20.0, "bullet_speed": 36.0, "bullet_life": 0.7, "spread": 0.12, "evo_jitter": 0.08,
+		"range": 20.0, "bullet_speed": 36.0, "bullet_life": 0.7, "spread": 0.12, "evo_jitter": 0.08, "knock": 9.0,
 		"levels": [
 			{"dmg": 8.0, "barrels": 1, "pierce": 0, "cd": 0.42},
 			{"dmg": 11.2, "barrels": 1, "pierce": 0, "cd": 0.42},
@@ -129,7 +133,7 @@ const WEAPONS := {
 		"up": ["", "+40% damage", "+1 blade", "+wider orbit", "+1 blade, faster spin"],
 		"evo": "blast", "evo_name": "Buzzkill Halo", "evo_desc": "A huge ring of screaming saws.",
 		"color": Color(0.8, 0.85, 0.9),
-		"hit_cd": 0.35, "knock": 3.0,
+		"hit_cd": 0.35, "knock": 10.0,
 		"levels": [
 			{"dmg": 9.0, "count": 2, "orbit": 2.7, "spin": 3.0, "size": 1.0},
 			{"dmg": 12.6, "count": 2, "orbit": 2.7, "spin": 3.0, "size": 1.0},
@@ -160,7 +164,7 @@ const WEAPONS := {
 		"up": ["", "+2 chains", "+40% damage", "faster recharge", "+3 chains"],
 		"evo": "magnet", "evo_name": "Storm Rod", "evo_desc": "Lightning arcs everywhere.",
 		"color": Color(0.45, 0.8, 1.0),
-		"range": 14.0, "chain_range": 6.5,
+		"range": 14.0, "chain_range": 6.5, "knock": 5.0,
 		"levels": [
 			{"dmg": 14.0, "chains": 3, "heads": 1, "cd": 1.5},
 			{"dmg": 14.0, "chains": 5, "heads": 1, "cd": 1.5},
@@ -176,13 +180,13 @@ const WEAPONS := {
 		"evo": "plating", "evo_name": "Thunder Hull", "evo_desc": "Massive knockback pulses.",
 		"color": Color(0.6, 0.5, 1.0),
 		"levels": [
-			{"dmg": 7.0, "radius": 3.2, "knock": 6.0, "cd": 1.2},
-			{"dmg": 7.0, "radius": 4.16, "knock": 6.0, "cd": 1.2},
-			{"dmg": 10.5, "radius": 4.16, "knock": 6.0, "cd": 1.2},
-			{"dmg": 10.5, "radius": 4.16, "knock": 6.0, "cd": 0.9},
-			{"dmg": 13.65, "radius": 5.408, "knock": 6.0, "cd": 0.9},
+			{"dmg": 7.0, "radius": 3.2, "knock": 12.0, "cd": 1.2},
+			{"dmg": 7.0, "radius": 4.16, "knock": 12.0, "cd": 1.2},
+			{"dmg": 10.5, "radius": 4.16, "knock": 12.0, "cd": 1.2},
+			{"dmg": 10.5, "radius": 4.16, "knock": 12.0, "cd": 0.9},
+			{"dmg": 13.65, "radius": 5.408, "knock": 12.0, "cd": 0.9},
 		],
-		"evolved": {"dmg": 20.0, "radius": 6.5, "knock": 14.0, "cd": 0.8},
+		"evolved": {"dmg": 20.0, "radius": 6.5, "knock": 22.0, "cd": 0.8},
 	},
 }
 
@@ -198,11 +202,12 @@ const PASSIVES := {
 ## Enemy type ids index into ENEMY_ORDER.
 const ENEMY_ORDER := ["crawler", "runner", "spitter", "brute", "boss"]
 const ENEMIES := {
-	"crawler": {"hp": 10.0, "speed": 3.4, "radius": 0.65, "dmg": 6.0, "xp": 1, "score": 10, "color": Color(0.55, 0.78, 0.3), "scale": 1.1},
-	"runner": {"hp": 20.0, "speed": 11.5, "radius": 0.7, "dmg": 9.0, "xp": 2, "score": 20, "color": Color(0.95, 0.35, 0.25), "scale": 1.25},
-	"spitter": {"hp": 30.0, "speed": 9.0, "radius": 0.75, "dmg": 8.0, "xp": 3, "score": 30, "color": Color(0.72, 0.38, 0.95), "scale": 1.2},
-	"brute": {"hp": 300.0, "speed": 5.0, "radius": 1.3, "dmg": 20.0, "xp": 15, "score": 300, "color": Color(1.0, 0.78, 0.2), "scale": 2.2},
-	"boss": {"hp": 4500.0, "speed": 0.0, "radius": 2.8, "dmg": 25.0, "xp": 0, "score": 5000, "color": Color(1, 1, 1), "scale": 1.0},
+	"crawler": {"hp": 10.0, "speed": 3.4, "radius": 0.65, "dmg": 6.0, "xp": 1, "score": 10, "knock": 1.0, "color": Color(0.55, 0.78, 0.3), "scale": 1.1},
+	"runner": {"hp": 20.0, "speed": 11.5, "radius": 0.7, "dmg": 9.0, "xp": 2, "score": 20, "knock": 0.8, "color": Color(0.95, 0.35, 0.25), "scale": 1.25},
+	"spitter": {"hp": 30.0, "speed": 9.0, "radius": 0.75, "dmg": 8.0, "xp": 3, "score": 30, "knock": 1.0,
+		"range": 11.0, "pace": 0.6, "hold": 1.5, "back_off": 0.5, "hold_inside": 8.0, "color": Color(0.72, 0.38, 0.95), "scale": 1.2},
+	"brute": {"hp": 300.0, "speed": 5.0, "radius": 1.3, "dmg": 20.0, "xp": 15, "score": 300, "knock": 0.25, "color": Color(1.0, 0.78, 0.2), "scale": 2.2},
+	"boss": {"hp": 4500.0, "speed": 0.0, "radius": 2.8, "dmg": 25.0, "xp": 0, "score": 5000, "knock": 0.0, "color": Color(1, 1, 1), "scale": 1.0},
 }
 
 const BIOMES := [

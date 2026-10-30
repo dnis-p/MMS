@@ -197,7 +197,7 @@ func update(delta: float) -> void:
 				run.explode(p_pos[i], p_aoe[i], p_dmg[i], false)
 				_p_remove(i)
 				break
-			run.hit_enemy(j, p_dmg[i], p_vel[i].normalized(), 3.0)
+			run.hit_enemy(j, p_dmg[i], p_vel[i].normalized(), Defs.WEAPONS["mg"]["knock"])
 			p_last[i] = j
 			p_pierce[i] -= 1
 			if p_pierce[i] < 0:
