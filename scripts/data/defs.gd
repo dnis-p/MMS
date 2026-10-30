@@ -135,11 +135,11 @@ const WEAPONS := {
 		"evolved": {"dmg": 22.0, "count": 6, "orbit": 4.4, "spin": 4.5, "size": 1.6},
 	},
 	"mines": {
-		"name": "Mine Dropper", "desc": "Drops mines behind you.",
+		"name": "Mine Dropper", "desc": "Throws mines all around you.",
 		"up": ["", "+40% damage", "faster drops", "+30% blast radius", "drops 2 mines"],
 		"evo": "hot", "evo_name": "Napalm Mines", "evo_desc": "Mines leave burning pools.",
 		"color": Color(0.95, 0.25, 0.25),
-		"life": 9.0, "arm_time": 0.4, "trigger_radius": 1.3, "back_dist": 2.0, "side_min": 0.5, "side_max": 2.5,
+		"life": 9.0, "arm_time": 0.4, "trigger_radius": 1.3, "throw_min": 5.0, "throw_max": 12.0, "throw_arc": 3.0,
 		"levels": [
 			{"dmg": 30.0, "count": 1, "aoe": 2.6, "cd": 1.3},
 			{"dmg": 42.0, "count": 1, "aoe": 2.6, "cd": 1.3},
