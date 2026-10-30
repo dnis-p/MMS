@@ -38,7 +38,7 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 | Topic | Decision |
 |---|---|
 | Camera | 3D scene, nearly top-down with a slight tilt (about 18 degrees from vertical), fixed orientation. Can still be changed by moving the camera. |
-| Movement | (owner, 2026-10-30) Free driving on walled open maps with smooth, tight steering ("flowy", little drift). Replaces instant 8-direction turning. Touch uses an analog virtual stick. |
+| Movement | (owner, 2026-10-30) Free driving on walled open maps with smooth, tight steering ("flowy", no drift): the car follows its front wheels like a real car. Replaces instant 8-direction turning. Touch uses an analog virtual stick. |
 | Maps | (owner, 2026-10-30) Roads optional per map. No big structures that cover the player or enemies; buildings only as map walls. |
 | Boss trigger | Random moment 90-150 s into a stage (owner offered this or kills; Claude picked this one, not confirmed yet). |
 | Engine / language | Godot 4.7, GDScript. Compatibility renderer for phones and web. |
@@ -148,10 +148,15 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - **Vehicle speed** (owner). Juggernaut 7 to 10, War Rig 8.2 to 11.5, Interceptor 9.5 to 13. Enemy speed went up less, about
   20%: crawler 5.5, runner 11.5, spitter 10.5, brute 6. Maps are 1.5 times larger with twice the obstacles. The camera sits a
   little higher and looks ahead by 0.35 s of travel. The boss arena uses 72% of vehicle speed, so it plays as before.
-- **Smooth steering** (owner, replaces the instant 8-direction decision). Keys still give 8 target directions, but the nose
-  turns toward them at a fixed rate per class (Juggernaut 315, War Rig 372, Interceptor 458 degrees per second). The stick is
-  now fully analog. The car takes 0.25 s to reach speed, brakes in 0.15 s, slows up to 35% in hard turns and leans a little. High
-  grip keeps drift very small. Tuning is in `Defs.DRIVE` and the "turn" stat of each class; feel needs the owner's judgment.
+- **Smooth steering** (owner, replaces the instant 8-direction decision). Keys still give 8 target directions; the stick is
+  fully analog. The car takes 0.25 s to reach speed, brakes in 0.15 s, slows up to 20% in hard turns and leans a little.
+  The first version spun the car around its centre, which the owner found unrealistic after playing it. **Front-wheel steering**
+  (owner, 2026-10-30) replaced that: the front wheels turn toward the input, visibly on the model, and the car follows them. The
+  rear axle rolls straight along the car and the nose swings around it. There is no drift or slip any more. Turning radius is the
+  class "turn" stat: Juggernaut 4 m, War Rig 3.8 m, Interceptor 3 m. Consequences: a stopped car cannot turn on the spot, there
+  is no reverse, and a full U-turn is an arc taking roughly 0.8-1.4 s by calculation (it was about 0.5 s). A car pinned against a
+  wall can still rotate, so it can't get stuck. Tuning is in `Defs.DRIVE` and "turn"; feel needs the owner's judgment. Bots with
+  this steering, same test as below: past the first boss, Juggernaut 5, War Rig 4, Interceptor 2 of 6, no worse than before.
 - **Redline meter** (owner approved, my proposal). A bar at the bottom of the screen fills in about 11 s of driving at 70%+ speed,
   drains when slower, and loses 30% per hit. It raises fire rate by up to 35% and ram damage up to 2.5x. When full, **nitro**
   fires by itself: 2.5 s of 1.4x speed, no damage taken, 4x ram damage, then the meter restarts at 25%. It only fills on the map;

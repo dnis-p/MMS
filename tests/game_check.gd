@@ -175,11 +175,30 @@ func _check_mines(r: Run) -> void:
 
 func _check_turning(r: Run) -> void:
 	var p := r.player
-	p.heading = Vector3.FORWARD
-	p.drive(1.0 / 60.0, Vector2.DOWN, r.map)
+	var dt := 1.0 / 60.0
+	p.place_on_map()
+	p.drive(dt, Vector2.RIGHT, r.map)
 	var turned := rad_to_deg(Vector3.FORWARD.angle_to(p.heading))
-	_check("turning is gradual (%.1f degrees in one frame)" % turned, turned > 0.5 and turned < 15.0)
-	p.global_position = Vector3.ZERO
+	_check("a stopped car does not spin on the spot (%.2f degrees)" % turned, turned < 1.0)
+	# Hold a direction left of the nose: full lock, so the car drives its tightest circle.
+	var sideways := 0.0
+	var yaw := 0.0
+	var dist := 0.0
+	for i in 120:
+		var rear := p.global_position - p.heading * p.wheelbase * 0.5
+		var was := p.heading
+		var left := p.heading.rotated(Vector3.UP, PI * 0.5)
+		p.drive(dt, Vector2(left.x, left.z), r.map)
+		var moved := p.global_position - p.heading * p.wheelbase * 0.5 - rear
+		if i >= 60:
+			sideways = maxf(sideways, absf(moved.dot(was.rotated(Vector3.UP, PI * 0.5))))
+			yaw += was.angle_to(p.heading)
+			dist += moved.length()
+	_check("the rear axle follows the car, not sideways (%.4f m)" % sideways, sideways < 0.001)
+	_check("the nose swings around the rear axle", p.steer > 0.1 and yaw > 0.5)
+	var circle := dist / yaw
+	var wanted: float = p.def["turn"]
+	_check("turning circle is the class radius (%.2f m)" % circle, absf(circle - wanted) < 0.1)
 	p.place_on_map()
 
 
