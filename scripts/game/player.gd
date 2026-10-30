@@ -4,9 +4,7 @@ extends Node3D
 ## steering) and boss-arena driving (auto-circling, dash, ring switching).
 
 const LATERAL_LIMIT := Road.HALF_WIDTH - 1.0
-const RINGS := [7.0, 10.5, 14.0]
-const DASH_TIME := 0.22
-const DASH_COOLDOWN := 0.5
+const RINGS: Array = Defs.ARENA["rings"]
 
 var class_id := ""
 var def: Dictionary
@@ -17,7 +15,7 @@ var base_speed := 7.0
 var steer_speed := 8.0
 var ram_damage := 20.0
 var radius := 1.2
-var pickup_radius := 3.8
+var pickup_radius := Defs.PICKUP_RADIUS
 var velocity := Vector3.ZERO
 var invuln := 0.0
 
@@ -192,7 +190,7 @@ func steer_by(meters: float) -> void:
 
 func enter_arena(center: Vector3) -> void:
 	theta = PI * 0.5
-	ring_index = 1
+	ring_index = Defs.ARENA["start_ring"]
 	ring_radius = RINGS[ring_index]
 	dash_time = 0.0
 	dash_cd = 0.0
@@ -207,9 +205,9 @@ func arena_update(delta: float, center: Vector3) -> void:
 	var dtheta := ang * delta
 	if dash_time > 0.0:
 		dash_time -= delta
-		dtheta += dash_dir * base_speed * 3.5 / ring_radius * delta
+		dtheta += dash_dir * base_speed * Defs.ARENA["dash_speed"] / ring_radius * delta
 	theta = fmod(theta + dtheta, TAU)
-	ring_radius = move_toward(ring_radius, RINGS[ring_index], 16.0 * delta)
+	ring_radius = move_toward(ring_radius, RINGS[ring_index], Defs.ARENA["ring_switch_speed"] * delta)
 	var p := center + Vector3(cos(theta), 0, sin(theta)) * ring_radius
 	velocity = (p - global_position) / maxf(delta, 0.0001)
 	global_position = p
@@ -223,9 +221,9 @@ func dash(screen_dir: float, cam_right: Vector3) -> bool:
 		return false
 	var tangent := Vector3(-sin(theta), 0, cos(theta))
 	dash_dir = screen_dir * signf(tangent.dot(cam_right))
-	dash_time = DASH_TIME
-	dash_cd = DASH_COOLDOWN
-	invuln = maxf(invuln, 0.4)
+	dash_time = Defs.ARENA["dash_time"]
+	dash_cd = Defs.ARENA["dash_cooldown"]
+	invuln = maxf(invuln, Defs.ARENA["dash_invuln"])
 	return true
 
 
@@ -234,7 +232,7 @@ func switch_ring(step: int) -> bool:
 	if next == ring_index:
 		return false
 	ring_index = next
-	invuln = maxf(invuln, 0.2)
+	invuln = maxf(invuln, Defs.ARENA["ring_invuln"])
 	return true
 
 

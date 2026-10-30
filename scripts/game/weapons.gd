@@ -54,15 +54,15 @@ func is_evolved(id: String) -> bool:
 
 
 func damage_mult() -> float:
-	return float(run.player.def["might"]) * (1.0 + 0.1 * passive("hot"))
+	return float(run.player.def["might"]) * (1.0 + float(Defs.PASSIVES["hot"]["damage"]) * passive("hot"))
 
 
 func cooldown_mult() -> float:
-	return pow(0.92, passive("turbo"))
+	return pow(Defs.PASSIVES["turbo"]["cooldown"], passive("turbo"))
 
 
 func area_mult() -> float:
-	return 1.0 + 0.12 * passive("blast")
+	return 1.0 + float(Defs.PASSIVES["blast"]["area"]) * passive("blast")
 
 
 func display_name(id: String) -> String:
@@ -103,10 +103,11 @@ func can_evolve(id: String) -> bool:
 func _apply_passive_stats() -> void:
 	var p: Player = run.player
 	var old_max := p.max_hp
-	p.max_hp = float(p.def["max_hp"]) * (1.0 + 0.12 * passive("plating"))
+	var plating: Dictionary = Defs.PASSIVES["plating"]
+	p.max_hp = float(p.def["max_hp"]) * (1.0 + float(plating["hp"]) * passive("plating"))
 	p.hp += p.max_hp - old_max
-	p.armor = float(p.def["armor"]) + passive("plating")
-	p.pickup_radius = 3.8 * (1.0 + 0.35 * passive("magnet"))
+	p.armor = float(p.def["armor"]) + float(plating["armor"]) * passive("plating")
+	p.pickup_radius = Defs.PICKUP_RADIUS * (1.0 + float(Defs.PASSIVES["magnet"]["range"]) * passive("magnet"))
 
 
 func apply(option: Dictionary) -> void:
@@ -118,9 +119,9 @@ func apply(option: Dictionary) -> void:
 		"evolve":
 			evolve(option["id"])
 		"heal":
-			run.heal(40.0)
+			run.heal(Defs.FILLER_HEAL)
 		"score":
-			run.add_score(500)
+			run.add_score(Defs.FILLER_SCORE)
 
 
 ## Level-up choices: upgrades for owned items plus new items while slots remain.
@@ -220,9 +221,9 @@ func _passive_option(id: String) -> Dictionary:
 
 func _filler(kind: String) -> Dictionary:
 	if kind == "heal":
-		return {"kind": "heal", "id": "", "title": "Field Repair", "desc": "Restore 40 HP", "hint": "",
+		return {"kind": "heal", "id": "", "title": "Field Repair", "desc": "Restore %d HP" % int(Defs.FILLER_HEAL), "hint": "",
 			"level_text": "", "color": Color(0.3, 1.0, 0.4)}
-	return {"kind": "score", "id": "", "title": "Scrap Haul", "desc": "+500 score", "hint": "",
+	return {"kind": "score", "id": "", "title": "Scrap Haul", "desc": "+%d score" % Defs.FILLER_SCORE, "hint": "",
 		"level_text": "", "color": Color(1.0, 0.85, 0.3)}
 
 
@@ -261,75 +262,68 @@ func update(delta: float) -> void:
 
 func _fire_mg(origin: Vector3, lvl: int, evo: bool, dm: float) -> float:
 	var enemies: Enemies = run.enemies
-	var t := enemies.nearest(origin, 20.0)
+	var d: Dictionary = Defs.WEAPONS["mg"]
+	var t := enemies.nearest(origin, d["range"])
 	if t < 0:
 		return 0.1
-	var dmg := (16.0 if evo else 8.0 * (1.4 if lvl >= 2 else 1.0)) * dm
-	var barrels := 2 if evo else 1 + int(lvl >= 3) + int(lvl >= 5)
-	var pierce := 3 if evo else int(lvl >= 5)
+	var st := Defs.weapon_stats("mg", lvl, evo)
+	var barrels: int = st["barrels"]
 	var dir := (enemies.pos[t] + Vector3(0, 0.5, 0) - origin).normalized()
 	for b in barrels:
-		var spread := (b - (barrels - 1) * 0.5) * 0.12
+		var spread: float = (b - (barrels - 1) * 0.5) * d["spread"]
 		if evo:
-			spread += randf_range(-0.08, 0.08)
-		run.projectiles.fire(Projectiles.BULLET, origin, dir.rotated(Vector3.UP, spread) * 36.0, dmg, 0.7, pierce)
+			spread += randf_range(-d["evo_jitter"], d["evo_jitter"])
+		run.projectiles.fire(Projectiles.BULLET, origin, dir.rotated(Vector3.UP, spread) * d["bullet_speed"], st["dmg"] * dm, d["bullet_life"], st["pierce"])
 	Sfx.play("shot", -12.0)
-	if evo:
-		return 0.07
-	return 0.42 * (0.7 if lvl >= 4 else 1.0)
+	return st["cd"]
 
 
 func _fire_rockets(origin: Vector3, lvl: int, evo: bool, dm: float, am: float) -> float:
 	var enemies: Enemies = run.enemies
-	var count := 4 if evo else 1 + int(lvl >= 3) + int(lvl >= 5)
-	var dmg := (34.0 if evo else 22.0 * (1.3 if lvl >= 2 else 1.0)) * dm
-	var aoe := (3.2 if evo else 2.4 * (1.25 if lvl >= 4 else 1.0)) * am
+	var d: Dictionary = Defs.WEAPONS["rockets"]
+	var st := Defs.weapon_stats("rockets", lvl, evo)
+	var aoe: float = st["aoe"] * am
 	var fired := false
-	for k in count:
-		var t := enemies.random_in_range(origin, 22.0)
+	for k in st["count"]:
+		var t := enemies.random_in_range(origin, d["range"])
 		if t < 0:
 			break
 		var to := (enemies.pos[t] - origin)
 		to.y = 0.0
 		var side := to.normalized().cross(Vector3.UP) * randf_range(-5.0, 5.0)
 		var vel := to.normalized() * 10.0 + Vector3(0, 7.0, 0) + side
-		run.projectiles.fire(Projectiles.ROCKET, origin + Vector3(0, 0.4, 0), vel.normalized() * 16.0, dmg, 2.2, 0, aoe, t, Projectiles.FLAG_HOMING)
+		run.projectiles.fire(Projectiles.ROCKET, origin + Vector3(0, 0.4, 0), vel.normalized() * d["rocket_speed"], st["dmg"] * dm, d["rocket_life"], 0, aoe, t, Projectiles.FLAG_HOMING)
 		fired = true
 	if not fired:
 		return 0.2
 	Sfx.play("shot", -6.0, 0.6)
-	if evo:
-		return 0.75
-	return 1.7 - (0.4 if lvl >= 5 else 0.0)
+	return st["cd"]
 
 
 func _drop_mines(player: Player, lvl: int, evo: bool, dm: float, am: float) -> float:
-	var count := 2 if evo or lvl >= 5 else 1
-	var dmg := (45.0 if evo else 30.0 * (1.4 if lvl >= 2 else 1.0)) * dm
-	var aoe := 2.6 * (1.3 if lvl >= 4 else 1.0) * am * (1.2 if evo else 1.0)
+	var d: Dictionary = Defs.WEAPONS["mines"]
+	var st := Defs.weapon_stats("mines", lvl, evo)
 	var back := -player.velocity.normalized() if player.velocity.length() > 0.5 else Vector3.BACK
 	var right := back.cross(Vector3.UP)
-	for k in count:
+	for k in st["count"]:
 		_mine_side = -_mine_side
-		var p := player.global_position + back * 2.0 + right * _mine_side * randf_range(0.5, 2.5)
+		var p: Vector3 = player.global_position + back * d["back_dist"] + right * _mine_side * randf_range(d["side_min"], d["side_max"])
 		p.y = 0.0
-		run.projectiles.fire(Projectiles.MINE, p, Vector3.ZERO, dmg, 9.0, 0, aoe, -1, Projectiles.FLAG_NAPALM if evo else 0)
-	if evo:
-		return 0.8
-	return 0.95 if lvl >= 3 else 1.3
+		run.projectiles.fire(Projectiles.MINE, p, Vector3.ZERO, st["dmg"] * dm, d["life"], 0, st["aoe"] * am, -1, Projectiles.FLAG_NAPALM if evo else 0)
+	return st["cd"]
 
 
 func _fire_tesla(origin: Vector3, lvl: int, evo: bool, dm: float) -> float:
 	var enemies: Enemies = run.enemies
-	var chains := 12 if evo else 3 + (2 if lvl >= 2 else 0) + (3 if lvl >= 5 else 0)
-	var dmg := (24.0 if evo else 14.0 * (1.4 if lvl >= 3 else 1.0)) * dm
-	var heads := 2 if evo else 1
+	var d: Dictionary = Defs.WEAPONS["tesla"]
+	var st := Defs.weapon_stats("tesla", lvl, evo)
+	var dmg: float = st["dmg"] * dm
 	var visited := {}
 	var any := false
-	for h in heads:
+	for h in st["heads"]:
 		var from := origin + Vector3(0, 0.6, 0)
-		var t := enemies.nearest(origin, 14.0, visited)
-		for c in chains:
+		var t := enemies.nearest(origin, d["range"], visited)
+		for c in st["chains"]:
 			if t < 0:
 				break
 			var to: Vector3 = enemies.pos[t] + Vector3(0, 0.6, 0)
@@ -338,45 +332,41 @@ func _fire_tesla(origin: Vector3, lvl: int, evo: bool, dm: float) -> float:
 			run.hit_enemy(t, dmg, Vector3.ZERO, 0.0)
 			any = true
 			from = to
-			t = enemies.nearest(to, 6.5, visited)
+			t = enemies.nearest(to, d["chain_range"], visited)
 	if not any:
 		return 0.2
 	Sfx.play("zap", -8.0)
-	if evo:
-		return 0.55
-	return 1.1 if lvl >= 4 else 1.5
+	return st["cd"]
 
 
 func _pulse_shock(player: Player, lvl: int, evo: bool, dm: float, am: float) -> float:
-	var r := (6.5 if evo else 3.2 * (1.3 if lvl >= 2 else 1.0) * (1.3 if lvl >= 5 else 1.0)) * am
-	var dmg := (20.0 if evo else 7.0 * (1.5 if lvl >= 3 else 1.0) * (1.3 if lvl >= 5 else 1.0)) * dm
-	var knock := 14.0 if evo else 6.0
+	var st := Defs.weapon_stats("shock", lvl, evo)
+	var r: float = st["radius"] * am
 	var c := player.global_position
 	_tmp.clear()
 	run.enemies.query(c, r, _tmp)
 	for j in _tmp:
 		var out: Vector3 = run.enemies.pos[j] - c
 		out.y = 0.0
-		run.hit_enemy(j, dmg, out.normalized(), knock)
+		run.hit_enemy(j, st["dmg"] * dm, out.normalized(), st["knock"])
 	run.fx.ring(c, r, Color(0.6, 0.5, 1.0, 0.9) if not evo else Color(0.9, 0.85, 1.0, 1.0), 0.3)
 	if not _tmp.is_empty():
 		Sfx.play("zap", -14.0, 0.5)
-	if evo:
-		return 0.8
-	return 0.9 if lvl >= 4 else 1.2
+	return st["cd"]
 
 
 func _update_saws(delta: float, player: Player, dm: float, am: float) -> void:
 	if not owned.has("saws"):
 		return
-	var lvl := level("saws")
-	var evo := is_evolved("saws")
-	var count := 6 if evo else 2 + int(lvl >= 3) + int(lvl >= 5)
-	var orbit := (4.4 if evo else 2.7 + (0.8 if lvl >= 4 else 0.0)) * am
-	var spin := 4.5 if evo else (4.0 if lvl >= 5 else 3.0)
-	var dmg := (22.0 if evo else 9.0 * (1.4 if lvl >= 2 else 1.0)) * dm
-	var size := (1.6 if evo else 1.0) * am
-	_saw_angle += spin * delta
+	var d: Dictionary = Defs.WEAPONS["saws"]
+	var st := Defs.weapon_stats("saws", level("saws"), is_evolved("saws"))
+	var count: int = st["count"]
+	var orbit: float = st["orbit"] * am
+	var size: float = st["size"] * am
+	var dmg: float = st["dmg"] * dm
+	var hit_cd: float = d["hit_cd"]
+	var knock: float = d["knock"]
+	_saw_angle += st["spin"] * delta
 	var c := player.global_position
 	var hit_any := false
 	for k in _saws.size():
@@ -395,10 +385,10 @@ func _update_saws(delta: float, player: Player, dm: float, am: float) -> void:
 		for j in _tmp:
 			if run.enemies.saw_cd[j] > 0.0:
 				continue
-			run.enemies.saw_cd[j] = 0.35
+			run.enemies.saw_cd[j] = hit_cd
 			var out: Vector3 = run.enemies.pos[j] - c
 			out.y = 0.0
-			run.hit_enemy(j, dmg, out.normalized(), 3.0)
+			run.hit_enemy(j, dmg, out.normalized(), knock)
 			hit_any = true
 	if hit_any:
 		Sfx.play("saw", -10.0)
