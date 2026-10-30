@@ -26,6 +26,13 @@ const FILLER_SCORE := 500
 const COMBO_WINDOW := 2.5
 const BOSS_KILL_SCORE := 5000
 
+## Redline meter (0-1): fills while driving fast, drains when slow, drops when hit, and
+## boosts fire rate and ram damage. When full, nitro fires by itself.
+const REDLINE := {
+	"fill": 0.09, "min_speed": 0.7, "drain": 0.35, "hit_loss": 0.3, "fire_bonus": 0.35, "ram_bonus": 1.5,
+	"nitro_time": 2.5, "nitro_speed": 1.4, "nitro_ram": 4.0, "after_nitro": 0.25,
+}
+
 ## Enemies hit by an attack are pushed away and stagger (walk slower) until the push fades.
 ## Each enemy type has its own "knock" factor; the push strength is set per weapon.
 ## Fast-firing weapons push less per hit, or the closest enemy flies out of reach.

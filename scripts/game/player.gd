@@ -23,6 +23,7 @@ var move_dir := Vector3.FORWARD  # direction of travel, follows the nose closely
 var drive_speed := 0.0
 var turn_rate := 6.5
 var boost := 1.0  # speed factor while nitro burns
+var nitro := false
 
 var theta := 0.0
 var ring_index := 1
@@ -164,6 +165,7 @@ func place_on_map() -> void:
 	move_dir = heading
 	drive_speed = 0.0
 	boost = 1.0
+	nitro = false
 	global_position = Vector3.ZERO
 	look_at(global_position + heading, Vector3.UP)
 	velocity = Vector3.ZERO
@@ -251,7 +253,7 @@ func switch_ring(step: int) -> bool:
 
 
 func can_be_hit() -> bool:
-	return invuln <= 0.0
+	return invuln <= 0.0 and not nitro
 
 
 ## Applies damage after armor. Returns the damage actually taken.

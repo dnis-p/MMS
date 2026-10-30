@@ -24,6 +24,8 @@ var _last_combo := 0
 var _icon_key := ""
 var _boss_mode := -1
 var joystick: Joystick
+var _redline_bar: ProgressBar
+var _redline_label: Label
 
 
 func _ready() -> void:
@@ -130,6 +132,23 @@ func _ready() -> void:
 	_combo_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_combo_sub)
 
+	_redline_bar = Ui.bar(Color(0.3, 0.9, 0.4), 22)
+	_redline_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_redline_bar.offset_left = -240
+	_redline_bar.offset_right = 240
+	_redline_bar.offset_top = -36
+	_redline_bar.offset_bottom = -14
+	add_child(_redline_bar)
+	_redline_label = Ui.label("REDLINE", 16)
+	_redline_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_redline_label.offset_left = -240
+	_redline_label.offset_right = 240
+	_redline_label.offset_top = -38
+	_redline_label.offset_bottom = -12
+	_redline_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_redline_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	add_child(_redline_label)
+
 	_fps_label = Ui.label("", 16, Color(1, 1, 1, 0.6))
 	_fps_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	_fps_label.offset_left = 12
@@ -183,6 +202,10 @@ func refresh(run: Node) -> void:
 	else:
 		var t := int(run.stage_time)
 		_progress_label.text = "STAGE %d  %s   %d:%02d" % [run.stage, run.biome["name"].to_upper(), t / 60, t % 60]
+	var meter: float = run.nitro_left / Defs.REDLINE["nitro_time"] if run.nitro_left > 0.0 else run.redline
+	_redline_bar.value = meter
+	_redline_label.text = "NITRO" if run.nitro_left > 0.0 else "REDLINE"
+	(_redline_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color = Color(1.0, 0.25, 0.1) if run.nitro_left > 0.0 or meter > 0.8 else (Color(1.0, 0.65, 0.15) if meter > 0.5 else Color(0.3, 0.9, 0.4))
 	_fps_label.text = "%d fps · %d enemies" % [Engine.get_frames_per_second(), run.enemies.alive_count]
 	var combo: int = run.combo
 	if combo >= 5:
