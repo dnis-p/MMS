@@ -8,7 +8,7 @@ const ATTACKS := ["burst", "slam", "sweep", "summon"]
 const BEAM_LENGTH := 17.0
 const BEAM_HALF_WIDTH := 0.75
 
-var run: Node  # Run
+var run: Run
 var idx := -1
 var center := Vector3.ZERO
 var stage := 1
@@ -38,7 +38,7 @@ var _beam_pivot: Node3D
 var _beam_mat: StandardMaterial3D
 
 
-func setup(p_run: Node, p_center: Vector3, biome: Dictionary, p_stage: int) -> void:
+func setup(p_run: Run, p_center: Vector3, biome: Dictionary, p_stage: int) -> void:
 	run = p_run
 	center = p_center
 	stage = p_stage
@@ -192,7 +192,7 @@ func update(delta: float) -> void:
 func _start_attack(enraged: bool) -> void:
 	var choices := ATTACKS.duplicate()
 	choices.erase(_last_attack)
-	_attack = choices[randi() % choices.size()]
+	_attack = choices[run.rng.randi() % choices.size()]
 	_last_attack = _attack
 	_state = "telegraph"
 	match _attack:
@@ -203,7 +203,7 @@ func _start_attack(enraged: bool) -> void:
 			_slam_rings.clear()
 			_slam_rings.append(run.player.ring_index)
 			if enraged:
-				var other: int = (run.player.ring_index + 1 + randi() % 2) % Player.RINGS.size()
+				var other: int = (run.player.ring_index + 1 + run.rng.randi() % 2) % Player.RINGS.size()
 				_slam_rings.append(other)
 			Sfx.play("warn", -10.0, 1.6, true)
 		"sweep":
@@ -288,9 +288,9 @@ func _fire_burst(enraged: bool) -> void:
 		# on any ring. Later gaps stay close to the first so there is always a path through.
 		_gap_placed = true
 		var reach: float = run.player.speed / spd * b["burst_reach"]
-		_gap_angle = run.player.theta + randf_range(-reach, reach)
+		_gap_angle = run.player.theta + run.rng.randf_range(-reach, reach)
 	else:
-		_gap_angle += randf_range(-b["burst_drift"], b["burst_drift"])
+		_gap_angle += run.rng.randf_range(-b["burst_drift"], b["burst_drift"])
 	var offset: float = _gap_angle - (gap - 1) * 0.5 * TAU / n
 	var dmg: float = b["burst_dmg"] * _dmg_mult()
 	for k in n:
@@ -321,7 +321,7 @@ func _do_summon(enraged: bool) -> void:
 	var hm := Defs.stage_hp_mult(stage)
 	var n: int = Defs.BOSS["summon_count_enraged"] if enraged else Defs.BOSS["summon_count"]
 	for k in n:
-		var a := randf() * TAU
+		var a := run.rng.randf() * TAU
 		run.enemies.spawn(Enemies.CRAWLER if k % 3 != 0 else Enemies.RUNNER, center + Vector3(cos(a), 0, sin(a)) * Defs.ARENA["summon_radius"], hm)
 	run.fx.ring(center, 16.0, Color(0.8, 0.3, 1.0, 0.8), 0.6)
 	Sfx.play("warn", -12.0, 2.0, true)

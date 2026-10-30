@@ -13,7 +13,7 @@ const BRUTE := 3
 const BOSS := 4
 const DESPAWN_DIST := 62.0
 
-var run: Node  # Run
+var run: Run
 var speed_mult := 1.0  # the game's pace, so a faster car cannot outrun the horde
 
 var used := 0  # high-water mark of slots
@@ -141,14 +141,14 @@ func spawn(type_id: int, p: Vector3, hp_mult := 1.0) -> int:
 	pos[i] = Vector3(p.x, 0.0, p.z)
 	hp[i] = d["hp"] * hp_mult
 	max_hp[i] = hp[i]
-	speed[i] = d["speed"] * randf_range(0.9, 1.1)
+	speed[i] = d["speed"] * run.rng.randf_range(0.9, 1.1)
 	radius[i] = d["radius"]
 	dmg[i] = d["dmg"]
 	flash[i] = 0.0
 	knock[i] = Vector3.ZERO
 	saw_cd[i] = 0.0
 	ram_cd[i] = 0.0
-	attack_cd[i] = randf_range(1.0, 2.5)
+	attack_cd[i] = run.rng.randf_range(1.0, 2.5)
 	yaw[i] = 0.0
 	alive_count += 1
 	return i
@@ -194,7 +194,7 @@ func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> 
 				# Keep pace with the car at range and lob shots.
 				v = car_vel * 0.95 + dir * (1.5 if d > 8.0 else -2.0)
 				if attack_cd[i] <= 0.0:
-					attack_cd[i] = randf_range(2.0, 2.8)
+					attack_cd[i] = run.rng.randf_range(2.0, 2.8)
 					run.projectiles.enemy_shot(p + Vector3(0, 0.8, 0), dir, 9.0, dmg[i])
 		var k := knock[i]
 		if k != Vector3.ZERO:
@@ -289,7 +289,7 @@ func random_in_range(center: Vector3, max_r: float) -> int:
 		var diff := pos[i] - center
 		if diff.x * diff.x + diff.z * diff.z < r2:
 			picks.append(i)
-	return picks[randi() % picks.size()] if not picks.is_empty() else -1
+	return picks[run.rng.randi() % picks.size()] if not picks.is_empty() else -1
 
 
 func _render() -> void:
