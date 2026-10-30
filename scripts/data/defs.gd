@@ -23,20 +23,20 @@ const COMBO_WINDOW := 2.5
 const BOSS_KILL_SCORE := 5000
 
 ## Road camera, relative to the car: metres back, metres up, look-ahead metres.
-const ROAD_CAMERA := {"back": 9.0, "up": 16.5, "look": 6.5, "fov": 60.0}
+const ROAD_CAMERA := {"back": 13.0, "up": 24.0, "look": 3.0, "fov": 60.0}
 
 ## Spawn director. `t` below means seconds into the stage. Distances are metres from the car.
 const SPAWN := {
 	"rate_base": 3.0, "rate_ramp": 0.1,  # enemies per second = base + ramp * t
 	"hp_ramp": 0.6,  # extra enemy HP by the end of a stage
-	"cluster_every": 1.4, "cluster_ahead": [26.0, 36.0], "cluster_side": 9.0, "cluster_jitter": 4.0,
+	"cluster_every": 1.4, "cluster_ahead": [40.0, 50.0], "cluster_side": 9.0, "cluster_jitter": 4.0,
 	"runner_from": 15.0, "runner_weight": 0.18, "runner_ramp": 1.0 / 500.0, "runner_side_chance": 0.4,
 	"runner_behind": [16.0, 24.0], "runner_behind_side": 8.0,
-	"runner_side": [17.0, 22.0], "runner_side_along": 6.0,
+	"runner_side": [30.0, 34.0], "runner_side_along": 6.0,
 	"spitter_from": 40.0, "spitter_weight": 0.1, "spitter_ramp": 1.0 / 900.0,
-	"spitter_side": [15.0, 20.0], "spitter_ahead": [4.0, 18.0],
-	"elite_times": [45.0, 100.0], "elite_ahead": 30.0, "elite_side": 3.0,
-	"horde_times": [30.0, 65.0, 95.0, 125.0], "horde_count": 36, "horde_radius": 17.0,
+	"spitter_side": [28.0, 32.0], "spitter_ahead": [4.0, 18.0],
+	"elite_times": [45.0, 100.0], "elite_ahead": 42.0, "elite_side": 3.0,
+	"horde_times": [30.0, 65.0, 95.0, 125.0], "horde_count": 36, "horde_radius": 26.0,
 }
 
 ## Boss arena. Damage and HP also grow per stage through the *_stage values.
