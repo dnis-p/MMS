@@ -30,6 +30,7 @@ var ring_radius := 10.5
 var dash_time := 0.0
 var dash_dir := 0.0
 var dash_cd := 0.0
+var circle_dir := 1.0  # +1 / -1: which way the car circles the boss
 
 var _body: Node3D
 var _mats: Array[StandardMaterial3D] = []
@@ -194,6 +195,7 @@ func enter_arena(center: Vector3) -> void:
 	ring_radius = RINGS[ring_index]
 	dash_time = 0.0
 	dash_cd = 0.0
+	circle_dir = 1.0
 	global_position = center + Vector3(cos(theta), 0, sin(theta)) * ring_radius
 	_body.rotation = Vector3.ZERO
 
@@ -201,8 +203,7 @@ func enter_arena(center: Vector3) -> void:
 func arena_update(delta: float, center: Vector3) -> void:
 	_common(delta)
 	dash_cd -= delta
-	var ang := base_speed / ring_radius
-	var dtheta := ang * delta
+	var dtheta := circle_dir * base_speed / ring_radius * delta
 	if dash_time > 0.0:
 		dash_time -= delta
 		dtheta += dash_dir * base_speed * Defs.ARENA["dash_speed"] / ring_radius * delta
@@ -215,12 +216,14 @@ func arena_update(delta: float, center: Vector3) -> void:
 	look_at(p + tangent, Vector3.UP)
 
 
-## `screen_dir` is +1 for a swipe to the right. Returns true if the dash happened.
+## `screen_dir` is +1 for a swipe to the right. The car dashes that way and keeps
+## circling that way afterwards. Returns true if the dash happened.
 func dash(screen_dir: float, cam_right: Vector3) -> bool:
 	if dash_cd > 0.0:
 		return false
 	var tangent := Vector3(-sin(theta), 0, cos(theta))
-	dash_dir = screen_dir * signf(tangent.dot(cam_right))
+	dash_dir = screen_dir * (1.0 if tangent.dot(cam_right) >= 0.0 else -1.0)
+	circle_dir = dash_dir
 	dash_time = Defs.ARENA["dash_time"]
 	dash_cd = Defs.ARENA["dash_cooldown"]
 	invuln = maxf(invuln, Defs.ARENA["dash_invuln"])

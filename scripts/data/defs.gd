@@ -43,7 +43,7 @@ const SPAWN := {
 const ARENA := {
 	"rings": [7.0, 10.5, 14.0], "start_ring": 1, "ring_switch_speed": 16.0, "ring_invuln": 0.2,
 	"floor_radius": 16.5, "summon_radius": 17.5,
-	"dash_time": 0.22, "dash_cooldown": 0.5, "dash_speed": 3.5, "dash_invuln": 0.4,
+	"dash_time": 0.22, "dash_cooldown": 0.5, "dash_speed": 3.5, "dash_invuln": 0.4, "dash_buffer": 0.5,
 }
 const BOSS := {
 	"hp_stage": 0.25, "dmg_stage": 0.2, "first_attack": 2.5,
@@ -51,6 +51,8 @@ const BOSS := {
 	"burst_telegraph": 0.7, "burst_dmg": 18.0, "burst_shots": 22, "burst_shots_enraged": 26, "burst_gap": 3,
 	"burst_speed": 7.0, "burst_speed_enraged": 8.5, "burst_volleys": 3, "burst_volleys_enraged": 4,
 	"burst_interval": 0.7, "burst_interval_enraged": 0.55, "burst_shot_radius": 0.5, "burst_life": 4.0,
+	# First gap: within this share of what the car can reach before the shots arrive. Later gaps drift (radians).
+	"burst_reach": 0.8, "burst_drift": 0.3,
 	"slam_telegraph": 1.3, "slam_dmg": 35.0, "slam_width": 1.6,
 	"sweep_telegraph": 1.1, "sweep_dmg": 26.0, "sweep_speed": 1.55, "sweep_speed_enraged": 2.0, "sweep_turns": 1.15,
 	"summon_telegraph": 0.6, "summon_count": 8, "summon_count_enraged": 12,

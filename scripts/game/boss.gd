@@ -20,6 +20,8 @@ var _attack := ""
 var _last_attack := ""
 var _timer: float = Defs.BOSS["first_attack"]
 var _volleys := 0
+var _gap_angle := 0.0
+var _gap_placed := false
 var _slam_rings: Array[int] = []
 var _beam_angle := 0.0
 var _beam_dir := 1.0
@@ -206,7 +208,7 @@ func _start_attack(enraged: bool) -> void:
 			Sfx.play("warn", -10.0, 1.6, true)
 		"sweep":
 			_timer = Defs.BOSS["sweep_telegraph"]
-			_beam_dir = -1.0  # sweep against the car's travel so the player must dash through
+			_beam_dir = -run.player.circle_dir  # sweep against the car's travel so the player must dash through
 			_beam_angle = run.player.theta + PI
 			_beam_left = TAU * Defs.BOSS["sweep_turns"]
 			_beam_pivot.visible = true
@@ -234,6 +236,7 @@ func _telegraph(delta: float, enraged: bool) -> void:
 	match _attack:
 		"burst":
 			_volleys = Defs.BOSS["burst_volleys_enraged"] if enraged else Defs.BOSS["burst_volleys"]
+			_gap_placed = false
 			_timer = 0.0
 		"slam":
 			_do_slam()
@@ -278,13 +281,20 @@ func _end_attack() -> void:
 func _fire_burst(enraged: bool) -> void:
 	var b := Defs.BOSS
 	var n: int = b["burst_shots_enraged"] if enraged else b["burst_shots"]
-	var gap_start := randi() % n
 	var gap: int = b["burst_gap"]
 	var spd: float = b["burst_speed_enraged"] if enraged else b["burst_speed"]
-	var offset := randf() * TAU
+	if not _gap_placed:
+		# The shots take r / spd to reach ring r, in which the car covers speed / spd radians
+		# on any ring. Later gaps stay close to the first so there is always a path through.
+		_gap_placed = true
+		var reach: float = run.player.base_speed / spd * b["burst_reach"]
+		_gap_angle = run.player.theta + randf_range(-reach, reach)
+	else:
+		_gap_angle += randf_range(-b["burst_drift"], b["burst_drift"])
+	var offset: float = _gap_angle - (gap - 1) * 0.5 * TAU / n
 	var dmg: float = b["burst_dmg"] * _dmg_mult()
 	for k in n:
-		if (k - gap_start + n) % n < gap:
+		if k < gap:
 			continue
 		var a := offset + TAU * k / n
 		run.projectiles.enemy_shot(center + Vector3(0, 1.0, 0), Vector3(cos(a), 0, sin(a)), spd, dmg, b["burst_shot_radius"], b["burst_life"])
