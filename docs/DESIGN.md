@@ -82,11 +82,11 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Biome rules, not just art: EMP zones switch off electronic weapons, sandstorms cut vision,
   ice makes steering slide, toxic swamp damages when slow.
 
-**Mechanic twist (suggested 2026-10-30, none approved yet)**
-- Redline meter: keeping speed and avoiding hits fills a tachometer that raises fire rate and ram power. Stopping or
+**Mechanic twist (suggested 2026-10-30)**
+- (approved by owner 2026-10-30) Redline meter: keeping speed and avoiding hits fills a tachometer that raises fire rate and ram power. Stopping or
   being hit drops it. At full, an automatic short nitro rams through enemies. No button.
-- Burnout ring: the car leaves a burning trail; closing a loop around enemies blasts everything inside.
-- Roads as fast lanes: driving on a road gives a speed bonus, so map layout matters.
+- (saved for later review, owner 2026-10-30) Burnout ring: the car leaves a burning trail; closing a loop around enemies blasts everything inside.
+- (saved for later review, owner 2026-10-30) Roads as fast lanes: driving on a road gives a speed bonus, so map layout matters.
 
 **Enemies**
 - Boarders that climb on the vehicle until rammed off, chasers from behind, roadblocks, enemy rammer cars,
@@ -110,6 +110,9 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Anti-cheat: store seed and inputs so suspicious runs can be replayed and checked.
 - Ghost runs of friends or the player just above you.
 - Rankings must not depend on permanent upgrades or money, or they stop being fair.
+- (owner, 2026-10-30) For multiplayer versions, a leaderboard entry should also show the player's **build, time, score and kills**.
+- (owner, 2026-10-30) Not decided if permanent upgrades count on leaderboards. Owner's view: everyone can earn them by playing,
+  so it is not really unfair. They must not take too long: no 80-hour grind for the best upgrade.
 
 **PC / later**
 - Manual aim (twin-stick), local co-op where a second player controls the roof turret.
@@ -216,7 +219,7 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
 - Procedural levels: idea only, not to be implemented yet (see section 5).
 
-**Owner requests, 2026-10-30 (proposal given, waiting for go-ahead)**
+**Owner requests, 2026-10-30 (approved, in progress)**
 - Permanent progress between runs: points earned in runs, spent on upgrades outside runs, to help get past runs you are stuck on.
 - Every upgrade should fire at the closest enemy.
 - Pick upgrades with the keyboard: move keys to select, Space or Enter to confirm.
