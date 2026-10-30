@@ -4,7 +4,6 @@ extends Node3D
 ## it, roadside props, and a ground plane that follows the camera.
 
 const HALF_WIDTH := 5.5
-const LENGTH := 1900.0
 const SEGMENT := 45.0
 
 var curve := Curve3D.new()
@@ -64,10 +63,10 @@ void fragment() {
 """
 
 
-func build(biome: Dictionary, rng: RandomNumberGenerator) -> void:
+func build(biome: Dictionary, rng: RandomNumberGenerator, road_length: float) -> void:
 	for c in get_children():
 		c.queue_free()
-	_build_curve(rng)
+	_build_curve(rng, road_length)
 	_build_road_mesh(biome)
 	_build_ground(biome)
 	_build_props(biome, rng)
@@ -90,12 +89,12 @@ func follow(target: Vector3) -> void:
 		_ground.global_position = Vector3(snappedf(target.x, 4.0), -0.02, snappedf(target.z, 4.0))
 
 
-func _build_curve(rng: RandomNumberGenerator) -> void:
+func _build_curve(rng: RandomNumberGenerator, road_length: float) -> void:
 	curve = Curve3D.new()
 	curve.bake_interval = 0.5
 	var p := Vector3.ZERO
 	var heading := 0.0
-	var count := int(LENGTH / SEGMENT) + 2
+	var count := int(road_length / SEGMENT) + 2
 	for i in count:
 		var dir := Vector3(sin(heading), 0.0, -cos(heading))
 		curve.add_point(p, -dir * SEGMENT * 0.35, dir * SEGMENT * 0.35)

@@ -12,6 +12,7 @@ var max_hp := 100.0
 var hp := 100.0
 var armor := 0.0
 var base_speed := 7.0
+var speed := 7.0  # base_speed after stage and upgrades; see Run.update_pace
 var steer_speed := 8.0
 var ram_damage := 20.0
 var radius := 1.2
@@ -49,6 +50,7 @@ func setup(id: String) -> void:
 	hp = max_hp
 	armor = def["armor"]
 	base_speed = def["speed"]
+	speed = base_speed
 	steer_speed = def["steer"]
 	ram_damage = def["ram"]
 	var size: Vector3 = def["size"]
@@ -165,7 +167,7 @@ func place_on_road(road: Road) -> void:
 	forward = road.forward_at(s)
 	global_position = road.point_at(s)
 	look_at(global_position + forward, Vector3.UP)
-	velocity = forward * base_speed
+	velocity = forward * speed
 
 
 func road_update(delta: float, road: Road, steer_input: float) -> void:
@@ -173,7 +175,7 @@ func road_update(delta: float, road: Road, steer_input: float) -> void:
 	target_lateral = clampf(target_lateral + steer_input * steer_speed * delta, -LATERAL_LIMIT, LATERAL_LIMIT)
 	var prev := lateral
 	lateral = move_toward(lateral, target_lateral, steer_speed * 1.8 * delta)
-	s += base_speed * delta
+	s += speed * delta
 	forward = road.forward_at(s)
 	var right := forward.cross(Vector3.UP).normalized()
 	var p := road.point_at(s) + right * lateral
@@ -181,7 +183,7 @@ func road_update(delta: float, road: Road, steer_input: float) -> void:
 	global_position = p
 	var lat_v := (lateral - prev) / maxf(delta, 0.0001)
 	look_at(p + forward, Vector3.UP)
-	rotate_object_local(Vector3.UP, -clampf(lat_v / base_speed * 0.5, -0.5, 0.5))
+	rotate_object_local(Vector3.UP, -clampf(lat_v / speed * 0.5, -0.5, 0.5))
 	_body.rotation.z = lerpf(_body.rotation.z, clampf(-lat_v * 0.025, -0.15, 0.15), 10.0 * delta)
 
 
@@ -203,10 +205,10 @@ func enter_arena(center: Vector3) -> void:
 func arena_update(delta: float, center: Vector3) -> void:
 	_common(delta)
 	dash_cd -= delta
-	var dtheta := circle_dir * base_speed / ring_radius * delta
+	var dtheta := circle_dir * speed / ring_radius * delta
 	if dash_time > 0.0:
 		dash_time -= delta
-		dtheta += dash_dir * base_speed * Defs.ARENA["dash_speed"] / ring_radius * delta
+		dtheta += dash_dir * speed * Defs.ARENA["dash_speed"] / ring_radius * delta
 	theta = fmod(theta + dtheta, TAU)
 	ring_radius = move_toward(ring_radius, RINGS[ring_index], Defs.ARENA["ring_switch_speed"] * delta)
 	var p := center + Vector3(cos(theta), 0, sin(theta)) * ring_radius

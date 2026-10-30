@@ -60,6 +60,10 @@ func cooldown_mult() -> float:
 	return pow(Defs.PASSIVES["turbo"]["cooldown"], passive("turbo"))
 
 
+func speed_mult() -> float:
+	return 1.0 + float(Defs.PASSIVES["nitro"]["speed"]) * passive("nitro")
+
+
 func area_mult() -> float:
 	return 1.0 + float(Defs.PASSIVES["blast"]["area"]) * passive("blast")
 
@@ -107,6 +111,7 @@ func _apply_passive_stats() -> void:
 	p.hp += p.max_hp - old_max
 	p.armor = float(p.def["armor"]) + float(plating["armor"]) * passive("plating")
 	p.pickup_radius = Defs.PICKUP_RADIUS * (1.0 + float(Defs.PASSIVES["magnet"]["range"]) * passive("magnet"))
+	run.update_pace()
 
 
 func apply(option: Dictionary) -> void:

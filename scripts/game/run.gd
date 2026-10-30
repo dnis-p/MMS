@@ -152,7 +152,10 @@ func _exit_tree() -> void:
 func _start_stage() -> void:
 	biome = Defs.biome(stage)
 	_apply_biome()
-	road.build(biome, rng)
+	update_pace()
+	# Long enough for the fastest this stage can get, with every speed upgrade.
+	var top_speed := player.base_speed * Defs.stage_speed_mult(stage) * (1.0 + float(Defs.PASSIVES["nitro"]["speed"]) * Defs.MAX_PASSIVE_LEVEL)
+	road.build(biome, rng, top_speed * road_duration + 100.0)
 	road.visible = true
 	enemies.clear()
 	projectiles.clear()
@@ -207,6 +210,13 @@ func _enter_arena() -> void:
 	player.enter_arena(ARENA_CENTER)
 	_snap_camera_arena()
 	hud.show_hint("Swipe ← → to dash through attacks  ·  swipe ↑ ↓ to switch rings", 5.0)
+
+
+## Vehicle speed from stage and upgrades; enemies keep pace by the same factor.
+func update_pace() -> void:
+	var pace := Defs.stage_speed_mult(stage) * weapons.speed_mult()
+	player.speed = player.base_speed * pace
+	enemies.speed_mult = pace
 
 
 func _collect_all_gems() -> void:
