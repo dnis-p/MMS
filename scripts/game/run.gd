@@ -77,6 +77,12 @@ var _last_real_us := 0
 var _clear_ready := false
 var _score_saved := false
 var redline := 0.0
+var garage_damage := 1.0
+var parts_earned := 0
+var _xp_mult := 1.0
+var _xp_frac := 0.0
+var _revives := 0
+var _run_parts_done := false
 var nitro_left := 0.0
 var _nitro_fx := 0.0
 var _skipped := false  # jumped to a boss: the run stays off the leaderboard
@@ -130,6 +136,7 @@ func _ready() -> void:
 	player = Player.new()
 	add_child(player)
 	player.setup(class_id)
+	_apply_garage()
 	weapons = Weapons.new()
 	weapons.run = self
 	add_child(weapons)
@@ -165,6 +172,44 @@ func _exit_tree() -> void:
 
 
 # --- stage flow ------------------------------------------------------------------
+
+func _garage(id: String) -> float:
+	return Save.garage_level(id) * float(Defs.GARAGE[id]["value"])
+
+
+## Bots skip this so balance checks always measure the base game.
+func _apply_garage() -> void:
+	if autotest:
+		return
+	var p := player
+	p.base_hp *= 1.0 + _garage("hull")
+	p.max_hp = p.base_hp
+	p.hp = p.max_hp
+	p.base_armor += _garage("armor")
+	p.armor = p.base_armor
+	p.base_pickup *= 1.0 + _garage("magnet")
+	p.pickup_radius = p.base_pickup
+	p.base_speed *= 1.0 + _garage("engine")
+	garage_damage = 1.0 + _garage("guns")
+	_xp_mult = 1.0 + _garage("xp")
+	redline = _garage("redline")
+	_revives = Save.garage_level("revive")
+
+
+func _earn_parts(amount: int) -> void:
+	if autotest or amount <= 0:
+		return
+	parts_earned += amount
+	Save.add_parts(amount)
+
+
+## Pays for the kills and stages of a finished run, once.
+func _finish_run() -> void:
+	if _run_parts_done:
+		return
+	_run_parts_done = true
+	_earn_parts(kills / Defs.PARTS["per_kills"] + stage * Defs.PARTS["stage"])
+
 
 func _start_stage() -> void:
 	biome = Defs.biome(stage)
@@ -249,6 +294,7 @@ func _on_boss_killed(p: Vector3) -> void:
 	phase = Phase.CLEAR
 	boss.die()
 	add_score(Defs.BOSS_KILL_SCORE * stage)
+	_earn_parts(Defs.PARTS["boss"] * stage)
 	_slowmo(1.4, 0.3)
 	fx.shake(1.0)
 	Sfx.play("big_boom", 0.0, 1.0, true)
@@ -287,11 +333,13 @@ func _game_over() -> void:
 	Sfx.play("big_boom", 0.0, 1.0, true)
 	player.visible = false
 	var rank := _save_score()
+	_finish_run()
 	get_tree().create_timer(1.3, false, false, true).timeout.connect(func():
 		var lines := [
 			"Score  %d" % score,
 			"Stage %d  ·  Level %d  ·  %d kills" % [stage, level, kills],
 			"Best combo  x%d" % best_combo,
+			"+%d parts" % parts_earned if parts_earned > 0 else "",
 			("New #%d on the local leaderboard!" % rank) if rank > 0 else "",
 		]
 		get_tree().paused = true
@@ -313,6 +361,7 @@ func _retry() -> void:
 
 func _quit_to_menu() -> void:
 	_save_score()
+	_finish_run()
 	get_tree().paused = false
 	exit_to_menu.emit()
 
@@ -563,11 +612,26 @@ func player_hit(amount: float) -> void:
 	hud.damage_flash()
 	Sfx.play("hurt", -4.0)
 	if player.hp <= 0.0:
-		_game_over()
+		if _revives > 0:
+			_revive()
+		else:
+			_game_over()
+
+
+func _revive() -> void:
+	_revives -= 1
+	player.hp = player.max_hp * float(Defs.GARAGE["revive"]["value"])
+	player.invuln = 2.0
+	overlay.banner("SPARE ENGINE!", "", Color(0.4, 1.0, 0.5), 1.0)
+	Sfx.play("reward", -2.0, 0.8, true)
+	fx.shake(0.5)
 
 
 func add_xp(amount: int) -> void:
-	xp += amount
+	_xp_frac += amount * _xp_mult
+	var whole := int(_xp_frac)
+	_xp_frac -= whole
+	xp += whole
 	while xp >= xp_next:
 		xp -= xp_next
 		level += 1

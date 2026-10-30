@@ -45,6 +45,7 @@ func _process(delta: float) -> void:
 			r.pending_levelups = 0
 	match _step:
 		"targets":
+			_check_mg_aim(r)
 			_check_rockets(r)
 			_check_mines(r)
 			_step = "menu_open"
@@ -75,7 +76,9 @@ func _process(delta: float) -> void:
 		"redline_fill":
 			if _wait <= 0.0:
 				_check("driving fills Redline (%.2f)" % r.redline, r.redline > 0.15)
+				r.redline = 0.6
 				_a = r.redline
+				r.player.invuln = 0.0
 				r.player_hit(1.0)
 				_check("a hit drops Redline", r.redline <= _a - Defs.REDLINE["hit_loss"] + 0.001)
 				r.redline = 0.999
@@ -119,6 +122,26 @@ func _tap(action: String) -> void:
 		e.action = action
 		e.pressed = pressed
 		get_viewport().push_input(e)
+
+
+func _check_mg_aim(r: Run) -> void:
+	r.enemies.clear()
+	r.projectiles.clear()
+	var t := r.enemies.spawn(Enemies.RUNNER, Vector3(0, 0, -14), 1e6)
+	r.enemies.vel[t] = Vector3(10, 0, 0)
+	var origin := Vector3(0, 0.9, 0)
+	r.weapons._fire_mg(origin, 5, false, 1.0)
+	var pr := r.projectiles
+	var hit_all := pr.p_kind.size() == 3
+	for i in pr.p_kind.size():
+		# Where the target will be when this bullet has covered the distance to it.
+		var time: float = pr.p_pos[i].distance_to(r.enemies.pos[t]) / pr.p_vel[i].length()
+		var bullet: Vector3 = pr.p_pos[i] + pr.p_vel[i] * time
+		var enemy: Vector3 = r.enemies.pos[t] + r.enemies.vel[t] * time
+		if Vector2(bullet.x - enemy.x, bullet.z - enemy.z).length() > 1.0:
+			hit_all = false
+	_check("all MG barrels lead a moving target", hit_all)
+	r.projectiles.clear()
 
 
 func _check_rockets(r: Run) -> void:

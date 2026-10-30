@@ -214,6 +214,21 @@ const PASSIVES := {
 	"hot": {"name": "Hot Rounds", "desc": "+10% damage", "damage": 0.1, "color": Color(1.0, 0.3, 0.2)},
 }
 
+## Permanent upgrades bought between runs. Cost of the next level = "cost" * (level + 1).
+## "class" limits an upgrade to one vehicle class; empty means all of them.
+const GARAGE := {
+	"hull": {"name": "Reinforced Hull", "desc": "+5% max HP", "max": 5, "cost": 40, "value": 0.05, "class": ""},
+	"guns": {"name": "Heavy Calibers", "desc": "+4% damage", "max": 5, "cost": 40, "value": 0.04, "class": ""},
+	"engine": {"name": "Tuned Engine", "desc": "+3% vehicle speed", "max": 5, "cost": 30, "value": 0.03, "class": ""},
+	"magnet": {"name": "Scrap Sweep", "desc": "+8% pickup range", "max": 4, "cost": 25, "value": 0.08, "class": ""},
+	"xp": {"name": "Field Manual", "desc": "+5% XP", "max": 5, "cost": 30, "value": 0.05, "class": ""},
+	"armor": {"name": "Bolt-on Armor", "desc": "+1 armor", "max": 3, "cost": 60, "value": 1.0, "class": ""},
+	"redline": {"name": "Hot Start", "desc": "Start with +10% Redline", "max": 3, "cost": 40, "value": 0.1, "class": ""},
+	"revive": {"name": "Spare Engine", "desc": "Revive once per run at 50% HP", "max": 1, "cost": 300, "value": 0.5, "class": ""},
+}
+## Parts earned: one per "per_kills" kills, "stage" per stage reached, "boss" per boss (times its stage).
+const PARTS := {"per_kills": 10, "stage": 15, "boss": 40}
+
 ## Enemy type ids index into ENEMY_ORDER.
 const ENEMY_ORDER := ["crawler", "runner", "spitter", "brute", "boss"]
 const ENEMIES := {

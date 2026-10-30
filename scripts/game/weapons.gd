@@ -53,7 +53,7 @@ func is_evolved(id: String) -> bool:
 
 
 func damage_mult() -> float:
-	return float(run.player.def["might"]) * (1.0 + float(Defs.PASSIVES["hot"]["damage"]) * passive("hot"))
+	return float(run.player.def["might"]) * run.garage_damage * (1.0 + float(Defs.PASSIVES["hot"]["damage"]) * passive("hot"))
 
 
 func cooldown_mult() -> float:
@@ -107,10 +107,10 @@ func _apply_passive_stats() -> void:
 	var p: Player = run.player
 	var old_max := p.max_hp
 	var plating: Dictionary = Defs.PASSIVES["plating"]
-	p.max_hp = float(p.def["max_hp"]) * (1.0 + float(plating["hp"]) * passive("plating"))
+	p.max_hp = p.base_hp * (1.0 + float(plating["hp"]) * passive("plating"))
 	p.hp += p.max_hp - old_max
-	p.armor = float(p.def["armor"]) + float(plating["armor"]) * passive("plating")
-	p.pickup_radius = Defs.PICKUP_RADIUS * (1.0 + float(Defs.PASSIVES["magnet"]["range"]) * passive("magnet"))
+	p.armor = p.base_armor + float(plating["armor"]) * passive("plating")
+	p.pickup_radius = p.base_pickup * (1.0 + float(Defs.PASSIVES["magnet"]["range"]) * passive("magnet"))
 	run.update_pace()
 
 
