@@ -40,6 +40,8 @@ var _gulp := 0.0
 var _model: RaccoonBody
 var _grafts: Array = []
 var _scent: MeshInstance3D
+var _aim: MeshInstance3D
+var _aim_mat: StandardMaterial3D
 
 var theta := 0.0
 var ring_index := 1
@@ -85,7 +87,9 @@ func _build_model(size: Vector3, color: Color) -> void:
 	add_child(_body)
 	if creature:
 		set_form(0)
-		_build_scent()
+		_scent = _arrow(Color(0.5, 1.0, 0.4), Vector3(0.8, 1.2, 0.05))
+		_aim = _arrow(Color(0.6, 0.2, 0.15), Vector3(1.3, 1.9, 0.05))
+		_aim_mat = _aim.material_override
 		return
 	var wheel_r := 0.45 if class_id != "juggernaut" else 0.55
 	var hull_y := wheel_r + size.y * 0.5 - 0.1
@@ -145,27 +149,44 @@ func add_mutation(part: String, color: Color) -> void:
 	_model.graft(part, color)
 
 
-## An arrow on the ground that points at the nearest food.
-func _build_scent() -> void:
-	_scent = MeshInstance3D.new()
+## An arrow lying on the ground around the body.
+func _arrow(color: Color, size: Vector3) -> MeshInstance3D:
+	var arrow := MeshInstance3D.new()
 	var mesh := PrismMesh.new()
-	mesh.size = Vector3(1.3, 1.9, 0.05)
-	_scent.mesh = mesh
+	mesh.size = size
+	arrow.mesh = mesh
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = Color(1.0, 0.2, 0.15)
-	_scent.material_override = mat
-	_scent.top_level = true
-	_scent.visible = false
-	add_child(_scent)
+	mat.albedo_color = color
+	arrow.material_override = mat
+	arrow.top_level = true
+	arrow.visible = false
+	add_child(arrow)
+	return arrow
 
 
-## `dir` is flat and points at the food; zero hides the arrow.
+## `dir` is flat; zero hides the arrow.
+func _point(arrow: MeshInstance3D, dir: Vector3, s: float, out: float) -> void:
+	arrow.visible = dir != Vector3.ZERO
+	if arrow.visible:
+		arrow.basis = Basis(dir.cross(Vector3.UP), dir, Vector3.UP).scaled(Vector3.ONE * s)
+		arrow.global_position = global_position + dir * (radius + out * s) + Vector3(0, 0.3, 0)
+
+
+## Green: where the nearest food is.
 func set_scent(dir: Vector3, s: float) -> void:
-	_scent.visible = dir != Vector3.ZERO
-	if _scent.visible:
-		_scent.basis = Basis(dir.cross(Vector3.UP), dir, Vector3.UP).scaled(Vector3.ONE * s)
-		_scent.global_position = global_position + dir * (radius + 2.6 * s) + Vector3(0, 0.3, 0)
+	_point(_scent, dir, s, 1.8)
+
+
+## Red: where a jump would go, bright when something is there to hit.
+func set_aim(dir: Vector3, s: float, locked: bool) -> void:
+	_point(_aim, dir, s, 3.4)
+	_aim_mat.albedo_color = Color(1.0, 0.12, 0.08) if locked else Color(0.6, 0.2, 0.15)
+
+
+func hide_arrows() -> void:
+	_scent.visible = false
+	_aim.visible = false
 
 
 ## Starts a pounce (or a bounce, with `face` off) that takes `time` seconds and stops `stop` metres short.

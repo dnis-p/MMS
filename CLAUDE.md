@@ -11,6 +11,7 @@ decision the owner gives you there (mark owner's words vs your suggestions).**
 - Satisfying, simple, scalable. Vampire Survivors feel: play "without thinking", no complex builds,
   juicy feedback (hit flash, shake, damage numbers, combo, rising-pitch pickups).
 - One input during a run: driving with smooth, tight steering (keys, or drag for a virtual stick). No ability buttons.
+  Exception (owner, 2026-10-31): the raccoon prototype has a jump, Space at the mouse pointer or a second-finger tap.
 - Fast paced and vehicle-first: the Redline meter rewards keeping speed; nitro fires by itself.
 - Permanent upgrades (Garage) must never need a long grind (owner: no 80-hour goals).
 - Maps: walled rectangles, roads optional. Nothing inside may cover the player or enemies; buildings only as walls.

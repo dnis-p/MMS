@@ -122,6 +122,7 @@ func _setup_input() -> void:
 		"move_up": [KEY_W, KEY_UP],
 		"move_down": [KEY_S, KEY_DOWN],
 		"pause": [KEY_ESCAPE, KEY_P],
+		"pounce": [KEY_SPACE],
 	}
 	for action in map:
 		if not InputMap.has_action(action):

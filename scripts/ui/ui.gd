@@ -131,3 +131,28 @@ static func option_card_content(o: Dictionary, compact := false) -> VBoxContaine
 		hint.custom_minimum_size.x = 180 if compact else 230
 		v.add_child(hint)
 	return v
+
+
+## Keyboard focus after `delay` seconds, even while the game is paused.
+static func focus_after(c: Control, delay: float) -> void:
+	if delay <= 0.0:
+		c.grab_focus()
+		return
+	c.get_tree().create_timer(delay, true).timeout.connect(func():
+		if is_instance_valid(c) and c.is_visible_in_tree():
+			c.grab_focus())
+
+
+## The in-game pointer: a ring with a cross, big enough to find on a busy screen.
+static func crosshair(color: Color) -> ImageTexture:
+	var img := Image.create(48, 48, false, Image.FORMAT_RGBA8)
+	for y in 48:
+		for x in 48:
+			var d := Vector2(x - 23.5, y - 23.5)
+			var on := absf(d.length() - 16.0) < 2.0 or (minf(absf(d.x), absf(d.y)) < 1.2 and d.length() > 8.0 and d.length() < 23.0)
+			var edge := absf(d.length() - 16.0) < 3.5
+			if on:
+				img.set_pixel(x, y, color)
+			elif edge:
+				img.set_pixel(x, y, Color(0, 0, 0, 0.8))
+	return ImageTexture.create_from_image(img)

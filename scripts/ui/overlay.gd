@@ -2,6 +2,7 @@ class_name Overlay
 extends Control
 ## Banners, screen flashes and simple modal panels (pause, stage clear, game over).
 
+var focus_delay := 0.0  # creatures mash Space, which must not press a button by accident
 var _banner: Label
 var _banner_sub: Label
 var _flash: ColorRect
@@ -105,7 +106,7 @@ func show_panel(title: String, lines: Array, buttons: Array, title_color := Colo
 			first = btn
 	_panel_root.visible = true
 	if first:
-		first.grab_focus()
+		Ui.focus_after(first, focus_delay)
 
 
 func hide_panel() -> void:

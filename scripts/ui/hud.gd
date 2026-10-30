@@ -107,6 +107,7 @@ func _ready() -> void:
 	right.add_child(_kills_label)
 
 	var pause := Button.new()
+	pause.focus_mode = Control.FOCUS_NONE  # Space must not press it
 	pause.text = "II"
 	pause.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	pause.offset_left = -88

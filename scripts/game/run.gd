@@ -11,6 +11,7 @@ enum Phase { ROAM, BOSS_INTRO, BOSS, CLEAR, DEAD, FEAST }
 
 const ARENA_CENTER := Vector3(0, 0, 4000)
 const STICK_DEADZONE := 18.0
+const SPACE_GUARD := 0.6  # panels ignore the keyboard this long, so mashed bites can't click them
 
 var class_id := ""
 var stage := 1
@@ -116,6 +117,11 @@ var _sniff := 0.0
 var _scent := -1  # nearest food
 var _prey := -1  # what the pounce in progress is aimed at
 var _biting := false  # the lunge in progress ends in a bite, not a bounce
+var aim_point := Vector3.ZERO  # the ground spot a jump goes at
+var _mouse_seen := false  # no mouse (yet): jumps go straight ahead
+var _jump_buffer := 0.0
+var _tap_left := 0.0  # seconds a phone tap holds the aim
+var _cursor_locked := -1
 var _herd_timer := 0.0
 var _threat_timer := 0.0
 var _hungry_tick := 0.0
@@ -187,6 +193,7 @@ func _ready() -> void:
 	crate_ui.auto_close = autotest
 	ui.add_child(crate_ui)
 	overlay = Overlay.new()
+	overlay.focus_delay = SPACE_GUARD if eat_mode else 0.0
 	ui.add_child(overlay)
 
 	_start_stage()
@@ -195,6 +202,8 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
 	Sfx.rev_stop()
+	if eat_mode:
+		Input.set_custom_mouse_cursor(null)
 	if get_tree():
 		get_tree().paused = false
 
@@ -278,7 +287,7 @@ func _start_stage() -> void:
 	if stage == 1:
 		var hint := "WASD / arrows or drag to drive  ·  weapons fire on their own"
 		if eat_mode:
-			hint = "Steer at prey: you pounce and bite by yourself  ·  keep eating or you starve"
+			hint = "Steer at food: you pounce by yourself  ·  %s  ·  keep eating or you starve" % ("tap to jump at big prey" if OS.has_feature("mobile") else "mouse aims, Space jumps at big prey")
 		hud.show_hint(hint, 6.0)
 	if eat_mode:
 		_last_meal = 0.0
@@ -494,6 +503,8 @@ func _hunt(delta: float) -> void:
 		frenzy = maxf(0.0, frenzy - e["frenzy_drain"] * delta)
 		_frenzied = _frenzied and frenzy > 0.5
 	_chain_left -= delta
+	_jump_buffer -= delta
+	_tap_left -= delta
 	if p.lunge_left > 0.0:
 		if _biting and enemies.is_alive(_prey):
 			p.lunge_to = enemies.pos[_prey]
@@ -505,6 +516,7 @@ func _hunt(delta: float) -> void:
 	if _sniff <= 0.0:
 		_sniff = 0.1
 		_scent = enemies.nearest_food(p.global_position)
+		enemies.aimed = enemies.aim_target(p.global_position, aim_point, bite_reach())
 	var to_food := Vector3.ZERO
 	var scent := false
 	if enemies.is_alive(_scent) and enemies.edible(_scent):
@@ -516,15 +528,60 @@ func _hunt(delta: float) -> void:
 	p.set_scent(to_food, view_zoom)
 	p.boost = (1.0 + e["frenzy_speed"] * frenzy) * (1.0 + (e["scent_boost"] if scent else 0.0))
 	p.drive(delta, _move_input(delta), map)
+	_update_aim()
 	if _bite_cd > 0.0:
 		return
+	if autotest:
+		var b := bot.jump_at(self)
+		if b >= 0:
+			aim_point = enemies.pos[b]
+			_jump_buffer = e["jump_buffer"]
+	if _jump_buffer > 0.0:
+		var j := enemies.aim_target(p.global_position, aim_point, bite_reach())
+		if j >= 0:
+			_jump_buffer = 0.0
+			_pounce(j)
+			return
 	_seek -= delta
 	if _seek > 0.0:
 		return
 	_seek = 0.05
-	var i := enemies.bite_target(p.global_position, p.heading, bite_reach(), _chain_left > 0.0)
+	var i := enemies.bite_target(p.global_position, p.heading, bite_reach(), _chain_left > 0.0, bite_radius())
 	if i >= 0:
 		_pounce(i)
+
+
+## Keeps the aim on the pointer and shows it: red arrow, pointer and the target all light up.
+func _update_aim() -> void:
+	var p := player
+	if _tap_left <= 0.0:
+		aim_point = _ground_at(get_viewport().get_mouse_position()) if _mouse_seen and not autotest else p.global_position + p.heading * bite_reach()
+	var locked := enemies.is_alive(enemies.aimed)
+	var to := (enemies.pos[enemies.aimed] if locked else aim_point) - p.global_position
+	to.y = 0.0
+	p.set_aim(to.normalized() if _mouse_seen and to.length_squared() > 0.01 else Vector3.ZERO, view_zoom, locked)
+	if not autotest and _mouse_seen and int(locked) != _cursor_locked:
+		_cursor_locked = int(locked)
+		Input.set_custom_mouse_cursor(Ui.crosshair(Color(1.0, 0.15, 0.1) if locked else Color(1, 1, 1)), Input.CURSOR_ARROW, Vector2(24, 24))
+
+
+## Where a screen position lands on the ground.
+func _ground_at(screen: Vector2) -> Vector3:
+	var from := camera.project_ray_origin(screen)
+	var dir := camera.project_ray_normal(screen)
+	return from - dir * from.y / minf(dir.y, -0.01)
+
+
+func press_jump() -> void:
+	_jump_buffer = Defs.EAT["jump_buffer"]
+
+
+func _tap_jump(screen: Vector2) -> void:
+	if phase != Phase.ROAM or not eat_mode:
+		return
+	aim_point = _ground_at(screen)
+	_tap_left = Defs.EAT["jump_buffer"]
+	press_jump()
 
 
 ## Hunger is your health: it drains all the time and only food refills it.
@@ -554,7 +611,7 @@ func _starve(delta: float) -> void:
 func _pounce(i: int) -> void:
 	_prey = i
 	_biting = true
-	player.set_scent(Vector3.ZERO, 1.0)
+	player.hide_arrows()
 	var stop: float = 0.0 if enemies.edible(i) else enemies.radius[i] + player.radius * 0.5
 	player.lunge(enemies.pos[i], Defs.EAT["lunge_time"], stop)
 	Sfx.play("dash", -10.0, 1.5)
@@ -622,6 +679,7 @@ func _chomp() -> void:
 func _tear(i: int) -> bool:
 	var amount := plain_bite() * (1.0 + Defs.EAT["frenzy_tear"] * frenzy)
 	enemies.hp[i] -= amount
+	player.hp = minf(player.max_hp, player.hp + Defs.EAT["tear_meal"])
 	enemies.flash[i] = 0.1
 	fx.number(enemies.pos[i], amount, frenzy > 0.75)
 	fx.burst(enemies.pos[i] + Vector3(0, 0.5, 0), Color(0.8, 0.1, 0.1), 10, 1.0 + enemies.sizes[i] * 0.2)
@@ -756,7 +814,7 @@ func _director_eat(delta: float) -> void:
 		if i >= 0:
 			_make_big(i, body_size * e["elite_size"], e["elite_bites"])
 			enemies.elite[i] = 1
-		overlay.banner("ELITE!", "Bite it down and eat it for a crate", Color(1.0, 0.75, 0.2), 1.4)
+		overlay.banner("ELITE!", "%s to bite it down, eat it for a crate" % _jump_word(), Color(1.0, 0.75, 0.2), 1.4)
 		Sfx.play("warn", -10.0, 1.4, true)
 
 
@@ -879,8 +937,12 @@ func _spawn_alpha() -> void:
 	enemies.speed[i] = e["alpha_speed"]
 	enemies.dmg[i] = e["alpha_dmg"]
 	enemies.attack_cd[i] = e["alpha_lunge_every"]
-	overlay.banner("%s INCOMING" % String(biome["boss"]), "Eat to fill Frenzy, then bite it down", Color(1, 0.3, 0.25), 1.8)
+	overlay.banner("%s INCOMING" % String(biome["boss"]), "Eat to fill Frenzy, then %s to bite it" % _jump_word().to_lower(), Color(1, 0.3, 0.25), 1.8)
 	Sfx.play("warn", -4.0, 1.0, true)
+
+
+func _jump_word() -> String:
+	return "Tap" if OS.has_feature("mobile") else "Space"
 
 
 func _on_alpha_eaten(p: Vector3) -> void:
@@ -888,7 +950,7 @@ func _on_alpha_eaten(p: Vector3) -> void:
 	phase = Phase.FEAST
 	player.end_lunge()
 	player.boost = 1.0
-	player.set_scent(Vector3.ZERO, 1.0)
+	player.hide_arrows()
 	if autotest:
 		print("alpha eaten: stage=%d t=%.0f fight=%.1f size=%.1f level=%d hp=%d" % [stage, stage_time, stage_time - _alpha_born, body_size, level, player.hp])
 	var m: Dictionary = _eat_stage(stage)["mutation"]
@@ -1332,7 +1394,15 @@ func _notification(what: int) -> void:
 			_open_pause()
 
 
+func _input(event: InputEvent) -> void:
+	if eat_mode and event is InputEventMouseMotion and event.device != InputEvent.DEVICE_ID_EMULATION:
+		_mouse_seen = true
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if eat_mode and phase == Phase.ROAM and event.is_action_pressed("pounce"):
+		press_jump()
+		return
 	if event.is_action_pressed("pause"):
 		if _paused_by_menu:
 			overlay.hide_panel()
@@ -1362,6 +1432,8 @@ func _stick_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed and _stick_index == -1:
 			_stick_start(event.index, event.position)
+		elif event.pressed:
+			_tap_jump(event.position)
 		elif not event.pressed and event.index == _stick_index:
 			_stick_reset()
 	elif event is InputEventScreenDrag:

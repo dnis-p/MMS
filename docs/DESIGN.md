@@ -27,6 +27,7 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Satisfaction comes from juicy feedback: hits, sounds with slot-machine-like rewards, visual impact.
 - Upgrades stay simple; max-level items **combine into evolved versions** (as in Vampire Survivors).
 - Keep the prototype free of extra mechanics. No ability buttons: **Decided** (keep it like Vampire Survivors).
+  Exception decided by the owner on 2026-10-31: the raccoon's jump (Space, or a tap). The cars still have no buttons.
 
 ## 3. Boss arena (owner)
 - Camera fixed to the vehicle; the vehicle constantly circles the boss and attacks.
@@ -96,11 +97,7 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Boss length: aim for a target fight time and set boss HP from it, and check level pace first, since level 25 by 90-150 s is one
   level every 4-6 s.
 
-**Raccoon jump and originality (suggested 2026-10-31, answer to the owner's jump idea in section 9; not built)**
-- Hybrid jump: pounces on food stay automatic, so chains and multikills need no thought. Big things are never jumped at by themselves:
-  Space jumps at the pointer, and that is the only way to bite them. A jump into food chains by itself. On a phone, a tap with the
-  second thumb does the same, so no button is drawn. Needs the owner's yes: it changes "No ability buttons", which is Decided.
-- The scent arrow would then need its own look or place, since the owner wants the arrow to follow the pointer.
+**Raccoon originality (suggested 2026-10-31; not built)**
 - Forms that change the bite, not only the look: Ghoul's long arms grab from further, Were-Raccoon's bite slams an area, Abomination's
   arm pounds the ground. This makes evolving a mechanic and leads into the owner's classes.
 - Predators that hunt the prey too, so you steal their kills; and a town that reacts, with animal control and news vans as you eat more.
@@ -160,6 +157,21 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-10-31, raccoon hybrid jump** (owner chose the hybrid; rule checks, bots and one screenshot, the owner has not played it)
+- **The problem** (owner): with only elites around, steering at them jumped you in by yourself and you died. Now the raccoon never
+  jumps by itself at something big, nor at food within bite range of something big. Dropped prey (0 HP) still counts as food.
+- **Jump** (owner's idea, narrower than proposed). Space jumps at what the mouse points at, within pounce reach and 41 degrees of the
+  line to the pointer; nothing in range means nothing happens. It works on food too and is the only way to bite something big. A jump
+  into food chains by itself. A press lands up to 0.2 s early, so it can be pressed during the bite cooldown. Differs from the owner's
+  proposal: food stays automatic, so Space is not needed for every jump, because that would break chains. With no mouse, jumps go straight ahead.
+- **Pointer** (owner). A white ring-and-cross cursor, red when something is in range, shown once the mouse moves in a raccoon run. The
+  red arrow follows it and brightens on a target, and the target lights up. The food arrow is now smaller and green, so the two don't mix.
+- **Phone:** a tap with a second finger jumps at the tap. Written but never run on a device or with a touch screen.
+- **Added, not proposed:** each chunk torn off something big gives 8 hunger, because 3 of 6 bots died at the boss without it, 2 of them
+  starving. Game-over and stage-clear panels ignore the keyboard for 0.6 s, so mashing Space can't press Retry. The pause button no longer takes focus.
+- Bots (6 seeds, 120 s of game time): 5 of 6 ate the first boss after 7-12 s of fighting, and one starved with the boss at 3% HP. One bot went 15.9 s between meals in stage 2, cause not looked into; the others 3-6 s.
+- Not checked: the cursor image itself (screenshots don't capture it) and aiming with a real mouse. The rule checks test the targeting directly.
+
 **2026-10-31, more prey for the raccoon** (owner: too much running between victims; bots only, the owner has not played it)
 - Herds now arrive every 1.6 s instead of 3 s, with 9 groups at stage start instead of 5. Bots ate about 70% more. Their longest gap
   between meals was 2.8-3.7 s, down from 2.5-8.3 s; bots go straight to food, so people will see longer gaps.
@@ -394,9 +406,6 @@ This replaces parts of the raccoon prototype below: guns, knocking down by shoot
 
 **Owner, 2026-10-30, on the raccoon, for later (the rest of these notes is built, see section 8, 2026-10-31)**
 - Open worry: is being the hunter the best idea? Hunger and threats are the first answer; the owner's playtest decides.
-- (2026-10-31) Problem: with only elites around, steering toward them jumps you at them by itself and you die. Idea, not decided: the
-  mouse aims and Space triggers the jump at what you point at, if food is in range; no Space, no jump. The arrow follows the pointer
-  to show where the jump would go, with a custom, more visible cursor. Changes a Decided item, so waiting for the owner (section 6).
 - (2026-10-31) The owner is still thinking about how to make the game more original and fun.
 - Add attacks slowly by evolving path: ranged spit (Kog'Maw in LoL), AOE around the body (spinning blades, garlic in VS). The focus
   stays on AOE damage or eating, for satisfying multikills.

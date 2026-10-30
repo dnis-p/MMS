@@ -69,6 +69,13 @@ func _toward_alpha(run: Run, car: Vector3) -> Vector2:
 	return Vector2(e.pos[run.alpha].x - car.x, e.pos[run.alpha].z - car.z).normalized() * 5.0
 
 
+## Bites the boss with Frenzy up and anything else big whenever it can. Returns what to jump at.
+func jump_at(run: Run) -> int:
+	if run.alpha >= 0 and run.frenzy < 0.4:
+		return -1
+	return run.enemies.nearest_big(run.player.global_position, run.bite_reach())
+
+
 func _toward_pickup(run: Run, car: Vector3) -> Vector2:
 	var best := Vector3.ZERO
 	var best_d := GEM_RANGE * GEM_RANGE

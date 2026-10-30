@@ -59,8 +59,35 @@ func _process(delta: float) -> void:
 			_step = "pounce"
 		"pounce":
 			if _wait <= 0.0:
-				_check("prey ahead gets pounced on with no input", not r.enemies.is_alive(_food) and r.frenzy > 0.0)
+				_check("food ahead gets pounced on with no input", not r.enemies.is_alive(_food) and r.frenzy > 0.0)
 				r.enemies.clear()
+				r.player.end_lunge()
+				r._bite_cd = 0.0
+				r.player.heading = Vector3.FORWARD
+				_food = r.enemies.spawn(Enemies.BRUTE, r.player.global_position + Vector3.FORWARD * 7.0, 1.0)
+				r._make_big(_food, 2.0, 3.0)
+				r.enemies.speed[_food] = 0.0
+				_gap = r.enemies.hp[_food]
+				_wait = 0.3
+				_step = "no_auto"
+		"no_auto":
+			if _wait <= 0.0:
+				_check("something big is never jumped at by itself", r.enemies.hp[_food] == _gap and r.player.lunge_left <= 0.0)
+				r.press_jump()
+				_wait = 0.4
+				_step = "jump"
+		"jump":
+			if _wait <= 0.0:
+				_check("Space jumps at big prey and bites it", r.enemies.hp[_food] < _gap)
+				r.enemies.clear()
+				r.player.end_lunge()
+				r._bite_cd = 0.0
+				r.press_jump()
+				_wait = 0.1
+				_step = "empty_jump"
+		"empty_jump":
+			if _wait <= 0.0:
+				_check("Space with nothing in range does nothing", r.player.lunge_left <= 0.0)
 				_food = r.enemies.spawn(Enemies.CRAWLER, r.player.global_position + Vector3.BACK * 15.0, 1e6)
 				_gap = 15.0
 				_wait = 0.5
@@ -152,6 +179,17 @@ func _check_rules(r: Run) -> void:
 	r.frenzy = 1.0
 	_check("Frenzy widens the bite", r.bite_radius() > plain)
 	r.frenzy = 0.0
+
+	var beside := e.spawn(Enemies.CRAWLER, at + Vector3.FORWARD * 6.0, 1e6)
+	_check("food on its own can be pounced on", e.bite_target(at, Vector3.FORWARD, 10.0, false, 2.0) == beside)
+	var near := e.spawn(Enemies.BRUTE, at + Vector3.FORWARD * 7.0, 1.0)
+	r._make_big(near, 3.0, 2.0)
+	_check("food next to something big is left alone", e.bite_target(at, Vector3.FORWARD, 10.0, false, 2.0) == -1)
+	var left := e.spawn(Enemies.BRUTE, at + Vector3.LEFT * 7.0, 1.0)
+	r._make_big(left, 3.0, 2.0)
+	_check("the pointer picks the target", e.aim_target(at, at + Vector3.LEFT * 7.0, 10.0) == left and e.aim_target(at, at + Vector3.FORWARD * 6.0, 10.0) == beside)
+	_check("the pointer can't pick what is behind it", e.aim_target(at, at + Vector3.BACK * 7.0, 10.0) == -1)
+	e.clear()
 
 	var big := e.spawn(Enemies.BRUTE, at + Vector3(1, 0, 0), 1.0)
 	r._make_big(big, 5.0, 1.9)

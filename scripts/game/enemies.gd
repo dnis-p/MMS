@@ -47,6 +47,8 @@ var weak := PackedFloat32Array()  # seconds left knocked down and edible, eat mo
 var herd := PackedFloat32Array()  # calm prey of a herd wander together along this angle
 var elite := PackedByteArray()  # eat mode: a brute that drops a crate
 var threat_count := 0  # eat mode: alive things too big to eat
+var aimed := -1  # eat mode: what a jump would hit right now
+var _big := PackedInt32Array()
 var _eat: Dictionary = Defs.EAT
 var _reach := 3.0
 var _free: Array[int] = []
@@ -369,25 +371,78 @@ func nearest(center: Vector3, max_r: float, exclude := {}) -> int:
 	return best
 
 
-## What to pounce at: food first, something bigger only when no food is in reach. Only what is
-## ahead counts, unless `any_way` is set, which is how bites chain.
-func bite_target(center: Vector3, facing: Vector3, reach: float, any_way: bool) -> int:
+## The closest food to pounce at by itself. Only what is ahead counts, unless `any_way` is set,
+## which is how bites chain. Food within `keep_off` of something big is left alone: going near
+## that has to be the player's choice.
+func bite_target(center: Vector3, facing: Vector3, reach: float, any_way: bool, keep_off: float) -> int:
+	_big.clear()
+	for i in used:
+		if alive[i] == 1 and not edible(i):
+			_big.append(i)
 	var best := -1
-	var best_score := INF
+	var best_gap := INF
 	var ahead: float = _eat["ahead"]
 	for i in used:
-		if alive[i] == 0:
+		if alive[i] == 0 or not edible(i):
 			continue
 		var diff := pos[i] - center
 		diff.y = 0.0
 		var length := diff.length()
 		var gap := length - radius[i]
-		if gap > reach or (not any_way and gap > 1.0 and diff.dot(facing) < ahead * length):
+		if gap >= best_gap or gap > reach or (not any_way and gap > 1.0 and diff.dot(facing) < ahead * length):
 			continue
-		var score := gap if edible(i) else gap + reach
-		if score < best_score:
-			best_score = score
+		if not _near_big(pos[i], keep_off):
+			best_gap = gap
 			best = i
+	return best
+
+
+func _near_big(p: Vector3, keep_off: float) -> bool:
+	for b in _big:
+		var r := radius[b] + keep_off
+		if p.distance_squared_to(pos[b]) < r * r:
+			return true
+	return false
+
+
+## What a jump at the ground spot `at` would hit: whatever in reach is closest to that spot, inside
+## the cone around the line to it. Food and big prey count the same, since the player chose.
+func aim_target(center: Vector3, at: Vector3, reach: float) -> int:
+	var line := at - center
+	line.y = 0.0
+	var length := line.length()
+	if length < 0.01:
+		return -1
+	var dir := line / length
+	var spot := center + dir * minf(length, reach)
+	var cone: float = _eat["aim_cone"]
+	var best := -1
+	var best_d := INF
+	for i in used:
+		if alive[i] == 0:
+			continue
+		var diff := pos[i] - center
+		diff.y = 0.0
+		var l := diff.length()
+		if l - radius[i] > reach or diff.dot(dir) < cone * l:
+			continue
+		var d2 := spot.distance_squared_to(pos[i])
+		if d2 < best_d:
+			best_d = d2
+			best = i
+	return best
+
+
+## The closest thing too big to eat within `r`, or -1.
+func nearest_big(center: Vector3, r: float) -> int:
+	var best := -1
+	var best_d := r * r
+	for i in used:
+		if alive[i] == 1 and not edible(i):
+			var d2 := center.distance_squared_to(pos[i]) - radius[i] * radius[i]
+			if d2 < best_d:
+				best_d = d2
+				best = i
 	return best
 
 
@@ -437,6 +492,8 @@ func _render() -> void:
 				color = color.lightened(0.2)
 			else:  # too big: black with a red pulse
 				color = DANGER_COLOR.lerp(DANGER_PULSE, pulse)
+			if i == aimed:
+				color = color.lerp(white, 0.65)
 		var k: int = counts[t]
 		_mm[t].set_instance_transform(k, Transform3D(basis, Vector3(p.x, lift + bob, p.z)))
 		_mm[t].set_instance_color(k, white if flash[i] > 0.0 else color)

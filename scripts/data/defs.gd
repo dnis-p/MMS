@@ -48,14 +48,16 @@ const MAP_CAMERA := {"back": 9.0, "up": 30.0, "lead": 0.35, "fov": 60.0}
 const DRIVE := {"accel_time": 0.25, "brake_time": 0.15, "steer_speed": 6.0, "turn_slow": 0.2, "lean": 0.03}
 
 ## Eat-and-grow prototype, used by classes with "creature": true. No guns: the creature pounces by
-## itself at prey ahead of it and bites everything around where it lands. Anything smaller is eaten
-## and resets the pounce; anything bigger loses a chunk of HP and bounces you back, drops at 0 HP
-## ("weak") and is then eaten. Mass is size squared.
+## itself at food ahead of it and bites everything around where it lands, but never at or next to
+## something big: that takes a jump (Space, or a tap on a phone) at what the pointer is on, within
+## aim_cone (a dot product) of the line to it. Anything smaller is eaten and resets the pounce;
+## anything bigger loses a chunk of HP and bounces you back, drops at 0 HP ("weak") and is then
+## eaten. jump_buffer: a jump pressed this many seconds early still goes. Mass is size squared.
 ## growth: share of the prey's mass you gain, less on later stages where prey is bigger. xp: share of its XP. stage_scale: food gets this much bigger each stage.
 ## zoom: camera zoom per point of size. pace_zoom: share of that zoom added to everyone's speed, so
 ## growing never feels slower on screen.
 ## HP is hunger: it drains by hunger_drain (plus hunger_stage per stage) per second, and each meal
-## gives the square root of its XP times meal. Frenzy (0-1): each meal adds frenzy_gain, it holds for frenzy_hold
+## gives the square root of its XP times meal. A chunk torn off something big gives tear_meal. Frenzy (0-1): each meal adds frenzy_gain, it holds for frenzy_hold
 ## seconds and then drains; it raises speed, bite area and chunks by the frenzy_* factors at full.
 ## scent_boost: extra speed while running at food within scent_range (Warwick's passive).
 ## reach, bite_radius and bounce are metres at size 1; reach grows by reach_grow per point of size.
@@ -65,8 +67,8 @@ const DRIVE := {"accel_time": 0.25, "brake_time": 0.15, "steer_speed": 6.0, "tur
 ## you, is added every threat_every seconds while fewer than threat_base + threat_ramp * t are alive.
 const EAT := {
 	"radius": 0.9, "growth": 0.0075, "xp": 0.11, "stage_scale": 2.5, "zoom": 0.3, "pace_zoom": 0.7,
-	"reach": 10.0, "reach_grow": 0.6, "bite_radius": 2.6, "ahead": 0.5, "lunge_time": 0.16, "bite_cd": 0.7, "chain_time": 0.3,
-	"bounce": 5.0, "bounce_time": 0.18, "bite_dmg": 40.0, "weak_time": 4.0, "recover": 0.4,
+	"reach": 10.0, "reach_grow": 0.6, "bite_radius": 2.6, "ahead": 0.5, "lunge_time": 0.16, "bite_cd": 0.7, "chain_time": 0.3, "aim_cone": 0.75, "jump_buffer": 0.2,
+	"bounce": 5.0, "bounce_time": 0.18, "bite_dmg": 40.0, "tear_meal": 8.0, "weak_time": 4.0, "recover": 0.4,
 	"hunger_drain": 8.0, "hunger_stage": 1.0, "meal": 1.0,
 	"frenzy_gain": 0.05, "frenzy_hold": 1.2, "frenzy_drain": 0.5, "frenzy_speed": 0.35, "frenzy_bite": 0.5, "frenzy_tear": 2.0,
 	"scent_boost": 0.3, "scent_range": 30.0,

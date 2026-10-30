@@ -12,6 +12,7 @@ iOS, Windows, macOS, Linux and Web.
 | | Phone | Keyboard |
 |---|---|---|
 | Drive | Drag anywhere for a virtual stick (mouse drag works too) | WASD or arrows |
+| Raccoon jump (prototype) | Tap with a second finger | Space jumps at the mouse pointer; food is pounced on by itself |
 | Menus and upgrades | Tap | Arrows or WASD to select, Space or Enter to confirm |
 | Boss: dash and set circling direction | Swipe left / right, or tap a screen side | A / D or ← / → |
 | Boss: switch ring | Swipe up (inner) / down (outer) | W / S or ↑ / ↓ |

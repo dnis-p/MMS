@@ -60,6 +60,9 @@ func _process(delta: float) -> void:
 				_run().enemies.spawn(k % 4, _run().player.global_position + Vector3(cos(k) * 16.0, 0, sin(k) * 12.0), 1e6)],
 		[25.0, func(): _shot("raccoon_grown")],
 		[25.2, func(): _run()._spawn_alpha()],
+		[27.9, func():
+			_run()._mouse_seen = true
+			get_viewport().warp_mouse(get_viewport().get_visible_rect().size * 0.5 + Vector2(240, -120))],
 		[28.0, func(): _shot("raccoon_boss")],
 		[28.1, func(): _run().hit_enemy(_run().alpha, 1e9, Vector3.LEFT, 0.0, false)],
 		[28.6, func(): _shot("raccoon_boss_down")],
