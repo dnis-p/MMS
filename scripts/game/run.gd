@@ -502,7 +502,7 @@ func on_enemy_contact(i: int) -> void:
 		enemies.ram_cd[i] = Defs.RAM_COOLDOWN
 		var away := enemies.pos[i] - player.global_position
 		away.y = 0.0
-		var spd := clampf(player.velocity.length() / 7.0, 0.6, 1.5)
+		var spd := clampf(player.velocity.length() / player.speed, 0.6, 1.0)
 		hit_enemy(i, player.ram_damage * spd, away.normalized(), Defs.KNOCK["ram"])
 	if enemies.is_alive(i) and player.can_be_hit():
 		player_hit(enemies.dmg[i])
@@ -710,7 +710,8 @@ func _update_time_scale(_delta: float) -> void:
 func _map_cam_targets() -> Array:
 	var cam := Defs.MAP_CAMERA
 	var car := player.global_position
-	return [car + Vector3(0, cam["up"], cam["back"]), car]
+	var look: Vector3 = car + player.velocity * cam["lead"]
+	return [look + Vector3(0, cam["up"], cam["back"]), look]
 
 
 func _snap_camera_map() -> void:
@@ -787,16 +788,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		_stick_input(event)
 
 
-## Screen-relative move direction, always one of 8 directions.
+## Screen-relative move direction. Keys give 8 directions, the stick any angle.
 func _move_input(delta: float) -> Vector2:
 	var v := Input.get_vector("move_left", "move_right", "move_up", "move_down", 0.0)
 	if autotest:
 		v = bot.steer(self, delta)
 	elif _stick_dir != Vector2.ZERO:
 		v = _stick_dir
-	if v == Vector2.ZERO:
-		return v
-	return Vector2.RIGHT.rotated(snappedf(v.angle(), TAU / 8.0))
+	return v
 
 
 func _stick_input(event: InputEvent) -> void:
