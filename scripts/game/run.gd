@@ -76,6 +76,7 @@ var _hitstop_left := 0.0
 var _last_real_us := 0
 var _clear_ready := false
 var _score_saved := false
+var _skipped := false  # jumped to a boss: the run stays off the leaderboard
 var _touch_index := -1
 var _touch_start := Vector2.ZERO
 var _touch_start_ms := 0
@@ -295,7 +296,7 @@ func _game_over() -> void:
 
 ## Records the run once, however it ends. Returns the leaderboard rank (0 = none).
 func _save_score() -> int:
-	if _score_saved or score <= 0 or autotest:
+	if _score_saved or score <= 0 or autotest or _skipped:
 		return 0
 	_score_saved = true
 	return Save.submit(score, class_id, stage, kills)
@@ -662,9 +663,10 @@ func _open_pause() -> void:
 	_stick_reset()
 	get_tree().paused = true
 	var buttons := [["Resume", _resume]]
-	if phase == Phase.ROAM and OS.is_debug_build():
+	if phase == Phase.ROAM:
 		buttons.append(["Skip to boss (test)", func():
 			_resume()
+			_skipped = true
 			stage_time = boss_time])
 	buttons.append(["Quit to menu", _quit_to_menu])
 	overlay.show_panel("PAUSED", ["Stage %d  ·  %s" % [stage, biome["name"]]], buttons)

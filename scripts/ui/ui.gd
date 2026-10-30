@@ -18,7 +18,10 @@ static func theme() -> Theme:
 	t.set_stylebox("normal", "Button", normal)
 	t.set_stylebox("hover", "Button", hover)
 	t.set_stylebox("pressed", "Button", pressed)
-	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
+	var focus := _box(Color(0, 0, 0, 0), Color(1, 0.85, 0.3, 1.0))
+	focus.draw_center = false
+	focus.set_border_width_all(6)
+	t.set_stylebox("focus", "Button", focus)
 	t.set_stylebox("disabled", "Button", normal)
 	t.set_font_size("font_size", "Button", 26)
 	t.set_stylebox("panel", "PanelContainer", _box(Color(0.08, 0.08, 0.1, 0.94), Color(1, 1, 1, 0.12)))

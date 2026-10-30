@@ -155,7 +155,7 @@ func _gui_input(event: InputEvent) -> void:
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if visible and _can_close and event.is_pressed():
+	if visible and _can_close and event.is_action_pressed("ui_accept"):
 		_close()
 
 

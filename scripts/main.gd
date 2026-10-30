@@ -100,6 +100,12 @@ func _process(delta: float) -> void:
 
 
 func _setup_input() -> void:
+	# Menus use Godot's ui_* actions: arrows, Space and Enter come built in, WASD is added here.
+	var nav_keys := {"ui_left": KEY_A, "ui_right": KEY_D, "ui_up": KEY_W, "ui_down": KEY_S}
+	for action in nav_keys:
+		var nav := InputEventKey.new()
+		nav.physical_keycode = nav_keys[action]
+		InputMap.action_add_event(action, nav)
 	var map := {
 		"move_left": [KEY_A, KEY_LEFT],
 		"move_right": [KEY_D, KEY_RIGHT],

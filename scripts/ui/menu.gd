@@ -41,6 +41,7 @@ func _ready() -> void:
 	root.add_child(cards)
 	for id in Defs.CLASSES:
 		cards.add_child(_class_card(id))
+	cards.get_child(0).grab_focus.call_deferred()
 
 	var board := Ui.label(_leaderboard_text(), 20, Color(0.85, 0.85, 0.85))
 	board.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
