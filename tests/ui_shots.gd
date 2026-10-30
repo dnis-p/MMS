@@ -11,6 +11,8 @@ var _step := 0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	Save.profile_path = "user://profile_shots.cfg"  # the walkthrough ends in a game over
+	Save.load_profile()
 	for a in OS.get_cmdline_user_args():
 		if String(a).begins_with("--shots="):
 			_dir = String(a).trim_prefix("--shots=")
@@ -49,7 +51,9 @@ func _process(delta: float) -> void:
 		[17.0, func(): _shot("boss")],
 		[17.5, func(): _run().player_hit(9999.0)],
 		[20.0, func(): _shot("game_over")],
-		[20.5, func(): get_tree().quit()],
+		[20.5, func():
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(Save.profile_path))
+			get_tree().quit()],
 	]
 	while _step < steps.size() and _t >= steps[_step][0]:
 		# Level-ups can pop up between steps; take them so the script stays on track.
