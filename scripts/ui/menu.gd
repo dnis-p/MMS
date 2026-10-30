@@ -1,8 +1,9 @@
 class_name Menu
 extends Control
-## Title screen: class select and the local leaderboard.
+## Title screen: class select, garage and the local leaderboard.
 
 signal class_chosen(class_id: String)
+signal garage_pressed
 
 
 func _ready() -> void:
@@ -42,6 +43,13 @@ func _ready() -> void:
 	for id in Defs.CLASSES:
 		cards.add_child(_class_card(id))
 	cards.get_child(0).grab_focus.call_deferred()
+
+	var garage := Button.new()
+	garage.text = "Garage  ·  %d parts" % Save.parts
+	garage.custom_minimum_size = Vector2(400, 60)
+	garage.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	garage.pressed.connect(func(): garage_pressed.emit())
+	root.add_child(garage)
 
 	var board := Ui.label(_leaderboard_text(), 20, Color(0.85, 0.85, 0.85))
 	board.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -102,7 +110,7 @@ func _leaderboard_text() -> String:
 	if Save.scores.is_empty():
 		return "LOCAL LEADERBOARD — no runs yet"
 	var lines: Array[String] = ["LOCAL LEADERBOARD"]
-	for i in mini(3, Save.scores.size()):
+	for i in mini(2, Save.scores.size()):
 		var e: Dictionary = Save.scores[i]
 		var cname: String = Defs.CLASSES.get(e["class"], {"name": "?"})["name"]
 		lines.append("%d.  %d   %s  ·  stage %d  ·  %d kills" % [i + 1, int(e["score"]), cname, int(e["stage"]), int(e["kills"])])

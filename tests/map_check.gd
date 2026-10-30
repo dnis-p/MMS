@@ -1,7 +1,7 @@
 extends Node
-## Dev tool: checks open-world rules without a human, on every biome. Movement is
-## 8 directions at full speed, the car and enemies respect walls and obstacles,
-## spawns are off screen and the boss time is inside its window.
+## Dev tool: checks open-world rules without a human, on every biome. Keys steer the
+## car, the car and enemies respect walls and obstacles, spawns are off screen and
+## the boss time is inside its window.
 ##   godot --headless --path . res://tests/map_check.tscn
 
 const STAGES := [1, 2, 3, 4]
@@ -11,6 +11,7 @@ var _stage_i := -1
 var _step := "next"
 var _wait := 0.0
 var _from := Vector3.ZERO
+var _solid := PackedInt32Array()
 var _failed := false
 var _crawler := -1
 var _crawler_start := 0.0
@@ -57,8 +58,15 @@ func _process(delta: float) -> void:
 			_step = "straight"
 		"straight":
 			if _wait <= 0.0:
+				_solid = r.map._solid.duplicate()
+				r.map._solid.fill(-1)  # a random obstacle would spoil the speed readings
 				_from = r.player.global_position
 				Input.action_press("move_right")
+				_wait = 0.8  # time to turn and reach speed
+				_step = "straight_measure"
+		"straight_measure":
+			if _wait <= 0.0:
+				_from = r.player.global_position
 				_wait = 0.5
 				_step = "straight_end"
 		"straight_end":
@@ -66,6 +74,10 @@ func _process(delta: float) -> void:
 				var moved := r.player.global_position - _from
 				_check("right moves +x only at speed", moved.x > 0.0 and absf(moved.z) < 0.01 and absf(moved.length() / _elapsed_of(r) - 1.0) < 0.2)
 				Input.action_press("move_up")
+				_wait = 0.6
+				_step = "diagonal_measure"
+		"diagonal_measure":
+			if _wait <= 0.0:
 				_from = r.player.global_position
 				_wait = 0.5
 				_step = "diagonal_end"
@@ -76,7 +88,7 @@ func _process(delta: float) -> void:
 				_check("diagonal keeps speed", absf(moved.length() / _elapsed_of(r) - 1.0) < 0.2)
 				Input.action_release("move_right")
 				Input.action_release("move_up")
-				_wait = 0.1
+				_wait = 0.5
 				_step = "stopped"
 		"stopped":
 			if _wait <= 0.0:
@@ -86,6 +98,7 @@ func _process(delta: float) -> void:
 		"stopped_end":
 			if _wait <= 0.0:
 				_check("no input stops the car", r.player.global_position.distance_to(_from) < 0.01)
+				r.map._solid = _solid
 				_check_wall(r)
 				_check_obstacle(r)
 				_check_spawns(r)
@@ -109,7 +122,7 @@ func _process(delta: float) -> void:
 			_closest = minf(_closest, r.enemies.pos[_spitter].distance_to(r.player.global_position))
 			if _wait <= 0.0:
 				Input.action_release("move_right")
-				_check("car catches a spitter at speed 7 (closest %.1f m)" % _closest, _closest < 3.0)
+				_check("car catches a spitter at speed 10 (closest %.1f m)" % _closest, _closest < 3.0)
 				_step = "next"
 
 
@@ -119,9 +132,7 @@ func _elapsed_of(r: Run) -> float:
 
 func _check_stick(r: Run) -> void:
 	r._stick_dir = Vector2(1.0, 0.35)
-	_check("stick snaps to 8 directions", r._move_input(0.0).is_equal_approx(Vector2.RIGHT))
-	r._stick_dir = Vector2(1.0, 0.8)
-	_check("stick snaps to diagonals", r._move_input(0.0).is_equal_approx(Vector2(1, 1).normalized()))
+	_check("stick keeps its exact angle", r._move_input(0.0).is_equal_approx(Vector2(1.0, 0.35)))
 	r._stick_dir = Vector2.ZERO
 
 
@@ -171,7 +182,7 @@ func _check_stick_events(r: Run) -> void:
 	drag.index = 0
 	drag.position = Vector2(300, 400)
 	r._stick_input(drag)
-	_check("drag down steers down", r._move_input(0.0).is_equal_approx(Vector2.DOWN))
+	_check("drag down steers down", r._move_input(0.0).normalized().is_equal_approx(Vector2.DOWN))
 	_check("joystick is shown", r.hud.joystick.visible)
 	var release := InputEventScreenTouch.new()
 	release.index = 0
@@ -187,7 +198,7 @@ func _start_enemy_tests(r: Run) -> void:
 	r.weapons.order.clear()
 	r.weapons.owned.clear()
 	r.player.global_position = Vector3.ZERO
-	r.player.speed = 7.0
+	r.player.speed = 10.0
 	r.enemies.speed_mult = 1.0
 	r.map._solid.fill(-1)  # a random obstacle in the straight line would stall the chase
 	_crawler = r.enemies.spawn(Enemies.CRAWLER, Vector3(-8, 0, 0), 1e6)

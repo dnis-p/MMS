@@ -34,7 +34,17 @@ func show_menu() -> void:
 	var layer := CanvasLayer.new()
 	var menu := Menu.new()
 	menu.class_chosen.connect(start_run)
+	menu.garage_pressed.connect(show_garage)
 	layer.add_child(menu)
+	_set_current(layer)
+
+
+func show_garage() -> void:
+	_clear()
+	var layer := CanvasLayer.new()
+	var garage := Garage.new()
+	garage.closed.connect(show_menu)
+	layer.add_child(garage)
 	_set_current(layer)
 
 
