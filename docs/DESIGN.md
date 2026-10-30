@@ -5,6 +5,8 @@ Living document. The owner's words and decisions come first; Claude's suggestion
 changed without asking. Add new ideas at the bottom of the right section, with the date if useful.
 
 ## 1. Vision (owner)
+- (owner, 2026-10-30) Update: PC is the priority, and the fixed path is replaced by open maps with free 8-direction
+  driving (see 4, 5 and 8). The two points below about phone-first and auto-driving are the original vision.
 - A mobile game first (a test of gameplay with placeholder art), possibly a full-scale PC game later.
   Must be **multiplatform** (Android, web, iOS later, PC).
 - Linear progression through levels. You **drive a vehicle through different biomes** and kill hordes of
@@ -35,7 +37,10 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 ## 4. Decisions made so far
 | Topic | Decision |
 |---|---|
-| Camera | 3D scene with a tilted top-down camera (about 50-65 degrees). Can still be changed to isometric by moving the camera. |
+| Camera | 3D scene, nearly top-down with a slight tilt (about 18 degrees from vertical), fixed orientation. Can still be changed by moving the camera. |
+| Movement | (owner, 2026-10-30) Free driving in 8 directions on walled open maps, instant turning. Touch uses a virtual stick. |
+| Maps | (owner, 2026-10-30) Roads optional per map. No big structures that cover the player or enemies; buildings only as map walls. |
+| Boss trigger | Random moment 90-150 s into a stage (owner offered this or kills; Claude picked this one, not confirmed yet). |
 | Engine / language | Godot 4.7, GDScript. Compatibility renderer for phones and web. |
 | Orientation | Landscape (works on phone and PC). Portrait was mentioned as a possibility, not chosen. |
 | Chest | Not a slot machine. A tachometer ("Redline"): needle lands on green = 1, orange = 3, red = 5 rewards. Owner asked for a different twist. Open to a better idea. |
@@ -45,18 +50,19 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 
 ## 5. Future features (owner's direction)
 - More classes, themes/biomes and enemy types; bosses per biome.
-- Path that is not perfectly straight in the finished product (curves exist already; more variety later).
 - Online **leaderboards and rankings** to drive competition.
 - Possible **PC version** as a full-scale game; keep input, UI and services platform-independent.
 - (owner, 2026-10-30) **PC is now the priority.** The owner mainly tests on PC; phone stays a target but comes after it.
-- (owner, 2026-10-30) Future PC direction: get rid of the fixed path and let the player **move freely**.
-  Talk only, not to be implemented now. Keep movement/camera code separable from the road so this stays possible.
-  Owner's answers on how it would work:
+- (owner, 2026-10-30) Free movement: **built** on owner's request, see section 8. Owner's answers on how it should work:
   - Movement: **8 directions, changed instantly** when the buttons are pressed, no turning animation, like Vampire Survivors.
   - Progress to the boss: either by **enemies killed**, or the boss **appears at a random moment in a time window**
     (for example between 90 and 150 s, the screen changes and says "[boss name] incoming").
   - Phone: same game as PC for now, using a virtual controller to move, as Vampire Survivors does.
-  - (suggested) Free movement would also solve the far-gem problem (item deferred in section 9).
+- (owner, 2026-10-30) Idea, not to be implemented yet: **procedural levels**, for levels with walls and so on. Asked whether
+  it is viable or too complicated and unnecessary.
+  - (suggested) Viable if rule-based: keep hand-set size, theme and wall ring, randomise the inside from reusable
+    pieces, with a check that the map stays open. Maps already scatter obstacles this way. Avoid full maze or
+    room generation; it adds cost without serving the "play without thinking" goal.
 
 ## 6. Ideas backlog (suggested by Claude, not yet approved)
 **Player agency (keep it light given the "play without thinking" rule)**
@@ -112,6 +118,50 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-10-30, second batch** (bot and automated checks only; the owner has not played these yet, so feel is unconfirmed)
+- **Enemy kickback** (owner: so they don't swarm you this easily). Every attack except burn pools now pushes enemies
+  away and they walk at 35% speed until the push fades. One MG bullet moves a crawler about 2 m. Pushes stack up to a
+  cap. Brutes take 25%, runners 80%, the boss none. Tesla had no push before and has one now. Numbers are in `Defs.KNOCK`
+  and per weapon. map_check confirms the push.
+- **Purple enemies (spitters) can be caught** (owner: slightly slower than the player). They used to match 95% of the
+  car's speed; now 60%, and they back off more slowly. At the slowest speed (7) a car closed from 9 m to contact range
+  in under 6 s in map_check.
+- **Open world** (owner: replaces the fixed path). Each biome is a walled rectangular map, 300-360 m across. The road
+  system is gone. **Wastes** has one winding road, **Neon** a street grid, **Frost** and **Toxic** none; roads are
+  decoration only. Inside there are only small obstacles (rocks, wrecks, crates, posts, ice spikes, stumps), about 2.5 m
+  tall at most and at least 12 m apart, plus flat ground decor. Buildings and cliffs exist only as the outer walls. The
+  south wall is 1.4 m tall because the camera looks over it; a tall one would hide the car. Solid obstacles stop the car
+  and enemies; bullets and rockets pass over. Enemies are checked against obstacles every other frame to stay cheap. All
+  maps use random placement each stage.
+- **8-direction driving** (owner: instant, no turning animation, like VS). WASD or arrows; on touch or mouse drag, a
+  floating virtual stick appears where you press and snaps to 8 directions. Diagonals keep the same speed. **The car stops
+  with no input** (my reading of "like Vampire Survivors"; easy to change if you want it to keep rolling).
+  The joystick was tested with simulated input, not on a phone.
+- **Boss trigger** (owner offered kills or a random time window). Chosen: the random window, 90-150 s, because kills would
+  reward strong builds with less time to level. A banner says "[BOSS NAME] INCOMING". The HUD now shows elapsed time, no
+  countdown. The ring arena itself is unchanged except the ring sizes below.
+- **Camera for open world.** Fixed orientation, 9 m south and 28 m up, almost centred on the car. This replaces the
+  road camera from the first batch. Boss camera unchanged.
+- **Enemy scaling with player level** (owner). Per level above 1: +3% enemy HP, +1.2% enemy damage, +1.5% spawn pressure,
+  on top of stage scaling. Applies to enemies spawned after the level-up; the boss HP uses the level at the moment it
+  appears. Enemy speed already follows the car from the first batch.
+- **Spawning changed** (not requested, needed for open world). The old rates relied on driving past enemies; in the open
+  every bot was swamped with 200-350 enemies by 80 s. Now the game holds a target number of living enemies, 15 + 0.35 per
+  second, times stage and level factors, as VS does. Hordes come on top. Spawns are just off screen, 65% in your direction
+  of travel. Enemies left 80 m behind reappear just off screen.
+- **Other changes the open world needed.** Crawlers 3.4 to 4.6 speed so they can reach you. Runners 11.5 to 9.5 so you can
+  outrun them in the fastest class. Pickup radius 3.8 to 6. Hit recovery 0.45 to 0.6 s. Enemy contact damage about 20%
+  lower. Repair drop chance 1.2% to 2%. Boss HP 4500 to 3000, since it can now appear at 90 s. Hordes 36 to 20 enemies.
+  Elites at 40 and 80 s, hordes at 30, 60, 85 and 115 s. Rings are now 5.8 / 10 / 14 m (were 7 / 10.5 / 14) because saws
+  could not reach the boss from any ring.
+- **Far gems** (was deferred). Fixed as a side effect: you can drive to any gem, and gems and crates no longer disappear
+  with distance.
+- **Class balance** (owner: Juggernaut too strong, Interceptor weakest). Juggernaut: 150 HP, speed 7, ram 35, might 1.05
+  (was 165, 6.5, 45, 1.15). Interceptor: 110 HP, armor 1, ram 20, might 1.05 (was 95, 0, 14, 1.0). War Rig: 130 HP, speed
+  8.2, might 1.05 (was 125, 7.8, 1.0). Saw Blades stronger: damage 9 to 13, faster hits, wider orbit.
+  Measured with a bot on 6 seeds per class, 220 s limit at double speed: runs that got past the first boss were
+  Interceptor 2, Juggernaut 2, War Rig 1, and no class stood out. **Small sample with a simple bot, so it only shows
+  no class is far ahead for that bot.** It needs your playtest; a human plays melee and kiting differently.
 **2026-10-30** (bot and automated checks only; the owner has not played these yet, so feel is unconfirmed)
 - **Camera zoom-out** (owner: see more, especially behind). Road camera moved from 9 m back / 16.5 m up / 6.5 m
   look-ahead to 13 / 24 / 3. About 11 m of ground is visible behind the car (was about 5) and about 35 m ahead (was
@@ -158,16 +208,4 @@ changed without asking. Add new ideas at the bottom of the right section, with t
   in that boss fight. The bot never dashes or switches rings, so this is not a measure of real balance.
 
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
-- Balance the different classes. Juggernaut is too op for example. Interceptor is the weakest of all, speaking in terms of playability. So choosing juggernaut always has an advantage right now.
-- Enemies should scale in difficulty with the player's level.
-- Also regarding gems, when you kill enemies outside of the road if they are far away its impossible to get their gems, you can't get as close as needed, we should fix that somehow.
-
-**Owner answers, 2026-10-30**
-- Enemy scaling: when the player gets faster/stronger, enemies must scale too, otherwise you outrun or melt them.
-  Enemy speed is done (section 8); scaling enemy strength with player level is still open.
-- Far gems: **deferred**, leave as is for now.
-- Order: difficulty scaling next, then class balance.
-
-**Future, not to be implemented yet (owner, 2026-10-30)**
-- Free movement replacing the fixed path: 8 directions with instant turning, boss triggered by kills or a random
-  time window, phone uses a virtual controller. Details in section 5.
+- Procedural levels: idea only, not to be implemented yet (see section 5).

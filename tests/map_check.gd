@@ -12,6 +12,10 @@ var _step := "next"
 var _wait := 0.0
 var _from := Vector3.ZERO
 var _failed := false
+var _crawler := -1
+var _crawler_start := 0.0
+var _spitter := -1
+var _closest := 999.0
 
 
 func _ready() -> void:
@@ -44,6 +48,8 @@ func _process(delta: float) -> void:
 			r.god_mode = true
 			r.process_mode = Node.PROCESS_MODE_PAUSABLE
 			_main._set_current(r)
+			r.levelup_ui.auto_pick = true
+			r.crate_ui.auto_close = true
 			print("--- stage %d: %s" % [r.stage, r.biome["name"]])
 			_check("boss time %.0f s is in the window" % r.boss_time, r.boss_time >= Defs.BOSS_WINDOW[0] and r.boss_time <= Defs.BOSS_WINDOW[1])
 			_check_stick(r)
@@ -88,6 +94,22 @@ func _process(delta: float) -> void:
 		"enemies":
 			if _wait <= 0.0:
 				_check_enemies(r)
+				_check_stick_events(r)
+				_start_enemy_tests(r)
+				_wait = 0.4
+				_step = "knocked"
+		"knocked":
+			if _wait <= 0.0:
+				var gap: float = r.enemies.pos[_crawler].distance_to(r.player.global_position)
+				_check("kickback pushes a crawler back (%.1f m -> %.1f m)" % [_crawler_start, gap], gap > _crawler_start + 1.0)
+				Input.action_press("move_right")
+				_wait = 6.0
+				_step = "chase"
+		"chase":
+			_closest = minf(_closest, r.enemies.pos[_spitter].distance_to(r.player.global_position))
+			if _wait <= 0.0:
+				Input.action_release("move_right")
+				_check("car catches a spitter at speed 7 (closest %.1f m)" % _closest, _closest < 3.0)
 				_step = "next"
 
 
@@ -137,6 +159,43 @@ func _check_spawns(r: Run) -> void:
 			outside += 1
 	_check("spawns are off screen (%d of 300 visible)" % on_screen, on_screen == 0)
 	_check("spawns are inside the map", outside == 0)
+
+
+func _check_stick_events(r: Run) -> void:
+	var press := InputEventScreenTouch.new()
+	press.index = 0
+	press.pressed = true
+	press.position = Vector2(300, 300)
+	r._stick_input(press)
+	var drag := InputEventScreenDrag.new()
+	drag.index = 0
+	drag.position = Vector2(300, 400)
+	r._stick_input(drag)
+	_check("drag down steers down", r._move_input(0.0).is_equal_approx(Vector2.DOWN))
+	_check("joystick is shown", r.hud.joystick.visible)
+	var release := InputEventScreenTouch.new()
+	release.index = 0
+	release.pressed = false
+	r._stick_input(release)
+	_check("release stops the stick", r._stick_dir == Vector2.ZERO and not r.hud.joystick.visible)
+
+
+## Clears the field and tests one crawler and one spitter with weapons out of the way.
+func _start_enemy_tests(r: Run) -> void:
+	r.enemies.clear()
+	r.pickups.clear()
+	r.weapons.order.clear()
+	r.weapons.owned.clear()
+	r.player.global_position = Vector3.ZERO
+	r.player.speed = 7.0
+	r.enemies.speed_mult = 1.0
+	r.map._solid.fill(-1)  # a random obstacle in the straight line would stall the chase
+	_crawler = r.enemies.spawn(Enemies.CRAWLER, Vector3(-8, 0, 0), 1e6)
+	_spitter = r.enemies.spawn(Enemies.SPITTER, Vector3(9, 0, 0), 1e6)
+	_crawler_start = 8.0
+	_closest = 999.0
+	r.hit_enemy(_crawler, 0.001, Vector3.LEFT, Defs.WEAPONS["mg"]["knock"], false)
+	r.hit_enemy(_crawler, 0.001, Vector3.LEFT, Defs.WEAPONS["mg"]["knock"], false)
 
 
 func _check_enemies(r: Run) -> void:
