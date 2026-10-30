@@ -69,6 +69,7 @@ var _slowmo_left := 0.0
 var _hitstop_left := 0.0
 var _last_real_us := 0
 var _clear_ready := false
+var _score_saved := false
 var _touch_index := -1
 var _touch_start := Vector2.ZERO
 var _touch_start_ms := 0
@@ -255,7 +256,7 @@ func _game_over() -> void:
 	fx.shake(1.0)
 	Sfx.play("big_boom", 0.0, 1.0, true)
 	player.visible = false
-	var rank := Save.submit(score, class_id, stage, kills)
+	var rank := _save_score()
 	get_tree().create_timer(1.3, false, false, true).timeout.connect(func():
 		var lines := [
 			"Score  %d" % score,
@@ -267,12 +268,21 @@ func _game_over() -> void:
 		overlay.show_panel("WRECKED", lines, [["Retry", _retry], ["Main Menu", _quit_to_menu]], Color(1, 0.35, 0.3)))
 
 
+## Records the run once, however it ends. Returns the leaderboard rank (0 = none).
+func _save_score() -> int:
+	if _score_saved or score <= 0:
+		return 0
+	_score_saved = true
+	return Save.submit(score, class_id, stage, kills)
+
+
 func _retry() -> void:
 	get_tree().paused = false
 	retry_requested.emit(class_id)
 
 
 func _quit_to_menu() -> void:
+	_save_score()
 	get_tree().paused = false
 	exit_to_menu.emit()
 
@@ -601,7 +611,7 @@ func _open_pause() -> void:
 	_paused_by_menu = true
 	get_tree().paused = true
 	var buttons := [["Resume", _resume]]
-	if phase == Phase.ROAD:
+	if phase == Phase.ROAD and OS.is_debug_build():
 		buttons.append(["Skip to boss (test)", func():
 			_resume()
 			road_time = road_duration])
