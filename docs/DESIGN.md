@@ -82,6 +82,12 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Biome rules, not just art: EMP zones switch off electronic weapons, sandstorms cut vision,
   ice makes steering slide, toxic swamp damages when slow.
 
+**Mechanic twist (suggested 2026-10-30, none approved yet)**
+- Redline meter: keeping speed and avoiding hits fills a tachometer that raises fire rate and ram power. Stopping or
+  being hit drops it. At full, an automatic short nitro rams through enemies. No button.
+- Burnout ring: the car leaves a burning trail; closing a loop around enemies blasts everything inside.
+- Roads as fast lanes: driving on a road gives a speed bonus, so map layout matters.
+
 **Enemies**
 - Boarders that climb on the vehicle until rammed off, chasers from behind, roadblocks, enemy rammer cars,
   flying drones, roadside artillery, swarms that slow the vehicle, environmental kills (explosive barrels,
@@ -209,3 +215,16 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
 - Procedural levels: idea only, not to be implemented yet (see section 5).
+
+**Owner requests, 2026-10-30 (proposal given, waiting for go-ahead)**
+- Permanent progress between runs: points earned in runs, spent on upgrades outside runs, to help get past runs you are stuck on.
+- Every upgrade should fire at the closest enemy.
+- Pick upgrades with the keyboard: move keys to select, Space or Enter to confirm.
+- Skip to boss in the menu again, also in normal builds.
+- More starting vehicle speed; gameplay should be fast paced. Check how that affects swarming.
+- Less snappy turning: more than 8 directions or smoother transitions, "flowy" like a normal car game, but with good
+  control and not too much drifting.
+- A gameplay/mechanic twist so it is more addictive and not just a copy of VS.
+
+**Future, not to be implemented yet (owner, 2026-10-30)**
+- Upgrades specific to each vehicle class, both in runs and in the permanent upgrades between runs.
