@@ -264,6 +264,12 @@ func update(delta: float) -> void:
 	_update_saws(delta, player, dm, am)
 
 
+## Where to aim so a shot at `shot_speed` meets the enemy as it keeps moving.
+func _lead(t: int, from: Vector3, shot_speed: float) -> Vector3:
+	var e: Enemies = run.enemies
+	return e.pos[t] + e.vel[t] * from.distance_to(e.pos[t]) / shot_speed
+
+
 func _fire_mg(origin: Vector3, lvl: int, evo: bool, dm: float) -> float:
 	var enemies: Enemies = run.enemies
 	var d: Dictionary = Defs.WEAPONS["mg"]
@@ -272,12 +278,16 @@ func _fire_mg(origin: Vector3, lvl: int, evo: bool, dm: float) -> float:
 		return 0.1
 	var st := Defs.weapon_stats("mg", lvl, evo)
 	var barrels: int = st["barrels"]
-	var dir := (enemies.pos[t] + Vector3(0, 0.5, 0) - origin).normalized()
+	run.projectiles.bullet_knock = st["knock"]
+	var aim := _lead(t, origin, d["bullet_speed"]) + Vector3(0, 0.5, 0)
+	var side := (aim - origin).cross(Vector3.UP).normalized()
 	for b in barrels:
-		var spread: float = (b - (barrels - 1) * 0.5) * d["spread"]
+		# Barrels sit side by side and all converge on the target.
+		var from: Vector3 = origin + side * (b - (barrels - 1) * 0.5) * d["barrel_gap"]
+		var dir := (aim - from).normalized()
 		if evo:
-			spread += run.rng.randf_range(-d["evo_jitter"], d["evo_jitter"])
-		run.projectiles.fire(Projectiles.BULLET, origin, dir.rotated(Vector3.UP, spread) * d["bullet_speed"], st["dmg"] * dm, d["bullet_life"], st["pierce"])
+			dir = dir.rotated(Vector3.UP, run.rng.randf_range(-d["evo_jitter"], d["evo_jitter"]))
+		run.projectiles.fire(Projectiles.BULLET, from, dir * d["bullet_speed"], st["dmg"] * dm, d["bullet_life"], st["pierce"])
 	Sfx.play("shot", -12.0)
 	return st["cd"]
 
@@ -287,32 +297,45 @@ func _fire_rockets(origin: Vector3, lvl: int, evo: bool, dm: float, am: float) -
 	var d: Dictionary = Defs.WEAPONS["rockets"]
 	var st := Defs.weapon_stats("rockets", lvl, evo)
 	var aoe: float = st["aoe"] * am
-	var fired := false
+	var swerve: float = d["swerve"]
+	var seen := {}
+	var first := -1
 	for k in st["count"]:
-		var t := enemies.random_in_range(origin, d["range"])
+		# Closest enemy first, then the next closest; spare rockets go to the closest.
+		var t := enemies.nearest(origin, d["range"], seen)
 		if t < 0:
-			break
+			t = first
+		if t < 0:
+			return 0.2
+		seen[t] = true
+		if first < 0:
+			first = t
 		var to := (enemies.pos[t] - origin)
 		to.y = 0.0
-		var side := to.normalized().cross(Vector3.UP) * run.rng.randf_range(-5.0, 5.0)
+		var side := to.normalized().cross(Vector3.UP) * run.rng.randf_range(-swerve, swerve)
 		var vel := to.normalized() * 10.0 + Vector3(0, 7.0, 0) + side
 		run.projectiles.fire(Projectiles.ROCKET, origin + Vector3(0, 0.4, 0), vel.normalized() * d["rocket_speed"], st["dmg"] * dm, d["rocket_life"], 0, aoe, t, Projectiles.FLAG_HOMING)
-		fired = true
-	if not fired:
-		return 0.2
 	Sfx.play("shot", -6.0, 0.6)
 	return st["cd"]
 
 
 func _drop_mines(player: Player, lvl: int, evo: bool, dm: float, am: float) -> float:
+	var enemies: Enemies = run.enemies
 	var d: Dictionary = Defs.WEAPONS["mines"]
 	var st := Defs.weapon_stats("mines", lvl, evo)
 	var from := player.global_position
 	from.y = 0.0
+	var seen := {}
 	for k in st["count"]:
-		var a := run.rng.randf() * TAU
-		var to: Vector3 = run.keep_in_play(from + Vector3(cos(a), 0, sin(a)) * run.rng.randf_range(d["throw_min"], d["throw_max"]))
-		var vel: Vector3 = (to - from) / d["arm_time"]
+		var t := enemies.nearest(from, d["range"], seen)
+		var to: Vector3
+		if t >= 0:
+			seen[t] = true
+			to = enemies.pos[t] + enemies.vel[t] * d["arm_time"]
+		else:
+			var a := run.rng.randf() * TAU
+			to = from + Vector3(cos(a), 0, sin(a)) * run.rng.randf_range(d["throw_min"], d["throw_max"])
+		var vel: Vector3 = (run.keep_in_play(to) - from) / d["arm_time"]
 		run.projectiles.fire(Projectiles.MINE, from, vel, st["dmg"] * dm, d["life"], 0, st["aoe"] * am, -1, Projectiles.FLAG_NAPALM if evo else 0)
 	return st["cd"]
 

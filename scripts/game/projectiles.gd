@@ -11,6 +11,7 @@ const FLAG_NAPALM := 2
 const MAX_DRAW := 512
 
 var run: Node  # Run
+var bullet_knock := 0.0  # set by the MG for its current level
 
 var p_kind := PackedInt32Array()
 var p_pos := PackedVector3Array()
@@ -197,7 +198,7 @@ func update(delta: float) -> void:
 				run.explode(p_pos[i], p_aoe[i], p_dmg[i], false)
 				_p_remove(i)
 				break
-			run.hit_enemy(j, p_dmg[i], p_vel[i].normalized(), Defs.WEAPONS["mg"]["knock"])
+			run.hit_enemy(j, p_dmg[i], p_vel[i].normalized(), bullet_knock)
 			p_last[i] = j
 			p_pierce[i] -= 1
 			if p_pierce[i] < 0:
