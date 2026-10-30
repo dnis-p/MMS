@@ -14,7 +14,6 @@ var passive_order: Array[String] = []
 var _saws: Array[MeshInstance3D] = []
 var _saw_angle := 0.0
 var _tmp: Array = []
-var _mine_side := 1.0
 
 
 func _ready() -> void:
@@ -303,13 +302,13 @@ func _fire_rockets(origin: Vector3, lvl: int, evo: bool, dm: float, am: float) -
 func _drop_mines(player: Player, lvl: int, evo: bool, dm: float, am: float) -> float:
 	var d: Dictionary = Defs.WEAPONS["mines"]
 	var st := Defs.weapon_stats("mines", lvl, evo)
-	var back := -player.velocity.normalized() if player.velocity.length() > 0.5 else Vector3.BACK
-	var right := back.cross(Vector3.UP)
+	var from := player.global_position
+	from.y = 0.0
 	for k in st["count"]:
-		_mine_side = -_mine_side
-		var p: Vector3 = player.global_position + back * d["back_dist"] + right * _mine_side * randf_range(d["side_min"], d["side_max"])
-		p.y = 0.0
-		run.projectiles.fire(Projectiles.MINE, p, Vector3.ZERO, st["dmg"] * dm, d["life"], 0, st["aoe"] * am, -1, Projectiles.FLAG_NAPALM if evo else 0)
+		var a := randf() * TAU
+		var to: Vector3 = run.keep_in_play(from + Vector3(cos(a), 0, sin(a)) * randf_range(d["throw_min"], d["throw_max"]))
+		var vel: Vector3 = (to - from) / d["arm_time"]
+		run.projectiles.fire(Projectiles.MINE, from, vel, st["dmg"] * dm, d["life"], 0, st["aoe"] * am, -1, Projectiles.FLAG_NAPALM if evo else 0)
 	return st["cd"]
 
 

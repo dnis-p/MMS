@@ -151,9 +151,21 @@ func update(delta: float) -> void:
 		var kind := p_kind[i]
 		p_life[i] -= delta
 		if kind == MINE:
-			var armed := p_life[i] < _mine_arm_life
+			# A mine flies for its arming time, then sits on the ground as a trap.
+			var flight := p_life[i] - _mine_arm_life
+			var at := p_pos[i]
+			if flight > 0.0:
+				var mines: Dictionary = Defs.WEAPONS["mines"]
+				var u: float = 1.0 - flight / mines["arm_time"]
+				at += p_vel[i] * delta
+				at.y = 4.0 * mines["throw_arc"] * u * (1.0 - u)
+				p_pos[i] = at
+				continue
+			if at.y != 0.0:
+				at.y = 0.0
+				p_pos[i] = at
 			var trigger := p_life[i] <= 0.0
-			if armed and not trigger:
+			if not trigger:
 				_tmp.clear()
 				enemies.query(p_pos[i], Defs.WEAPONS["mines"]["trigger_radius"], _tmp)
 				trigger = not _tmp.is_empty()

@@ -522,6 +522,13 @@ func is_boss_phase() -> bool:
 	return phase == Phase.BOSS or phase == Phase.CLEAR
 
 
+## Keeps a thrown object on the arena floor during a boss fight.
+func keep_in_play(p: Vector3) -> Vector3:
+	if not is_boss_phase():
+		return p
+	return ARENA_CENTER + (p - ARENA_CENTER).limit_length(Defs.ARENA["floor_radius"])
+
+
 func boss_name() -> String:
 	return String(biome["boss"])
 
