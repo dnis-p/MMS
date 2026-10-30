@@ -33,6 +33,7 @@ var radius := PackedFloat32Array()
 var dmg := PackedFloat32Array()
 var flash := PackedFloat32Array()
 var knock := PackedVector3Array()
+var vel := PackedVector3Array()
 var saw_cd := PackedFloat32Array()
 var ram_cd := PackedFloat32Array()
 var attack_cd := PackedFloat32Array()
@@ -56,6 +57,7 @@ func _ready() -> void:
 	dmg.resize(MAX)
 	flash.resize(MAX)
 	knock.resize(MAX)
+	vel.resize(MAX)
 	saw_cd.resize(MAX)
 	ram_cd.resize(MAX)
 	attack_cd.resize(MAX)
@@ -151,6 +153,7 @@ func spawn(type_id: int, p: Vector3, hp_mult := 1.0) -> int:
 	dmg[i] = d["dmg"]
 	flash[i] = 0.0
 	knock[i] = Vector3.ZERO
+	vel[i] = Vector3.ZERO
 	saw_cd[i] = 0.0
 	ram_cd[i] = 0.0
 	attack_cd[i] = run.rng.randf_range(1.0, 2.5)
@@ -202,6 +205,7 @@ func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> 
 				if attack_cd[i] <= 0.0:
 					attack_cd[i] = run.rng.randf_range(2.0, 2.8)
 					run.projectiles.enemy_shot(p + Vector3(0, 0.8, 0), dir, 9.0, dmg[i])
+		vel[i] = v  # where it is heading; a knock wears off too fast to aim for
 		var k := knock[i]
 		if k != Vector3.ZERO:
 			v = v * _stagger + k
@@ -287,18 +291,6 @@ func nearest(center: Vector3, max_r: float, exclude := {}) -> int:
 			best_d = d2
 			best = i
 	return best
-
-
-func random_in_range(center: Vector3, max_r: float) -> int:
-	var picks: Array[int] = []
-	var r2 := max_r * max_r
-	for i in used:
-		if alive[i] == 0:
-			continue
-		var diff := pos[i] - center
-		if diff.x * diff.x + diff.z * diff.z < r2:
-			picks.append(i)
-	return picks[run.rng.randi() % picks.size()] if not picks.is_empty() else -1
 
 
 func _render() -> void:

@@ -28,7 +28,8 @@ const BOSS_KILL_SCORE := 5000
 
 ## Enemies hit by an attack are pushed away and stagger (walk slower) until the push fades.
 ## Each enemy type has its own "knock" factor; the push strength is set per weapon.
-const KNOCK := {"decay": 18.0, "stagger": 0.35, "max": 22.0, "ram": 16.0, "blast": 12.0}
+## Fast-firing weapons push less per hit, or the closest enemy flies out of reach.
+const KNOCK := {"decay": 18.0, "stagger": 0.35, "max": 14.0, "ram": 16.0, "blast": 12.0}
 
 ## Map camera, fixed orientation, relative to the car: metres south, metres up.
 const MAP_CAMERA := {"back": 9.0, "up": 28.0, "fov": 60.0}
@@ -105,22 +106,22 @@ const WEAPONS := {
 		"up": ["", "+40% damage", "+1 barrel", "+30% fire rate", "+1 barrel, bullets pierce"],
 		"evo": "hot", "evo_name": "Shredder Minigun", "evo_desc": "A piercing storm of lead.",
 		"color": Color(1.0, 0.85, 0.3),
-		"range": 20.0, "bullet_speed": 36.0, "bullet_life": 0.7, "spread": 0.12, "evo_jitter": 0.08, "knock": 9.0,
+		"range": 20.0, "bullet_speed": 36.0, "bullet_life": 0.7, "barrel_gap": 0.35, "evo_jitter": 0.025,
 		"levels": [
-			{"dmg": 8.0, "barrels": 1, "pierce": 0, "cd": 0.42},
-			{"dmg": 11.2, "barrels": 1, "pierce": 0, "cd": 0.42},
-			{"dmg": 11.2, "barrels": 2, "pierce": 0, "cd": 0.42},
-			{"dmg": 11.2, "barrels": 2, "pierce": 0, "cd": 0.294},
-			{"dmg": 11.2, "barrels": 3, "pierce": 1, "cd": 0.294},
+			{"dmg": 8.0, "barrels": 1, "pierce": 0, "cd": 0.42, "knock": 9.0},
+			{"dmg": 11.2, "barrels": 1, "pierce": 0, "cd": 0.42, "knock": 9.0},
+			{"dmg": 11.2, "barrels": 2, "pierce": 0, "cd": 0.42, "knock": 5.0},
+			{"dmg": 11.2, "barrels": 2, "pierce": 0, "cd": 0.294, "knock": 4.0},
+			{"dmg": 11.2, "barrels": 3, "pierce": 1, "cd": 0.294, "knock": 3.0},
 		],
-		"evolved": {"dmg": 16.0, "barrels": 2, "pierce": 3, "cd": 0.07},
+		"evolved": {"dmg": 16.0, "barrels": 2, "pierce": 3, "cd": 0.07, "knock": 1.2},
 	},
 	"rockets": {
-		"name": "Rocket Pod", "desc": "Rockets that explode on impact.",
+		"name": "Rocket Pod", "desc": "Homing rockets at the closest enemies.",
 		"up": ["", "+30% damage", "+1 rocket", "+25% blast radius", "+1 rocket, faster reload"],
 		"evo": "turbo", "evo_name": "Swarm Barrage", "evo_desc": "Endless homing rockets.",
 		"color": Color(1.0, 0.5, 0.15),
-		"range": 22.0, "rocket_speed": 16.0, "rocket_life": 2.2,
+		"range": 22.0, "rocket_speed": 16.0, "rocket_life": 2.2, "swerve": 1.5,
 		"levels": [
 			{"dmg": 22.0, "count": 1, "aoe": 2.4, "cd": 1.7},
 			{"dmg": 28.6, "count": 1, "aoe": 2.4, "cd": 1.7},
@@ -146,11 +147,11 @@ const WEAPONS := {
 		"evolved": {"dmg": 26.0, "count": 6, "orbit": 4.8, "spin": 4.5, "size": 1.6},
 	},
 	"mines": {
-		"name": "Mine Dropper", "desc": "Throws mines all around you.",
+		"name": "Mine Dropper", "desc": "Throws mines at the closest enemy.",
 		"up": ["", "+40% damage", "faster drops", "+30% blast radius", "drops 2 mines"],
 		"evo": "hot", "evo_name": "Napalm Mines", "evo_desc": "Mines leave burning pools.",
 		"color": Color(0.95, 0.25, 0.25),
-		"life": 9.0, "arm_time": 0.4, "trigger_radius": 1.3, "throw_min": 5.0, "throw_max": 12.0, "throw_arc": 3.0,
+		"life": 9.0, "arm_time": 0.4, "trigger_radius": 1.3, "range": 18.0, "throw_min": 5.0, "throw_max": 12.0, "throw_arc": 3.0,
 		"levels": [
 			{"dmg": 30.0, "count": 1, "aoe": 2.6, "cd": 1.3},
 			{"dmg": 42.0, "count": 1, "aoe": 2.6, "cd": 1.3},

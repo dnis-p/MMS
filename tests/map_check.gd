@@ -194,8 +194,8 @@ func _start_enemy_tests(r: Run) -> void:
 	_spitter = r.enemies.spawn(Enemies.SPITTER, Vector3(9, 0, 0), 1e6)
 	_crawler_start = 8.0
 	_closest = 999.0
-	r.hit_enemy(_crawler, 0.001, Vector3.LEFT, Defs.WEAPONS["mg"]["knock"], false)
-	r.hit_enemy(_crawler, 0.001, Vector3.LEFT, Defs.WEAPONS["mg"]["knock"], false)
+	r.hit_enemy(_crawler, 0.001, Vector3.LEFT, 9.0, false)
+	r.hit_enemy(_crawler, 0.001, Vector3.LEFT, 9.0, false)
 
 
 func _check_enemies(r: Run) -> void:
