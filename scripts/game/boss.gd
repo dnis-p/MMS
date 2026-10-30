@@ -287,7 +287,7 @@ func _fire_burst(enraged: bool) -> void:
 		# The shots take r / spd to reach ring r, in which the car covers speed / spd radians
 		# on any ring. Later gaps stay close to the first so there is always a path through.
 		_gap_placed = true
-		var reach: float = run.player.speed / spd * b["burst_reach"]
+		var reach: float = run.player.arena_speed() / spd * b["burst_reach"]
 		_gap_angle = run.player.theta + run.rng.randf_range(-reach, reach)
 	else:
 		_gap_angle += run.rng.randf_range(-b["burst_drift"], b["burst_drift"])

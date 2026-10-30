@@ -20,7 +20,7 @@ var _solid := PackedInt32Array()  # cell -> obstacle index, -1 when free
 var _ox := PackedFloat32Array()
 var _oz := PackedFloat32Array()
 var _or := PackedFloat32Array()
-var _road_points := PackedVector2Array()
+var _road_cells := PackedByteArray()  # 1 = road nearby, keep obstacles out
 
 const ROAD_SHADER := """
 shader_type spatial;
@@ -89,7 +89,8 @@ func build(biome: Dictionary, rng: RandomNumberGenerator) -> void:
 	_ox.clear()
 	_oz.clear()
 	_or.clear()
-	_road_points.clear()
+	_road_cells.resize(_cols * _rows)
+	_road_cells.fill(0)
 	_build_roads(biome, rng)
 	_build_ground(biome)
 	var theme := _theme(String(biome["props"]))
@@ -180,7 +181,7 @@ func _road_strip(points: PackedVector3Array, biome: Dictionary) -> void:
 		var steps := int(seg / 6.0) + 1
 		for k in steps:
 			var at := a.lerp(b, float(k) / steps)
-			_road_points.append(Vector2(at.x, at.z))
+			_mark_road(at.x, at.z)
 	st.generate_normals()
 	var mat := ShaderMaterial.new()
 	var shader := Shader.new()
@@ -227,13 +228,17 @@ func _build_ground(biome: Dictionary) -> void:
 	add_child(_ground)
 
 
+func _mark_road(x: float, z: float) -> void:
+	var col := int((x + half.x) / CELL)
+	var row := int((z + half.y) / CELL)
+	var reach := ceili((ROAD_HALF_WIDTH + ROAD_CLEAR) / CELL)
+	for dc in range(-reach, reach + 1):
+		for dr in range(-reach, reach + 1):
+			_road_cells[_cell_at(col + dc, row + dr)] = 1
+
+
 func _near_road(x: float, z: float) -> bool:
-	var at := Vector2(x, z)
-	var limit := (ROAD_HALF_WIDTH + ROAD_CLEAR) * (ROAD_HALF_WIDTH + ROAD_CLEAR)
-	for p in _road_points:
-		if at.distance_squared_to(p) < limit:
-			return true
-	return false
+	return _road_cells[_cell(x, z)] == 1
 
 
 ## Small solid things the car and enemies go around, spaced so the map stays open.

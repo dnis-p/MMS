@@ -1,6 +1,6 @@
 class_name Player
 extends Node3D
-## The player's vehicle: placeholder model, free driving in 8 directions on the map
+## The player's vehicle: placeholder model, free driving on the map
 ## and boss-arena driving (auto-circling, dash, ring switching).
 
 const RINGS: Array = Defs.ARENA["rings"]
@@ -18,7 +18,11 @@ var pickup_radius := Defs.PICKUP_RADIUS
 var velocity := Vector3.ZERO
 var invuln := 0.0
 
-var heading := Vector3.FORWARD  # last direction driven; stays when the car stops
+var heading := Vector3.FORWARD  # where the nose points; stays when the car stops
+var move_dir := Vector3.FORWARD  # direction of travel, follows the nose closely
+var drive_speed := 0.0
+var turn_rate := 6.5
+var boost := 1.0  # speed factor while nitro burns
 
 var theta := 0.0
 var ring_index := 1
@@ -46,6 +50,7 @@ func setup(id: String) -> void:
 	armor = def["armor"]
 	base_speed = def["speed"]
 	speed = base_speed
+	turn_rate = def["turn"]
 	ram_damage = def["ram"]
 	var size: Vector3 = def["size"]
 	radius = maxf(size.x, size.z) * 0.42
@@ -156,23 +161,43 @@ func add_weapon_visual(weapon_id: String) -> void:
 
 func place_on_map() -> void:
 	heading = Vector3.FORWARD
+	move_dir = heading
+	drive_speed = 0.0
+	boost = 1.0
 	global_position = Vector3.ZERO
 	look_at(global_position + heading, Vector3.UP)
 	velocity = Vector3.ZERO
 	_body.rotation = Vector3.ZERO
 
 
-## `input` is screen-relative (x right, y down). The car turns instantly and stops with no input.
+## `input` is screen-relative (x right, y down). The nose turns toward it at the class
+## turn rate; the car slows in hard turns and brakes to a stop with no input.
 func drive(delta: float, input: Vector2, map: Map) -> void:
 	_common(delta)
-	var move := Vector3.ZERO
+	var d := Defs.DRIVE
+	var top := speed * boost
+	var target := 0.0
+	var turning := 0.0
 	if input != Vector2.ZERO:
-		heading = Vector3(input.x, 0.0, input.y).normalized()
-		move = heading * speed * delta
-	var p := map.resolve(global_position + move, radius * 0.75)
+		var want := Vector3(input.x, 0.0, input.y).normalized()
+		var off := heading.signed_angle_to(want, Vector3.UP)
+		var step := clampf(off, -turn_rate * delta, turn_rate * delta)
+		heading = heading.rotated(Vector3.UP, step).normalized()
+		turning = step / maxf(delta, 0.0001)
+		target = top * (1.0 - d["turn_slow"] * absf(off) / PI)
+	var ramp: float = d["accel_time"] if target > drive_speed else d["brake_time"]
+	drive_speed = move_toward(drive_speed, target, top / ramp * delta)
+	var slip := move_dir.signed_angle_to(heading, Vector3.UP)
+	move_dir = move_dir.rotated(Vector3.UP, slip * (1.0 - exp(-d["grip"] * delta))).normalized()
+	var p := map.resolve(global_position + move_dir * drive_speed * delta, radius * 0.75)
 	velocity = (p - global_position) / maxf(delta, 0.0001)
 	global_position = p
 	look_at(p + heading, Vector3.UP)
+	_body.rotation.z = lerpf(_body.rotation.z, clampf(turning * d["lean"], -0.2, 0.2), 10.0 * delta)
+
+
+func arena_speed() -> float:
+	return speed * Defs.ARENA["speed_scale"]
 
 
 func enter_arena(center: Vector3) -> void:
@@ -189,10 +214,10 @@ func enter_arena(center: Vector3) -> void:
 func arena_update(delta: float, center: Vector3) -> void:
 	_common(delta)
 	dash_cd -= delta
-	var dtheta := circle_dir * speed / ring_radius * delta
+	var dtheta := circle_dir * arena_speed() / ring_radius * delta
 	if dash_time > 0.0:
 		dash_time -= delta
-		dtheta += dash_dir * speed * Defs.ARENA["dash_speed"] / ring_radius * delta
+		dtheta += dash_dir * arena_speed() * Defs.ARENA["dash_speed"] / ring_radius * delta
 	theta = fmod(theta + dtheta, TAU)
 	ring_radius = move_toward(ring_radius, RINGS[ring_index], Defs.ARENA["ring_switch_speed"] * delta)
 	var p := center + Vector3(cos(theta), 0, sin(theta)) * ring_radius

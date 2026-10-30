@@ -31,8 +31,13 @@ const BOSS_KILL_SCORE := 5000
 ## Fast-firing weapons push less per hit, or the closest enemy flies out of reach.
 const KNOCK := {"decay": 18.0, "stagger": 0.35, "max": 14.0, "ram": 16.0, "blast": 12.0}
 
-## Map camera, fixed orientation, relative to the car: metres south, metres up.
-const MAP_CAMERA := {"back": 9.0, "up": 28.0, "fov": 60.0}
+## Map camera, fixed orientation, relative to the car: metres south, metres up,
+## and how many seconds of travel it looks ahead.
+const MAP_CAMERA := {"back": 9.0, "up": 30.0, "lead": 0.35, "fov": 60.0}
+
+## Vehicle handling. Turn rates (radians per second) are per class. Grip is how fast the
+## direction of travel catches up with the nose; high means almost no drift.
+const DRIVE := {"accel_time": 0.25, "brake_time": 0.15, "grip": 16.0, "turn_slow": 0.35, "lean": 0.03}
 
 ## Spawn director. `t` below means seconds into the stage. Distances are metres from the car.
 const SPAWN := {
@@ -45,7 +50,7 @@ const SPAWN := {
 	"elite_times": [40.0, 80.0],
 	"horde_times": [30.0, 60.0, 85.0, 115.0], "horde_count": 20,
 	# Enemies appear this far from the car, just off screen. Side distance is per unit of aspect ratio.
-	"screen_side": 24.0, "screen_up": 26.0, "screen_down": 19.0,
+	"screen_side": 28.0, "screen_up": 34.0, "screen_down": 26.0,
 	"ahead_chance": 0.65, "ahead_spread": 1.0,  # most spawns are in the direction of travel
 }
 
@@ -53,7 +58,7 @@ const SPAWN := {
 const ARENA := {
 	"rings": [5.8, 10.0, 14.0], "start_ring": 1, "ring_switch_speed": 16.0, "ring_invuln": 0.2,
 	"floor_radius": 16.5, "summon_radius": 17.5,
-	"dash_time": 0.22, "dash_cooldown": 0.5, "dash_speed": 3.5, "dash_invuln": 0.4, "dash_buffer": 0.5,
+	"speed_scale": 0.72, "dash_time": 0.22, "dash_cooldown": 0.5, "dash_speed": 3.5, "dash_invuln": 0.4, "dash_buffer": 0.5,
 }
 const BOSS := {
 	"hp_stage": 0.25, "dmg_stage": 0.2, "first_attack": 2.5,
@@ -73,7 +78,7 @@ const CLASSES := {
 		"name": "Juggernaut",
 		"tagline": "Heavy tank",
 		"desc": "Slow, armored, rams hard.\nStarts with Rocket Pod.",
-		"max_hp": 150.0, "armor": 2.0, "speed": 7.0, "ram": 35.0, "might": 1.05,
+		"max_hp": 150.0, "armor": 2.0, "speed": 10.0, "turn": 5.5, "ram": 35.0, "might": 1.05,
 		"weapon": "rockets",
 		"color": Color(0.42, 0.5, 0.28),
 		"size": Vector3(2.6, 1.2, 3.8),
@@ -82,7 +87,7 @@ const CLASSES := {
 		"name": "Interceptor",
 		"tagline": "Fast raider",
 		"desc": "Fragile but quick.\nStarts with Hood MG.",
-		"max_hp": 110.0, "armor": 1.0, "speed": 9.5, "ram": 20.0, "might": 1.05,
+		"max_hp": 110.0, "armor": 1.0, "speed": 13.0, "turn": 8.0, "ram": 20.0, "might": 1.05,
 		"weapon": "mg",
 		"color": Color(0.85, 0.2, 0.18),
 		"size": Vector3(1.5, 0.8, 3.0),
@@ -91,7 +96,7 @@ const CLASSES := {
 		"name": "War Rig",
 		"tagline": "Armed hauler",
 		"desc": "Balanced and sturdy.\nStarts with Saw Blades.",
-		"max_hp": 130.0, "armor": 1.0, "speed": 8.2, "ram": 28.0, "might": 1.05,
+		"max_hp": 130.0, "armor": 1.0, "speed": 11.5, "turn": 6.5, "ram": 28.0, "might": 1.05,
 		"weapon": "saws",
 		"color": Color(0.9, 0.55, 0.15),
 		"size": Vector3(2.2, 1.5, 4.6),
@@ -205,38 +210,38 @@ const PASSIVES := {
 ## Enemy type ids index into ENEMY_ORDER.
 const ENEMY_ORDER := ["crawler", "runner", "spitter", "brute", "boss"]
 const ENEMIES := {
-	"crawler": {"hp": 10.0, "speed": 4.6, "radius": 0.65, "dmg": 5.0, "xp": 1, "score": 10, "knock": 1.0, "color": Color(0.55, 0.78, 0.3), "scale": 1.1},
-	"runner": {"hp": 20.0, "speed": 9.5, "radius": 0.7, "dmg": 7.0, "xp": 2, "score": 20, "knock": 0.8, "color": Color(0.95, 0.35, 0.25), "scale": 1.25},
-	"spitter": {"hp": 30.0, "speed": 9.0, "radius": 0.75, "dmg": 6.0, "xp": 3, "score": 30, "knock": 1.0,
+	"crawler": {"hp": 10.0, "speed": 5.5, "radius": 0.65, "dmg": 5.0, "xp": 1, "score": 10, "knock": 1.0, "color": Color(0.55, 0.78, 0.3), "scale": 1.1},
+	"runner": {"hp": 20.0, "speed": 11.5, "radius": 0.7, "dmg": 7.0, "xp": 2, "score": 20, "knock": 0.8, "color": Color(0.95, 0.35, 0.25), "scale": 1.25},
+	"spitter": {"hp": 30.0, "speed": 10.5, "radius": 0.75, "dmg": 6.0, "xp": 3, "score": 30, "knock": 1.0,
 		"range": 11.0, "pace": 0.6, "hold": 1.5, "back_off": 0.5, "hold_inside": 8.0, "color": Color(0.72, 0.38, 0.95), "scale": 1.2},
-	"brute": {"hp": 300.0, "speed": 5.0, "radius": 1.3, "dmg": 14.0, "xp": 15, "score": 300, "knock": 0.25, "color": Color(1.0, 0.78, 0.2), "scale": 2.2},
+	"brute": {"hp": 300.0, "speed": 6.0, "radius": 1.3, "dmg": 14.0, "xp": 15, "score": 300, "knock": 0.25, "color": Color(1.0, 0.78, 0.2), "scale": 2.2},
 	"boss": {"hp": 3000.0, "speed": 0.0, "radius": 2.8, "dmg": 25.0, "xp": 0, "score": 5000, "knock": 0.0, "color": Color(1, 1, 1), "scale": 1.0},
 }
 
 const BIOMES := [
 	{
-		"name": "Rust Wastes", "boss": "WARLORD MAXIMUS", "half": [170.0, 150.0], "roads": "winding", "solids": 120, "decor": 160,
+		"name": "Rust Wastes", "boss": "WARLORD MAXIMUS", "half": [255.0, 225.0], "roads": "winding", "solids": 240, "decor": 320,
 		"sky": Color(0.86, 0.6, 0.38), "fog": Color(0.86, 0.62, 0.4),
 		"ground_a": Color(0.72, 0.5, 0.3), "ground_b": Color(0.58, 0.38, 0.22),
 		"road": Color(0.32, 0.29, 0.27), "line": Color(0.95, 0.85, 0.5), "edge": Color(0.5, 0.42, 0.35),
 		"grid": 0.0, "grid_color": Color(0, 0, 0), "props": "waste", "boss_color": Color(0.75, 0.3, 0.15),
 	},
 	{
-		"name": "Neon Sprawl", "boss": "NEON HYDRA", "half": [150.0, 150.0], "roads": "grid", "solids": 90, "decor": 120,
+		"name": "Neon Sprawl", "boss": "NEON HYDRA", "half": [225.0, 225.0], "roads": "grid", "solids": 180, "decor": 240,
 		"sky": Color(0.08, 0.04, 0.16), "fog": Color(0.18, 0.06, 0.3),
 		"ground_a": Color(0.1, 0.08, 0.16), "ground_b": Color(0.06, 0.05, 0.1),
 		"road": Color(0.12, 0.12, 0.16), "line": Color(0.1, 1.0, 0.95), "edge": Color(1.0, 0.2, 0.75),
 		"grid": 1.0, "grid_color": Color(0.9, 0.2, 1.0), "props": "neon", "boss_color": Color(0.2, 0.95, 1.0),
 	},
 	{
-		"name": "Frost Line", "boss": "FROST TITAN", "half": [180.0, 140.0], "roads": "none", "solids": 140, "decor": 160,
+		"name": "Frost Line", "boss": "FROST TITAN", "half": [270.0, 210.0], "roads": "none", "solids": 280, "decor": 320,
 		"sky": Color(0.72, 0.84, 0.95), "fog": Color(0.8, 0.88, 0.96),
 		"ground_a": Color(0.9, 0.94, 1.0), "ground_b": Color(0.72, 0.8, 0.9),
 		"road": Color(0.4, 0.45, 0.52), "line": Color(0.95, 0.95, 1.0), "edge": Color(0.6, 0.68, 0.78),
 		"grid": 0.0, "grid_color": Color(0, 0, 0), "props": "frost", "boss_color": Color(0.5, 0.75, 1.0),
 	},
 	{
-		"name": "Toxic Bog", "boss": "BOG MOTHER", "half": [150.0, 130.0], "roads": "none", "solids": 110, "decor": 180,
+		"name": "Toxic Bog", "boss": "BOG MOTHER", "half": [225.0, 195.0], "roads": "none", "solids": 220, "decor": 360,
 		"sky": Color(0.3, 0.38, 0.2), "fog": Color(0.36, 0.45, 0.22),
 		"ground_a": Color(0.25, 0.35, 0.15), "ground_b": Color(0.35, 0.5, 0.12),
 		"road": Color(0.24, 0.22, 0.2), "line": Color(0.7, 1.0, 0.2), "edge": Color(0.3, 0.3, 0.25),
