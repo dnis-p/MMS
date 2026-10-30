@@ -52,7 +52,7 @@ func _process(delta: float) -> void:
 			run = _run()
 			run.base_time_scale = TIME_SCALE
 			run.levelup_ui.auto_pick = true
-			run.road_time = run.road_duration
+			run.stage_time = run.boss_time
 			_step = "wait_arena"
 		"wait_arena":
 			if run.phase == Run.Phase.BOSS:

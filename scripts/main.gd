@@ -50,7 +50,7 @@ func start_run(class_id: String) -> void:
 		run.base_time_scale = 2.0
 		if not fair:
 			run.god_mode = true
-			run.road_duration = 40.0
+			run.boss_window = [40.0, 40.0]
 			run.elite_times = [8.0, 25.0]
 			run.horde_times = [14.0]
 	run.exit_to_menu.connect(show_menu)
@@ -101,10 +101,10 @@ func _process(delta: float) -> void:
 
 func _setup_input() -> void:
 	var map := {
-		"steer_left": [KEY_A, KEY_LEFT],
-		"steer_right": [KEY_D, KEY_RIGHT],
-		"ring_in": [KEY_W, KEY_UP],
-		"ring_out": [KEY_S, KEY_DOWN],
+		"move_left": [KEY_A, KEY_LEFT],
+		"move_right": [KEY_D, KEY_RIGHT],
+		"move_up": [KEY_W, KEY_UP],
+		"move_down": [KEY_S, KEY_DOWN],
 		"pause": [KEY_ESCAPE, KEY_P],
 	}
 	for action in map:

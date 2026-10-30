@@ -23,12 +23,16 @@ var _fps_label: Label
 var _last_combo := 0
 var _icon_key := ""
 var _boss_mode := -1
+var joystick: Joystick
 
 
 func _ready() -> void:
 	theme = Ui.theme()
 	Ui.full_rect(self)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	joystick = Joystick.new()
+	add_child(joystick)
 
 	_vignette = ColorRect.new()
 	Ui.full_rect(_vignette)
@@ -171,14 +175,14 @@ func refresh(run: Node) -> void:
 		# Theme overrides trigger a relayout, so only touch them when the phase flips.
 		_boss_mode = boss_mode
 		_progress_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.35) if boss_mode else Color(1, 1, 1))
-		(_progress_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color = Color(0.95, 0.2, 0.25) if boss_mode else Color(1.0, 0.7, 0.2)
+		(_progress_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color = Color(0.95, 0.2, 0.25)
+		_progress_bar.visible = boss_mode == 1
 	if boss_mode:
 		_progress_label.text = run.boss_name()
 		_progress_bar.value = run.boss.hp_ratio() if run.boss else 0.0
 	else:
-		var left := maxf(0.0, run.road_duration - run.road_time)
-		_progress_label.text = "STAGE %d  %s   BOSS IN %d:%02d" % [run.stage, run.biome["name"].to_upper(), int(left) / 60, int(left) % 60]
-		_progress_bar.value = run.road_time / run.road_duration
+		var t := int(run.stage_time)
+		_progress_label.text = "STAGE %d  %s   %d:%02d" % [run.stage, run.biome["name"].to_upper(), t / 60, t % 60]
 	_fps_label.text = "%d fps · %d enemies" % [Engine.get_frames_per_second(), run.enemies.alive_count]
 	var combo: int = run.combo
 	if combo >= 5:

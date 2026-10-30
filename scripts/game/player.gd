@@ -1,9 +1,8 @@
 class_name Player
 extends Node3D
-## The player's vehicle: placeholder model, road driving (auto-forward, lateral
-## steering) and boss-arena driving (auto-circling, dash, ring switching).
+## The player's vehicle: placeholder model, free driving in 8 directions on the map
+## and boss-arena driving (auto-circling, dash, ring switching).
 
-const LATERAL_LIMIT := Road.HALF_WIDTH - 1.0
 const RINGS: Array = Defs.ARENA["rings"]
 
 var class_id := ""
@@ -13,17 +12,13 @@ var hp := 100.0
 var armor := 0.0
 var base_speed := 7.0
 var speed := 7.0  # base_speed after stage and upgrades; see Run.update_pace
-var steer_speed := 8.0
 var ram_damage := 20.0
 var radius := 1.2
 var pickup_radius := Defs.PICKUP_RADIUS
 var velocity := Vector3.ZERO
 var invuln := 0.0
 
-var s := 0.0
-var lateral := 0.0
-var target_lateral := 0.0
-var forward := Vector3.FORWARD
+var heading := Vector3.FORWARD  # last direction driven; stays when the car stops
 
 var theta := 0.0
 var ring_index := 1
@@ -51,7 +46,6 @@ func setup(id: String) -> void:
 	armor = def["armor"]
 	base_speed = def["speed"]
 	speed = base_speed
-	steer_speed = def["steer"]
 	ram_damage = def["ram"]
 	var size: Vector3 = def["size"]
 	radius = maxf(size.x, size.z) * 0.42
@@ -64,7 +58,7 @@ func _build_model(size: Vector3, color: Color) -> void:
 	var wheel_r := 0.45 if class_id != "juggernaut" else 0.55
 	var hull_y := wheel_r + size.y * 0.5 - 0.1
 	_box(Vector3(size.x, size.y, size.z), Vector3(0, hull_y, 0), color)
-	# Cabin sits toward the back; the nose (-Z) faces the road.
+	# Cabin sits toward the back; the nose is -Z.
 	_box(Vector3(size.x * 0.75, size.y * 0.7, size.z * 0.35), Vector3(0, hull_y + size.y * 0.8, size.z * 0.15), color.darkened(0.25))
 	_box(Vector3(size.x * 1.05, size.y * 0.35, 0.3), Vector3(0, hull_y - size.y * 0.15, -size.z * 0.5 - 0.1), Color(0.25, 0.25, 0.28))
 	match class_id:
@@ -160,35 +154,25 @@ func add_weapon_visual(weapon_id: String) -> void:
 	tw.tween_property(root, "scale", Vector3.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
-func place_on_road(road: Road) -> void:
-	s = 0.0
-	lateral = 0.0
-	target_lateral = 0.0
-	forward = road.forward_at(s)
-	global_position = road.point_at(s)
-	look_at(global_position + forward, Vector3.UP)
-	velocity = forward * speed
+func place_on_map() -> void:
+	heading = Vector3.FORWARD
+	global_position = Vector3.ZERO
+	look_at(global_position + heading, Vector3.UP)
+	velocity = Vector3.ZERO
+	_body.rotation = Vector3.ZERO
 
 
-func road_update(delta: float, road: Road, steer_input: float) -> void:
+## `input` is screen-relative (x right, y down). The car turns instantly and stops with no input.
+func drive(delta: float, input: Vector2, map: Map) -> void:
 	_common(delta)
-	target_lateral = clampf(target_lateral + steer_input * steer_speed * delta, -LATERAL_LIMIT, LATERAL_LIMIT)
-	var prev := lateral
-	lateral = move_toward(lateral, target_lateral, steer_speed * 1.8 * delta)
-	s += speed * delta
-	forward = road.forward_at(s)
-	var right := forward.cross(Vector3.UP).normalized()
-	var p := road.point_at(s) + right * lateral
+	var move := Vector3.ZERO
+	if input != Vector2.ZERO:
+		heading = Vector3(input.x, 0.0, input.y).normalized()
+		move = heading * speed * delta
+	var p := map.resolve(global_position + move, radius * 0.75)
 	velocity = (p - global_position) / maxf(delta, 0.0001)
 	global_position = p
-	var lat_v := (lateral - prev) / maxf(delta, 0.0001)
-	look_at(p + forward, Vector3.UP)
-	rotate_object_local(Vector3.UP, -clampf(lat_v / speed * 0.5, -0.5, 0.5))
-	_body.rotation.z = lerpf(_body.rotation.z, clampf(-lat_v * 0.025, -0.15, 0.15), 10.0 * delta)
-
-
-func steer_by(meters: float) -> void:
-	target_lateral = clampf(target_lateral + meters, -LATERAL_LIMIT, LATERAL_LIMIT)
+	look_at(p + heading, Vector3.UP)
 
 
 func enter_arena(center: Vector3) -> void:
