@@ -115,7 +115,7 @@ func update(delta: float) -> void:
 	_time += delta
 	var player: Player = run.player
 	var car := player.global_position
-	var magnet := player.pickup_radius
+	var magnet := player.pickup_radius * player.body_size
 	var m2 := magnet * magnet
 	var chime := false
 	for i in range(g_pos.size() - 1, -1, -1):

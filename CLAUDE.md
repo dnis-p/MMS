@@ -40,6 +40,7 @@ Run from the repo root after the project has been imported once (`godot --headle
 - Boss arena checks: `godot --headless --path . res://tests/boss_check.tscn` must end with `BOSS CHECK PASSED`.
 - Open-world checks: `godot --headless --path . res://tests/map_check.tscn` must end with `MAP CHECK PASSED`.
 - Combat, menus, Redline, Garage: `godot --headless --path . res://tests/game_check.tscn` must end with `GAME CHECK PASSED`.
+- Raccoon prototype rules: `godot --headless --path . res://tests/eat_check.tscn` must end with `EAT CHECK PASSED`.
 - Bots (--autotest) play through scripts/game/bot.gd, ignore the Garage and do not write to the leaderboard or profile. Compare classes on several
   `--seed` values; a single run varies a lot.
 - Screenshots of every screen (needs a display or xvfb): `godot --path . res://tests/ui_shots.tscn -- --shots=<dir>`

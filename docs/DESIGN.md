@@ -135,6 +135,26 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-10-30, raccoon prototype** (branch `prototype/raccoon-eat` only; automated checks and bots, the owner has not played it)
+- **Eat and grow** (owner). New "Raccoon" button on the main menu; the three cars still play as before. Touching anything smaller
+  eats it: it bursts into bits with the usual kill sound plus a chime, the body gulps and you grow. Bigger things hurt, and show
+  dark. Attacks kill smaller prey, which drops gems (a little growth), but can only knock bigger things down: they lie flat and
+  pulse gold for 6 s, can be eaten, then get back up at 40% HP. Smaller prey runs from you, slower than you. This is the rule
+  suggested in section 6. It replaces the owner's "pick when to absorb", which would have needed a second input.
+- **Growth.** Mass is size squared; eating gives 10% of the prey's mass. You never slow down as you grow (owner); the camera zooms
+  out instead and the map's obstacles ignore your size. "RATS ARE FOOD NOW" banners and a bar at the bottom (replacing Redline) show
+  the next kind of food. Bots reach rats in 10-20 s, pigeons around 42 s, cats around 100 s.
+- **Stages.** Dumpster, Back Alley, Suburbs, Downtown, with food 2.5 times bigger each stage and your size carried over. Only the
+  names are new: maps are still the old biomes and enemies are still the old shapes. Raccoon runs have no nitro, ring arena or dash.
+- **Boss in the world** (owner's option). Arrives at 70-100 s, always 1.5 times your size, and walks at you with a lunge every 5 s that
+  you can outrun. It can't be killed, only knocked down and eaten, which ends the stage and gives a **mutation**: a part on the body
+  plus a weapon (Razor Tail saws, Dog Jaws rockets, Shock Spines tesla, Crown of Horns mines). Its HP is 12 s of your recent damage,
+  at least 400. Bots: 5 of 6 ate the first boss in 27-55 s at level 11-17 (owner's car runs: under 5 s at about level 25), 2 of 6
+  ate the second. Bots play badly, so treat this as "it works", not as balance.
+- Placeholders: the raccoon keeps car weapons and upgrade names, Garage and "Spare Engine" text included. Dark enemies still read
+  as brown on the sand. Not built: destroying the environment, fast "tease" creatures, real mutation attacks.
+- Test: `tests/eat_check.tscn`.
+
 **2026-10-30, third batch** (checked by automated tests and bots; the owner has not played these yet)
 - **MG firing at far enemies** (owner saw this). There was no bug in choosing the target: it was always the closest at
   the moment of firing. The bullets just missed it, for two reasons, and flew on to enemies behind. (1) They aimed where
@@ -291,3 +311,10 @@ changed without asking. Add new ideas at the bottom of the right section, with t
   Absorbed bosses change your appearance and give new attacks. People run, some fight back; this part needs more thought.
 - Theme ideas: a dragonfly eating insects and evolving (like Cell in DBZ or the ants in HxH); or something absurd, like a raccoon
   in a garbage container whose food runs away, with other animals attacking, or a raccoon in a lab eating mutated animals.
+
+**Owner, 2026-10-30, on the raccoon prototype (prototype built, see section 8; these are for later)**
+- Raccoon is the theme for now. Eating must keep the satisfying feel: explode into bits, satisfying sound. No slowdown from growing.
+- Special creatures too fast to eat yet, teasing you to catch them, reachable only through permanent progress.
+- A first run should not show everything, like Hades: leave mystery and unexplored parts to motivate the next run. The owner is
+  still thinking about how.
+- Art style undecided: very low poly like 90s models (Half-Life 1), or more modern and textured like Megabonk.

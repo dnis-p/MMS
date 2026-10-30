@@ -189,7 +189,7 @@ func refresh(run: Node) -> void:
 	_level_label.text = "LV %d" % run.level
 	_score_label.text = _format(run.score)
 	_kills_label.text = "%d kills" % run.kills
-	var boss_mode := 1 if run.is_boss_phase() else 0
+	var boss_mode := 1 if run.is_boss_phase() or run.alpha >= 0 else 0
 	if boss_mode != _boss_mode:
 		# Theme overrides trigger a relayout, so only touch them when the phase flips.
 		_boss_mode = boss_mode
@@ -198,14 +198,23 @@ func refresh(run: Node) -> void:
 		_progress_bar.visible = boss_mode == 1
 	if boss_mode:
 		_progress_label.text = run.boss_name()
-		_progress_bar.value = run.boss.hp_ratio() if run.boss else 0.0
+		_progress_bar.value = run.boss_ratio()
 	else:
 		var t := int(run.stage_time)
 		_progress_label.text = "STAGE %d  %s   %d:%02d" % [run.stage, run.biome["name"].to_upper(), t / 60, t % 60]
+	if run.eat_mode:
+		_redline_bar.value = run.food_progress()
+		_redline_label.text = run.food_text()
+		_refresh_rest(run)
+		return
 	var meter: float = run.nitro_left / Defs.REDLINE["nitro_time"] if run.nitro_left > 0.0 else run.redline
 	_redline_bar.value = meter
 	_redline_label.text = "NITRO" if run.nitro_left > 0.0 else "REDLINE"
 	(_redline_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color = Color(1.0, 0.25, 0.1) if run.nitro_left > 0.0 or meter > 0.8 else (Color(1.0, 0.65, 0.15) if meter > 0.5 else Color(0.3, 0.9, 0.4))
+	_refresh_rest(run)
+
+
+func _refresh_rest(run: Node) -> void:
 	_fps_label.text = "%d fps · %d enemies" % [Engine.get_frames_per_second(), run.enemies.alive_count]
 	var combo: int = run.combo
 	if combo >= 5:

@@ -29,9 +29,6 @@ func _ready() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_constant_override("outline_size", 16)
 	root.add_child(title)
-	var sub := Ui.label("working title  ·  gameplay prototype", 24, Color(0.8, 0.75, 0.7))
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	root.add_child(sub)
 	var pick := Ui.label("Choose your ride", 30)
 	pick.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(pick)
@@ -41,8 +38,18 @@ func _ready() -> void:
 	cards.add_theme_constant_override("separation", 22)
 	root.add_child(cards)
 	for id in Defs.CLASSES:
-		cards.add_child(_class_card(id))
-	cards.get_child(0).grab_focus.call_deferred()
+		if not Defs.CLASSES[id].get("creature", false):
+			cards.add_child(_class_card(id))
+
+	var raccoon := Button.new()
+	raccoon.text = "Play the Raccoon (eat and grow prototype)"
+	raccoon.custom_minimum_size = Vector2(620, 60)
+	raccoon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	raccoon.pressed.connect(func():
+		Sfx.play("levelup", -6.0, 1.0, true)
+		class_chosen.emit("raccoon"))
+	root.add_child(raccoon)
+	raccoon.grab_focus.call_deferred()
 
 	var garage := Button.new()
 	garage.text = "Garage  ·  %d parts" % Save.parts

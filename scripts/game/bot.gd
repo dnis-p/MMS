@@ -19,12 +19,17 @@ func steer(run: Run, delta: float) -> Vector2:
 	var car := run.player.global_position
 	var want := Vector2(cos(_time * 0.23), sin(_time * 0.31)) * 0.25  # slow wander
 	var enemies := run.enemies
+	var danger := DANGER_RANGE * run.view_zoom
 	_near.clear()
-	enemies.query(car, DANGER_RANGE, _near)
+	enemies.query(car, danger, _near)
 	for i in _near:
+		if run.eat_mode and enemies.edible(i):
+			continue
 		var away := Vector2(car.x - enemies.pos[i].x, car.z - enemies.pos[i].z)
 		var d := maxf(away.length(), 0.5)
-		want += away / d * (DANGER_RANGE - d) / DANGER_RANGE * 2.0
+		want += away / d * (danger - d) / danger * 2.0
+	if run.eat_mode:
+		want += _toward_food(run, car)
 	want += _toward_pickup(run, car)
 	# Saws only reach what is next to the car, so a healthy car goes to the enemies.
 	if run.weapons.owned.has("saws") and run.player.hp > run.player.max_hp * 0.5:
@@ -37,6 +42,22 @@ func steer(run: Run, delta: float) -> Vector2:
 	if absf(car.z) > map.half.y - WALL_RANGE:
 		want.y -= signf(car.z) * 3.0
 	return want
+
+
+## The closest thing it can eat, with knocked-down prey counting as much closer.
+func _toward_food(run: Run, car: Vector3) -> Vector2:
+	var enemies := run.enemies
+	var best := -1
+	var best_d := (HUNT_RANGE * run.view_zoom) ** 2
+	for i in enemies.used:
+		if enemies.alive[i] == 1 and enemies.edible(i):
+			var d2 := car.distance_squared_to(enemies.pos[i]) * (0.2 if enemies.weak[i] > 0.0 else 1.0)
+			if d2 < best_d:
+				best_d = d2
+				best = i
+	if best < 0:
+		return Vector2.ZERO
+	return Vector2(enemies.pos[best].x - car.x, enemies.pos[best].z - car.z).normalized() * 2.5
 
 
 func _toward_pickup(run: Run, car: Vector3) -> Vector2:

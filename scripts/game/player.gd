@@ -28,6 +28,10 @@ var max_steer := 0.6
 var wheelbase := 2.4  # distance between the axles
 var boost := 1.0  # speed factor while nitro burns
 var nitro := false
+var creature := false  # runs instead of driving and grows by eating
+var body_size := 1.0
+var _base_radius := 1.2
+var _gulp := 0.0
 
 var theta := 0.0
 var ring_index := 1
@@ -61,6 +65,8 @@ func setup(id: String) -> void:
 	ram_damage = def["ram"]
 	var size: Vector3 = def["size"]
 	radius = maxf(size.x, size.z) * 0.42
+	_base_radius = radius
+	creature = def.get("creature", false)
 	wheelbase = size.z * 0.66
 	max_steer = atan(wheelbase / float(def["turn"]))
 	_build_model(size, def["color"])
@@ -69,6 +75,9 @@ func setup(id: String) -> void:
 func _build_model(size: Vector3, color: Color) -> void:
 	_body = Node3D.new()
 	add_child(_body)
+	if creature:
+		_build_raccoon(size, color)
+		return
 	var wheel_r := 0.45 if class_id != "juggernaut" else 0.55
 	var hull_y := wheel_r + size.y * 0.5 - 0.1
 	_box(Vector3(size.x, size.y, size.z), Vector3(0, hull_y, 0), color)
@@ -105,6 +114,59 @@ func _build_model(size: Vector3, color: Color) -> void:
 		Vector3(-size.x * 0.4, top, size.z * 0.1),
 		Vector3(size.x * 0.4, top, size.z * 0.1),
 	]
+
+
+func _build_raccoon(size: Vector3, color: Color) -> void:
+	var dark := color.darkened(0.65)
+	var y := size.y * 0.8
+	_box(Vector3(size.x, size.y, size.z * 0.6), Vector3(0, y, size.z * 0.05), color)
+	var head := -size.z * 0.38
+	_box(Vector3(size.x * 0.85, size.y * 0.8, size.z * 0.28), Vector3(0, y + 0.1, head), color.lightened(0.2))
+	_box(Vector3(size.x * 0.9, size.y * 0.22, size.z * 0.1), Vector3(0, y + 0.2, head - size.z * 0.1), dark)  # bandit mask
+	_box(Vector3(0.2, 0.15, 0.15), Vector3(0, y, head - size.z * 0.16), Color(0.05, 0.05, 0.05))  # nose
+	for side in [-1.0, 1.0]:
+		_box(Vector3(0.22, 0.28, 0.12), Vector3(side * size.x * 0.32, y + size.y * 0.55, head + 0.1), dark)  # ear
+		for z in [-size.z * 0.15, size.z * 0.25]:
+			_box(Vector3(0.24, 0.4, 0.24), Vector3(side * size.x * 0.42, 0.2, z), dark)  # leg
+	for k in 4:  # ringed tail
+		_box(Vector3(0.34, 0.34, 0.3), Vector3(0, y + 0.05 * k, size.z * 0.42 + 0.3 * k), dark if k % 2 == 0 else color.lightened(0.3))
+	var top := y + size.y * 0.5
+	_hardpoints = [
+		Vector3(0, top, -size.z * 0.1),
+		Vector3(-size.x * 0.35, top, size.z * 0.15),
+		Vector3(size.x * 0.35, top, size.z * 0.15),
+		Vector3(0, top, size.z * 0.28),
+		Vector3(-size.x * 0.35, top, -size.z * 0.15),
+		Vector3(size.x * 0.35, top, -size.z * 0.15),
+	]
+
+
+## Bolts what a boss gave on to the body, so a run shows on the character.
+func add_mutation(part: String, color: Color) -> void:
+	var size: Vector3 = def["size"]
+	var top := size.y * 1.3
+	match part:
+		"tail":
+			for side in [-1.0, 1.0]:
+				_box(Vector3(0.12, 0.5, 1.3), Vector3(side * 0.28, top, size.z * 0.75), color)
+		"jaws":
+			for side in [-1.0, 1.0]:
+				_box(Vector3(0.5, 0.2, 0.9), Vector3(side * 0.45, size.y * 0.6, -size.z * 0.7), color)
+		"spikes":
+			for k in 5:
+				_box(Vector3(0.15, 0.7, 0.15), Vector3(0, top + 0.3, size.z * (0.25 - 0.13 * k)), color)
+		"horns":
+			for side in [-1.0, 1.0]:
+				_box(Vector3(0.18, 0.9, 0.18), Vector3(side * size.x * 0.3, top + 0.5, -size.z * 0.38), color)
+
+
+func set_body_size(s: float) -> void:
+	body_size = s
+	radius = _base_radius * s
+
+
+func gulp() -> void:
+	_gulp = 0.25
 
 
 func _material(color: Color) -> StandardMaterial3D:
@@ -194,6 +256,9 @@ func place_on_map() -> void:
 ## stop with no input.
 func drive(delta: float, input: Vector2, map: Map) -> void:
 	_common(delta)
+	if creature:
+		_run_on_foot(delta, input, map)
+		return
 	var d := Defs.DRIVE
 	var top := speed * boost
 	var target := 0.0
@@ -214,6 +279,24 @@ func drive(delta: float, input: Vector2, map: Map) -> void:
 	global_position = p
 	look_at(p + heading, Vector3.UP)
 	_body.rotation.z = lerpf(_body.rotation.z, clampf(turning * d["lean"], -0.2, 0.2), 10.0 * delta)
+
+
+## Creatures turn almost at once and keep their speed however big they grow. Obstacles use
+## the starting body size, so a huge body can't jam between them.
+func _run_on_foot(delta: float, input: Vector2, map: Map) -> void:
+	var d := Defs.DRIVE
+	var target := 0.0
+	if input != Vector2.ZERO:
+		var want := Vector3(input.x, 0.0, input.y).normalized()
+		var step: float = float(def["turn"]) * delta
+		heading = heading.rotated(Vector3.UP, clampf(heading.signed_angle_to(want, Vector3.UP), -step, step)).normalized()
+		target = speed * boost
+	var ramp: float = d["accel_time"] if target > drive_speed else d["brake_time"]
+	drive_speed = move_toward(drive_speed, target, speed * boost / ramp * delta)
+	var p := map.resolve(global_position + heading * drive_speed * delta, _base_radius * 0.75)
+	velocity = (p - global_position) / maxf(delta, 0.0001)
+	global_position = p
+	look_at(p + heading, Vector3.UP)
 
 
 func arena_speed() -> float:
@@ -300,3 +383,6 @@ func _common(delta: float) -> void:
 		w.rotate_object_local(Vector3.UP, velocity.length() * delta * 1.5)
 	for s in _steer_nodes:
 		s.rotation.y = steer
+	if creature:
+		_gulp = maxf(0.0, _gulp - delta * 2.5)
+		_body.scale = _body.scale.lerp(Vector3.ONE * body_size * (1.0 + _gulp), 1.0 - exp(-14.0 * delta))

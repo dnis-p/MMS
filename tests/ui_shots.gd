@@ -51,7 +51,20 @@ func _process(delta: float) -> void:
 		[17.0, func(): _shot("boss")],
 		[17.5, func(): _run().player_hit(9999.0)],
 		[20.0, func(): _shot("game_over")],
-		[20.5, func():
+		[20.5, func(): _main.start_run("raccoon")],
+		[20.6, func(): _run().god_mode = true],
+		[22.5, func(): _shot("raccoon_start")],
+		[22.6, func():
+			_run()._grow(8.0)
+			for k in 12:
+				_run().enemies.spawn(k % 4, _run().player.global_position + Vector3(cos(k) * 16.0, 0, sin(k) * 12.0), 1e6)],
+		[25.0, func(): _shot("raccoon_grown")],
+		[25.1, func(): _run().weapons.add_weapon("saws")],
+		[25.2, func(): _run()._spawn_alpha()],
+		[28.0, func(): _shot("raccoon_boss")],
+		[28.1, func(): _run().hit_enemy(_run().alpha, 1e9, Vector3.LEFT, 0.0, false)],
+		[28.6, func(): _shot("raccoon_boss_down")],
+		[28.7, func():
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(Save.profile_path))
 			get_tree().quit()],
 	]

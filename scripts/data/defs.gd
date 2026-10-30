@@ -42,11 +42,38 @@ const KNOCK := {"decay": 18.0, "stagger": 0.35, "max": 14.0, "ram": 16.0, "blast
 ## and how many seconds of travel it looks ahead.
 const MAP_CAMERA := {"back": 9.0, "up": 30.0, "lead": 0.35, "fov": 60.0}
 
-## Vehicle handling. Turn rates (radians per second) are per class. Grip is how fast the
-## direction of travel catches up with the nose; high means almost no drift.
-## steer_speed: how fast the front wheels turn (radians per second). Each class's "turn" is
-## its turning radius in metres, measured at the rear axle.
+## Vehicle handling. steer_speed: how fast the front wheels turn (radians per second). Each
+## class's "turn" is its turning radius in metres, measured at the rear axle. For creatures
+## "turn" is how fast the body turns (radians per second).
 const DRIVE := {"accel_time": 0.25, "brake_time": 0.15, "steer_speed": 6.0, "turn_slow": 0.2, "lean": 0.03}
+
+## Eat-and-grow prototype, used by classes with "creature": true. Anything smaller than you is
+## eaten by touching it and runs away. Anything bigger hurts; attacks can't kill it, they only
+## knock it down ("weak") so it can be eaten. Mass is size squared.
+## growth: share of the prey's mass you gain. crumb_growth: mass per XP from gems.
+## stage_scale: food gets this much bigger each stage. zoom: camera zoom per point of size.
+## alpha_fight: boss HP as seconds of your recent damage rate. Only part of that damage lands on
+## the boss, so a fight runs about twice as long.
+const EAT := {
+	"radius": 0.9, "growth": 0.1, "crumb_growth": 0.015, "stage_scale": 2.5, "zoom": 0.3,
+	"flee_range": 12.0, "flee_speed": 0.75, "weak_time": 6.0, "recover": 0.4,
+	"boss_window": [70.0, 100.0], "alpha_size": 1.5, "alpha_fight": 12.0, "alpha_min_hp": 400.0,
+	"alpha_speed": 6.5, "alpha_dmg": 14.0, "alpha_lunge_every": 5.0, "alpha_lunge_time": 1.0, "alpha_lunge_speed": 1.7,
+}
+## Same order as ENEMY_ORDER. Sizes are multiplied by the stage's food scale.
+const EAT_FOOD := [
+	{"name": "BUGS", "size": 0.7},
+	{"name": "RATS", "size": 1.25},
+	{"name": "PIGEONS", "size": 1.8},
+	{"name": "CATS", "size": 3.0},
+]
+## Stage names, the boss to eat, and what eating it gives. Repeats after the last one.
+const EAT_STAGES := [
+	{"name": "Dumpster", "boss": "ALPHA RAT", "mutation": {"name": "Razor Tail", "desc": "Blades spin around you", "weapon": "saws", "part": "tail", "color": Color(0.8, 0.8, 0.85)}},
+	{"name": "Back Alley", "boss": "JUNKYARD DOG", "mutation": {"name": "Dog Jaws", "desc": "Rockets from your mouth", "weapon": "rockets", "part": "jaws", "color": Color(0.85, 0.3, 0.2)}},
+	{"name": "Suburbs", "boss": "ANIMAL CONTROL", "mutation": {"name": "Shock Spines", "desc": "Lightning jumps between prey", "weapon": "tesla", "part": "spikes", "color": Color(0.4, 0.8, 1.0)}},
+	{"name": "Downtown", "boss": "THE MAYOR", "mutation": {"name": "Crown of Horns", "desc": "You drop mines as you run", "weapon": "mines", "part": "horns", "color": Color(1.0, 0.8, 0.2)}},
+]
 
 ## Spawn director. `t` below means seconds into the stage. Distances are metres from the car.
 const SPAWN := {
@@ -109,6 +136,16 @@ const CLASSES := {
 		"weapon": "saws",
 		"color": Color(0.9, 0.55, 0.15),
 		"size": Vector3(2.2, 1.5, 4.6),
+	},
+	"raccoon": {
+		"name": "Raccoon",
+		"tagline": "Prototype",
+		"desc": "Eats everything smaller.",
+		"max_hp": 120.0, "armor": 0.0, "speed": 12.0, "turn": 14.0, "ram": 15.0, "might": 1.05,
+		"weapon": "mg",
+		"color": Color(0.36, 0.36, 0.42),
+		"size": Vector3(1.2, 0.8, 2.4),
+		"creature": true,
 	},
 }
 

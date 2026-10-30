@@ -3,7 +3,7 @@ extends Node
 ##
 ## Command-line options (after `--`):
 ##   --autotest           play a run unattended (auto-picks upgrades, short stages)
-##   --class=<id>         class for --autotest (juggernaut, interceptor, warrig)
+##   --class=<id>         class for --autotest (juggernaut, interceptor, warrig, raccoon)
 ##   --fair               with --autotest, normal rules: no god mode or pre-levelled build
 ##   --seed=<n>           use this random seed for the run
 ##   --shots=<dir>        with --autotest, save screenshots into <dir>
@@ -105,7 +105,7 @@ func _process(delta: float) -> void:
 		print("AUTOTEST DONE elapsed=%.1f" % _elapsed)
 		if _current is Run:
 			var r: Run = _current
-			print("stage=%d level=%d kills=%d score=%d phase=%d enemies=%d" % [r.stage, r.level, r.kills, r.score, r.phase, r.enemies.alive_count])
+			print("stage=%d level=%d kills=%d score=%d phase=%d enemies=%d size=%.1f" % [r.stage, r.level, r.kills, r.score, r.phase, r.enemies.alive_count, r.body_size])
 		get_tree().quit()
 
 

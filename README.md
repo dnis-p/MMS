@@ -123,6 +123,7 @@ godot --headless --path . -- --autotest --fair --class=interceptor --quit-after-
 godot --headless --path . res://tests/boss_check.tscn   # boss arena checks
 godot --headless --path . res://tests/map_check.tscn    # open-world checks
 godot --headless --path . res://tests/game_check.tscn   # combat, menus, Redline, Garage
+godot --headless --path . res://tests/eat_check.tscn    # raccoon prototype rules
 tools/android/build_apk.sh                             # signed arm64 APK -> build/mms-prototype.apk
 tools/web/build_web.sh                                 # browser build -> build/web, build/mms-web.zip
 ```

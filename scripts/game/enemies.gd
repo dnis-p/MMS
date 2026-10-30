@@ -12,6 +12,8 @@ const SPITTER := 2
 const BRUTE := 3
 const BOSS := 4
 const RECYCLE_DIST := 80.0  # enemies left this far behind reappear just off screen
+const WEAK_COLOR := Color(1.0, 0.8, 0.1)
+const DANGER_COLOR := Color(0.25, 0.02, 0.05)
 
 var run: Run
 var walls: Map  # set during the map phase, null in the boss arena
@@ -38,11 +40,15 @@ var saw_cd := PackedFloat32Array()
 var ram_cd := PackedFloat32Array()
 var attack_cd := PackedFloat32Array()
 var yaw := PackedFloat32Array()
+var scales := PackedFloat32Array()
+var sizes := PackedFloat32Array()  # food size, eat mode only
+var weak := PackedFloat32Array()  # seconds left knocked down and edible, eat mode only
+var _eat: Dictionary = Defs.EAT
+var _reach := 3.0
 var _free: Array[int] = []
 var _grid := {}
 var _mm: Array[MultiMesh] = []
 var _type_color: Array[Color] = []
-var _type_scale: Array[float] = []
 var _time := 0.0
 
 
@@ -62,10 +68,12 @@ func _ready() -> void:
 	ram_cd.resize(MAX)
 	attack_cd.resize(MAX)
 	yaw.resize(MAX)
+	scales.resize(MAX)
+	sizes.resize(MAX)
+	weak.resize(MAX)
 	for t in Defs.ENEMY_ORDER.size():
 		var d := Defs.enemy_def(t)
 		_type_color.append(d["color"])
-		_type_scale.append(d["scale"])
 	_mm.append(_make_mm(_crawler_mesh()))
 	_mm.append(_make_mm(_runner_mesh()))
 	_mm.append(_make_mm(_spitter_mesh()))
@@ -127,6 +135,7 @@ func clear() -> void:
 		alive[i] = 0
 	used = 0
 	alive_count = 0
+	_reach = 3.0
 	_free.clear()
 	_grid.clear()
 	for mm in _mm:
@@ -158,8 +167,35 @@ func spawn(type_id: int, p: Vector3, hp_mult := 1.0) -> int:
 	ram_cd[i] = 0.0
 	attack_cd[i] = run.rng.randf_range(1.0, 2.5)
 	yaw[i] = 0.0
+	scales[i] = d["scale"]
+	weak[i] = 0.0
+	if run.eat_mode and type_id < Defs.EAT_FOOD.size():
+		set_body(i, Defs.EAT_FOOD[type_id]["size"] * run.food_scale)
 	alive_count += 1
 	return i
+
+
+## Sets the food size; the body drawn and the hit area follow it.
+func set_body(i: int, s: float) -> void:
+	var d := Defs.enemy_def(etype[i])
+	sizes[i] = s
+	radius[i] = s * _eat["radius"]
+	scales[i] = d["scale"] * radius[i] / d["radius"]
+	_reach = maxf(_reach, radius[i])
+
+
+func can_swallow(i: int) -> bool:
+	return sizes[i] < run.body_size and i != run.alpha
+
+
+func edible(i: int) -> bool:
+	return weak[i] > 0.0 or can_swallow(i)
+
+
+func weaken(i: int, duration: float) -> void:
+	hp[i] = 0.0
+	weak[i] = duration
+	knock[i] = Vector3.ZERO
 
 
 func remove(i: int) -> void:
@@ -178,6 +214,9 @@ func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> 
 	_time += delta
 	_frame += 1
 	_rebuild_grid()
+	var food := run.eat_mode
+	var recycle := RECYCLE_DIST * run.view_zoom
+	var flee_range: float = _eat["flee_range"] * run.view_zoom
 	for i in used:
 		if alive[i] == 0:
 			continue
@@ -192,12 +231,29 @@ func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> 
 		var to := car - p
 		to.y = 0.0
 		var d := to.length()
-		if d > RECYCLE_DIST and walls:
+		if d > recycle and walls:
 			pos[i] = run.offscreen_point()
+			continue
+		if food and weak[i] > 0.0:
+			weak[i] -= delta
+			if weak[i] <= 0.0:
+				hp[i] = max_hp[i] * _eat["recover"]
+			elif d < radius[i] + car_radius:
+				run.on_enemy_contact(i)
 			continue
 		var dir := to / d if d > 0.001 else Vector3.ZERO
 		var v := dir * speed[i] * speed_mult
-		if t == SPITTER:
+		var scared := food and d < flee_range and can_swallow(i)
+		if scared:
+			v *= -_eat["flee_speed"]
+			dir = -dir
+		elif i == run.alpha:
+			attack_cd[i] -= delta
+			if attack_cd[i] < _eat["alpha_lunge_time"]:
+				v *= _eat["alpha_lunge_speed"]
+			if attack_cd[i] <= 0.0:
+				attack_cd[i] = _eat["alpha_lunge_every"]
+		elif t == SPITTER:
 			attack_cd[i] -= delta
 			if d < _spit["range"]:
 				# Hang back and lob shots, but slower than the car so it can run them down.
@@ -260,7 +316,7 @@ func _rebuild_grid() -> void:
 
 ## Appends alive enemies whose body overlaps the circle (center, r) to `out`.
 func query(center: Vector3, r: float, out: Array) -> void:
-	var reach := r + 3.0  # covers the largest enemy radius (the boss)
+	var reach := r + _reach  # covers the largest enemy radius
 	var x0 := floori((center.x - reach) / CELL)
 	var x1 := floori((center.x + reach) / CELL)
 	var z0 := floori((center.z - reach) / CELL)
@@ -283,7 +339,7 @@ func nearest(center: Vector3, max_r: float, exclude := {}) -> int:
 	var best := -1
 	var best_d := max_r * max_r
 	for i in used:
-		if alive[i] == 0 or exclude.has(i):
+		if alive[i] == 0 or weak[i] > 0.0 or exclude.has(i):
 			continue
 		var diff := pos[i] - center
 		var d2 := diff.x * diff.x + diff.z * diff.z - radius[i] * radius[i]
@@ -296,13 +352,15 @@ func nearest(center: Vector3, max_r: float, exclude := {}) -> int:
 func _render() -> void:
 	var counts := [0, 0, 0, 0]
 	var white := Color(1, 1, 1)
+	var food := run.eat_mode
+	var pulse := 0.5 + 0.5 * sin(_time * 14.0)
 	for i in used:
 		if alive[i] == 0:
 			continue
 		var t := etype[i]
 		if t >= _mm.size():
 			continue
-		var s := _type_scale[t]
+		var s := scales[i]
 		var p := pos[i]
 		var bob := absf(sin(_time * 12.0 + i)) * 0.25 if t != BRUTE else absf(sin(_time * 5.0 + i)) * 0.15
 		var lift := 0.4 * s
@@ -315,9 +373,16 @@ func _render() -> void:
 		var basis := Basis(Vector3.UP, yaw[i]).scaled(Vector3(s, s, s))
 		if flash[i] > 0.0:
 			basis = basis.scaled(Vector3(1.15, 0.85, 1.15))
+		var color := _type_color[t]
+		if food:
+			if weak[i] > 0.0:  # knocked down: pulses gold, lies flat
+				color = WEAK_COLOR.lerp(white, pulse)
+				basis = basis.scaled(Vector3(1.2, 0.55, 1.2))
+			elif not can_swallow(i):  # too big: dark and dangerous
+				color = color.lerp(DANGER_COLOR, 0.85)
 		var k: int = counts[t]
 		_mm[t].set_instance_transform(k, Transform3D(basis, Vector3(p.x, lift + bob, p.z)))
-		_mm[t].set_instance_color(k, white if flash[i] > 0.0 else _type_color[t])
+		_mm[t].set_instance_color(k, white if flash[i] > 0.0 else color)
 		counts[t] = k + 1
 	for t in _mm.size():
 		_mm[t].visible_instance_count = counts[t]
