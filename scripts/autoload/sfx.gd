@@ -74,6 +74,9 @@ func _build_all() -> void:
 		return randf_range(-1.0, 1.0) * pow(1.0 - t / 0.55, 2.0))
 	_streams["big_boom"] = _make_lowpass(1.2, 0.07, func(t: float, _i: int) -> float:
 		return (randf_range(-1.0, 1.0) + sin(TAU * 45.0 * t) * 0.6) * pow(1.0 - t / 1.2, 1.6))
+	_streams["chomp"] = _make_lowpass(0.16, 0.45, func(t: float, _i: int) -> float:
+		var snap := 1.0 if t < 0.02 or absf(t - 0.07) < 0.015 else 0.45
+		return (randf_range(-1.0, 1.0) * 0.7 + sin(TAU * lerpf(240.0, 70.0, t / 0.16) * t)) * snap * _env(t, 0.16))
 	_streams["pickup"] = _make(0.08, func(t: float, _i: int) -> float:
 		return sin(TAU * 1250.0 * t) * 0.35 * _env(t, 0.08))
 	_streams["zap"] = _make(0.16, func(t: float, _i: int) -> float:

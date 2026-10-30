@@ -26,6 +26,8 @@ var _boss_mode := -1
 var joystick: Joystick
 var _redline_bar: ProgressBar
 var _redline_label: Label
+var _food_bar: ProgressBar
+var _food_label: Label
 
 
 func _ready() -> void:
@@ -149,6 +151,25 @@ func _ready() -> void:
 	_redline_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	add_child(_redline_label)
 
+	_food_bar = Ui.bar(Color(0.45, 0.85, 0.35), 22)
+	_food_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_food_bar.offset_left = -240
+	_food_bar.offset_right = 240
+	_food_bar.offset_top = -64
+	_food_bar.offset_bottom = -42
+	_food_bar.visible = false
+	add_child(_food_bar)
+	_food_label = Ui.label("", 16)
+	_food_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_food_label.offset_left = -240
+	_food_label.offset_right = 240
+	_food_label.offset_top = -66
+	_food_label.offset_bottom = -40
+	_food_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_food_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_food_label.visible = false
+	add_child(_food_label)
+
 	_fps_label = Ui.label("", 16, Color(1, 1, 1, 0.6))
 	_fps_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	_fps_label.offset_left = 12
@@ -203,8 +224,16 @@ func refresh(run: Node) -> void:
 		var t := int(run.stage_time)
 		_progress_label.text = "STAGE %d  %s   %d:%02d" % [run.stage, run.biome["name"].to_upper(), t / 60, t % 60]
 	if run.eat_mode:
-		_redline_bar.value = run.food_progress()
-		_redline_label.text = run.food_text()
+		_hp_label.text = "HUNGER  %d%%" % ceili(p.hp / p.max_hp * 100.0)
+		_food_bar.value = run.food_progress()
+		_food_label.text = run.food_text()
+		_food_bar.visible = true
+		_food_label.visible = true
+		_hint.offset_top = -120
+		_hint.offset_bottom = -70
+		_redline_bar.value = run.frenzy
+		_redline_label.text = "FRENZY" if run.frenzy < 1.0 else "FRENZY!"
+		(_redline_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color = Color(1.0, 0.25, 0.1) if run.frenzy > 0.5 else Color(1.0, 0.65, 0.15)
 		_refresh_rest(run)
 		return
 	var meter: float = run.nitro_left / Defs.REDLINE["nitro_time"] if run.nitro_left > 0.0 else run.redline

@@ -61,11 +61,20 @@ func cooldown_mult() -> float:
 
 
 func speed_mult() -> float:
-	return 1.0 + float(Defs.PASSIVES["nitro"]["speed"]) * passive("nitro")
+	return 1.0 + float(Defs.PASSIVES["nitro"]["speed"]) * passive("nitro") + float(Defs.PASSIVES["paws"]["speed"]) * passive("paws")
 
 
 func area_mult() -> float:
 	return 1.0 + float(Defs.PASSIVES["blast"]["area"]) * passive("blast")
+
+
+## Passives this class can get: creatures only have traits, cars never do.
+func passive_pool() -> Array:
+	var pool: Array = []
+	for id in Defs.PASSIVES:
+		if Defs.PASSIVES[id].get("creature", false) == run.eat_mode:
+			pool.append(id)
+	return pool
 
 
 func display_name(id: String) -> String:
@@ -135,15 +144,15 @@ func level_up_options(n: int) -> Array:
 		if level(id) < Defs.MAX_WEAPON_LEVEL:
 			pool.append(_weapon_option(id))
 			pool.append(_weapon_option(id))  # favour what you already have
-	if order.size() < Defs.MAX_WEAPON_SLOTS:
+	if order.size() < Defs.MAX_WEAPON_SLOTS and not run.eat_mode:
 		for id in Defs.WEAPONS:
 			if not owned.has(id):
 				pool.append(_weapon_option(id))
 	for id in passive_order:
 		if passive(id) < Defs.MAX_PASSIVE_LEVEL:
 			pool.append(_passive_option(id))
-	if passive_order.size() < Defs.MAX_PASSIVE_SLOTS:
-		for id in Defs.PASSIVES:
+	if passive_order.size() < Defs.MAX_PASSIVE_SLOTS or run.eat_mode:
+		for id in passive_pool():
 			if not passives.has(id):
 				pool.append(_passive_option(id))
 	run.shuffle(pool)
@@ -173,14 +182,15 @@ func crate_rewards(count: int) -> Array:
 	var sim := {}
 	for id in order:
 		sim["w" + id] = level(id)
-	for id in passive_order:
+	var offered: Array = passive_pool() if run.eat_mode else passive_order
+	for id in offered:
 		sim["p" + id] = passive(id)
 	while rewards.size() < count:
 		var choices: Array = []
 		for id in order:
 			if sim["w" + id] < Defs.MAX_WEAPON_LEVEL:
 				choices.append(["w", id])
-		for id in passive_order:
+		for id in offered:
 			if sim["p" + id] < Defs.MAX_PASSIVE_LEVEL:
 				choices.append(["p", id])
 		if choices.is_empty():
@@ -225,9 +235,9 @@ func _passive_option(id: String) -> Dictionary:
 
 func _filler(kind: String) -> Dictionary:
 	if kind == "heal":
-		return {"kind": "heal", "id": "", "title": "Field Repair", "desc": "Restore %d HP" % int(Defs.FILLER_HEAL), "hint": "",
+		return {"kind": "heal", "id": "", "title": "Big Meal" if run.eat_mode else "Field Repair", "desc": "Restore %d HP" % int(Defs.FILLER_HEAL), "hint": "",
 			"level_text": "", "color": Color(0.3, 1.0, 0.4)}
-	return {"kind": "score", "id": "", "title": "Scrap Haul", "desc": "+%d score" % Defs.FILLER_SCORE, "hint": "",
+	return {"kind": "score", "id": "", "title": "Trophy" if run.eat_mode else "Scrap Haul", "desc": "+%d score" % Defs.FILLER_SCORE, "hint": "",
 		"level_text": "", "color": Color(1.0, 0.85, 0.3)}
 
 

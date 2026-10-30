@@ -102,9 +102,22 @@ var body_mass := 1.0
 var food_scale := 1.0
 var view_zoom := 1.0
 var alpha := -1  # enemy slot of the stage boss in eat mode
-var _damage_acc := 0.0
-var _damage_rate := 0.0
+var frenzy := 0.0
+var hungriest := 1.0  # autotest report: lowest hunger bar of the run, 0-1
 var _alpha_born := 0.0
+var _frenzy_hold := 0.0
+var _frenzied := false  # the full-Frenzy banner already showed
+var _bite_cd := 0.0
+var _chain_left := 0.0  # after a meal the next pounce may go any way
+var _seek := 0.0
+var _sniff := 0.0
+var _scent := -1  # nearest food
+var _prey := -1  # what the pounce in progress is aimed at
+var _biting := false  # the lunge in progress ends in a bite, not a bounce
+var _herd_timer := 0.0
+var _threat_timer := 0.0
+var _hungry_tick := 0.0
+var _starved := false
 
 
 func _ready() -> void:
@@ -152,7 +165,8 @@ func _ready() -> void:
 	weapons = Weapons.new()
 	weapons.run = self
 	add_child(weapons)
-	weapons.add_weapon(player.def["weapon"])
+	if player.def["weapon"] != "":
+		weapons.add_weapon(player.def["weapon"])
 	camera = Camera3D.new()
 	camera.fov = Defs.MAP_CAMERA["fov"]
 	camera.far = 260.0
@@ -229,8 +243,15 @@ func _start_stage() -> void:
 		biome = biome.duplicate()
 		biome["name"] = _eat_stage(stage)["name"]
 		biome["boss"] = _eat_stage(stage)["boss"]
-		food_scale = pow(Defs.EAT["stage_scale"], stage - 1)
+		# Capped so the smallest food always fits your mouth, or you would starve.
+		food_scale = minf(pow(Defs.EAT["stage_scale"], stage - 1), body_size * 0.9 / float(Defs.EAT_FOOD[0]["size"]))
 		alpha = -1
+		frenzy = 0.0
+		_bite_cd = 0.0
+		_chain_left = 0.0
+		_scent = -1
+		_prey = -1
+		player.end_lunge()
 	_apply_biome()
 	update_pace()
 	map.build(biome, rng)
@@ -255,8 +276,14 @@ func _start_stage() -> void:
 	if stage == 1:
 		var hint := "WASD / arrows or drag to drive  ·  weapons fire on their own"
 		if eat_mode:
-			hint = "Eat anything smaller  ·  shoot dark ones down, then eat them"
+			hint = "Steer at prey: you pounce and bite by yourself  ·  keep eating or you starve"
 		hud.show_hint(hint, 6.0)
+	if eat_mode:
+		_herd_timer = Defs.EAT["herd_every"]
+		_threat_timer = Defs.EAT["threat_every"]
+		_spawn_herd(player.global_position + player.heading * 20.0)
+		for k in Defs.EAT["start_herds"]:
+			_spawn_herd(offscreen_point())
 
 
 func _apply_biome() -> void:
@@ -301,6 +328,8 @@ func _enter_arena() -> void:
 ## Vehicle speed from stage and upgrades; enemies keep pace by the same factor.
 func update_pace() -> void:
 	var pace := Defs.stage_speed_mult(stage) * weapons.speed_mult()
+	if eat_mode:
+		pace *= 1.0 + (_target_zoom() - 1.0) * Defs.EAT["pace_zoom"]
 	player.speed = player.base_speed * pace
 	enemies.speed_mult = pace
 
@@ -354,7 +383,7 @@ func _game_over() -> void:
 		return
 	phase = Phase.DEAD
 	if autotest and eat_mode:
-		print("eaten: t=%.0f alpha_hp=%.2f alpha_for=%.0f level=%d" % [stage_time, boss_ratio() if alpha >= 0 else -1.0, stage_time - _alpha_born if alpha >= 0 else 0.0, level])
+		print("%s: t=%.0f alpha_hp=%.2f alpha_for=%.0f level=%d" % ["starved" if _starved else "eaten", stage_time, boss_ratio() if alpha >= 0 else -1.0, stage_time - _alpha_born if alpha >= 0 else 0.0, level])
 	_slowmo(1.2, 0.25)
 	fx.burst(player.global_position + Vector3(0, 1, 0), Color(1, 0.5, 0.2), 28, 2.0)
 	fx.shake(1.0)
@@ -372,7 +401,7 @@ func _game_over() -> void:
 			("New #%d on the local leaderboard!" % rank) if rank > 0 else "",
 		]
 		get_tree().paused = true
-		overlay.show_panel("EATEN" if eat_mode else "WRECKED", lines, [["Retry", _retry], ["Main Menu", _quit_to_menu]], Color(1, 0.35, 0.3)))
+		overlay.show_panel(("STARVED" if _starved else "EATEN") if eat_mode else "WRECKED", lines, [["Retry", _retry], ["Main Menu", _quit_to_menu]], Color(1, 0.35, 0.3)))
 
 
 ## Records the run once, however it ends. Returns the leaderboard rank (0 = none).
@@ -402,11 +431,10 @@ func _process(delta: float) -> void:
 	match phase:
 		Phase.ROAM:
 			stage_time += delta
-			player.drive(delta, _move_input(delta), map)
 			if eat_mode:
-				_damage_rate = lerpf(_damage_rate, _damage_acc / maxf(delta, 0.0001), 1.0 - exp(-delta / 8.0))
-				_damage_acc = 0.0
+				_hunt(delta)
 			else:
+				player.drive(delta, _move_input(delta), map)
 				_update_redline(delta)
 			_director(delta)
 			if stage_time >= boss_time:
@@ -450,6 +478,179 @@ func _process(delta: float) -> void:
 	_try_open_modal()
 
 
+## One frame of the creature: hunger, Frenzy and scent, then the pounce in progress or a run.
+func _hunt(delta: float) -> void:
+	var e := Defs.EAT
+	var p := player
+	_starve(delta)
+	if phase == Phase.DEAD:
+		return
+	if _frenzy_hold > 0.0:
+		_frenzy_hold -= delta
+	else:
+		frenzy = maxf(0.0, frenzy - e["frenzy_drain"] * delta)
+		_frenzied = _frenzied and frenzy > 0.5
+	_chain_left -= delta
+	if p.lunge_left > 0.0:
+		if _biting and enemies.is_alive(_prey):
+			p.lunge_to = enemies.pos[_prey]
+		if p.lunge_step(delta, map) and _biting:
+			_chomp()
+		return
+	_bite_cd -= delta
+	_sniff -= delta
+	if _sniff <= 0.0:
+		_sniff = 0.1
+		_scent = enemies.nearest_food(p.global_position)
+	var to_food := Vector3.ZERO
+	var scent := false
+	if enemies.is_alive(_scent) and enemies.edible(_scent):
+		to_food = enemies.pos[_scent] - p.global_position
+		to_food.y = 0.0
+		scent = to_food.length() < e["scent_range"] * view_zoom and to_food.dot(p.heading) > to_food.length() * e["ahead"]
+		var show := to_food.length() > bite_reach()
+		to_food = to_food.normalized() if show else Vector3.ZERO
+	p.set_scent(to_food, view_zoom)
+	p.boost = (1.0 + e["frenzy_speed"] * frenzy) * (1.0 + (e["scent_boost"] if scent else 0.0))
+	p.drive(delta, _move_input(delta), map)
+	if _bite_cd > 0.0:
+		return
+	_seek -= delta
+	if _seek > 0.0:
+		return
+	_seek = 0.05
+	var i := enemies.bite_target(p.global_position, p.heading, bite_reach(), _chain_left > 0.0)
+	if i >= 0:
+		_pounce(i)
+
+
+## Hunger is your health: it drains all the time and only food refills it.
+func _starve(delta: float) -> void:
+	if god_mode:
+		return
+	var e := Defs.EAT
+	var drain: float = (e["hunger_drain"] + e["hunger_stage"] * (stage - 1)) * pow(Defs.PASSIVES["gut"]["hunger"], weapons.passive("gut"))
+	player.hp -= drain * delta
+	if autotest:
+		hungriest = minf(hungriest, player.hp / player.max_hp)
+	if player.hp < player.max_hp * 0.25:
+		_hungry_tick -= delta
+		if _hungry_tick <= 0.0:
+			_hungry_tick = 0.8
+			hud.damage_flash()
+	if player.hp > 0.0:
+		return
+	player.hp = 0.0
+	if _revives > 0:
+		_revive()
+	else:
+		_starved = true
+		_game_over()
+
+
+func _pounce(i: int) -> void:
+	_prey = i
+	_biting = true
+	player.set_scent(Vector3.ZERO, 1.0)
+	var stop: float = 0.0 if enemies.edible(i) else enemies.radius[i] + player.radius * 0.5
+	player.lunge(enemies.pos[i], Defs.EAT["lunge_time"], stop)
+	Sfx.play("dash", -10.0, 1.5)
+
+
+func bite_radius() -> float:
+	var e := Defs.EAT
+	var jaws: float = Defs.PASSIVES["jaws"]["bite"] * weapons.passive("jaws")
+	return e["bite_radius"] * body_size * (1.0 + jaws) * (1.0 + e["frenzy_bite"] * frenzy)
+
+
+func bite_reach() -> float:
+	var e := Defs.EAT
+	var legs: float = Defs.PASSIVES["legs"]["reach"] * weapons.passive("legs")
+	return e["reach"] * (1.0 + (body_size - 1.0) * e["reach_grow"]) * (1.0 + legs)
+
+
+## What a bite tears off something bigger, before Frenzy.
+func plain_bite() -> float:
+	var fangs: float = Defs.PASSIVES["fangs"]["tear"] * weapons.passive("fangs")
+	return Defs.EAT["bite_dmg"] * body_size * (1.0 + fangs) * garage_damage
+
+
+## The pounce lands: everything around is eaten or loses a chunk, all at once.
+func _chomp() -> void:
+	var e := Defs.EAT
+	var at := player.global_position
+	var r := bite_radius()
+	_tmp.clear()
+	enemies.query(at, r, _tmp)
+	var eaten := 0
+	var big := -1
+	var downed := false
+	for j in _tmp:
+		if not enemies.is_alive(j):
+			continue
+		if enemies.edible(j):
+			eaten += 1
+			_kill(j, enemies.weak[j] > 0.0, true)
+		else:
+			big = j
+			downed = _tear(j) or downed
+	if phase != Phase.ROAM:
+		return
+	fx.ring(at, r, Color(1.0, 0.2, 0.15, 0.9), 0.2)
+	Sfx.play("chomp", -3.0, 1.1 - minf(body_size, 8.0) * 0.05 + frenzy * 0.15, true)
+	fx.shake(0.08 + 0.02 * mini(eaten, 10))
+	if eaten >= 5:
+		_hitstop(0.035)
+		fx.burst(at + Vector3(0, 1, 0), Color(1.0, 0.25, 0.2), 20, 1.2 + body_size * 0.3)
+		Sfx.play("big_boom", -14.0, 1.6, true)
+	player.gulp()
+	_bite_cd = e["bite_cd"]
+	if eaten > 0 or downed:
+		_bite_cd = 0.0
+		_seek = 0.0
+		_chain_left = e["chain_time"]
+	elif big < 0:
+		_bite_cd *= 0.5
+	if big >= 0 and not downed:
+		_bounce(enemies.pos[big])
+
+
+## Bites something too big to swallow. Returns true if that dropped it.
+func _tear(i: int) -> bool:
+	var amount := plain_bite() * (1.0 + Defs.EAT["frenzy_tear"] * frenzy)
+	enemies.hp[i] -= amount
+	enemies.flash[i] = 0.1
+	fx.number(enemies.pos[i], amount, frenzy > 0.75)
+	fx.burst(enemies.pos[i] + Vector3(0, 0.5, 0), Color(0.8, 0.1, 0.1), 10, 1.0 + enemies.sizes[i] * 0.2)
+	if enemies.hp[i] > 0.0:
+		return false
+	_knock_down(i)
+	return true
+
+
+## Biting something big throws you back off it, so hit-and-run needs no input.
+func _bounce(from: Vector3) -> void:
+	var e := Defs.EAT
+	var away := player.global_position - from
+	away.y = 0.0
+	if away.length_squared() < 0.01:
+		away = -player.heading
+	_biting = false
+	player.lunge(player.global_position + away.normalized() * e["bounce"] * (1.0 + (body_size - 1.0) * e["reach_grow"]), e["bounce_time"], 0.0, false)
+
+
+func _feed(d: Dictionary) -> void:
+	var e := Defs.EAT
+	player.hp = minf(player.max_hp, player.hp + sqrt(float(d["xp"])) * e["meal"])
+	var was := frenzy
+	frenzy = minf(1.0, frenzy + e["frenzy_gain"])
+	_frenzy_hold = e["frenzy_hold"] * (1.0 + Defs.PASSIVES["rage"]["hold"] * weapons.passive("rage"))
+	if frenzy >= 1.0 and was < 1.0 and not _frenzied:
+		_frenzied = true
+		overlay.banner("FRENZY!", "", Color(1.0, 0.25, 0.15), 0.7)
+		Sfx.play("reward", -6.0, 0.7, true)
+
+
 func _update_redline(delta: float) -> void:
 	var r := Defs.REDLINE
 	if nitro_left > 0.0:
@@ -488,6 +689,9 @@ func _end_nitro() -> void:
 
 
 func _director(delta: float) -> void:
+	if eat_mode:
+		_director_eat(delta)
+		return
 	var sp := Defs.SPAWN
 	var t := stage_time
 	var sm := Defs.stage_spawn_mult(stage) * Defs.level_spawn_mult(level)
@@ -522,6 +726,70 @@ func _director(delta: float) -> void:
 		enemies.spawn(Enemies.BRUTE, offscreen_point(), hm)
 		overlay.banner("ELITE!", "Bring it down and eat it for a crate" if eat_mode else "Destroy it for a salvage crate", Color(1.0, 0.75, 0.2), 1.4)
 		Sfx.play("warn", -10.0, 1.4, true)
+
+
+## Creatures don't get waves: herds wander in to be hunted, and threats come for you.
+func _director_eat(delta: float) -> void:
+	var e := Defs.EAT
+	var t := stage_time
+	_herd_timer -= delta
+	if _herd_timer <= 0.0:
+		_herd_timer = e["herd_every"] / (1.0 + e["herd_ramp"] * t)
+		var at := offscreen_point()
+		if alpha >= 0 and rng.randf() < 0.5:  # bosses bring food, which charges your bites
+			var a := rng.randf() * TAU
+			at = map.clamp_inside(enemies.pos[alpha] + Vector3(cos(a), 0, sin(a)) * 16.0 * view_zoom, 3.0)
+		_spawn_herd(at)
+	_threat_timer -= delta
+	if _threat_timer <= 0.0:
+		_threat_timer = e["threat_every"]
+		if enemies.threat_count < e["threat_base"] + e["threat_ramp"] * t:
+			_spawn_threat()
+	if _next_elite < elite_times.size() and t >= elite_times[_next_elite]:
+		_next_elite += 1
+		var i := enemies.spawn(Enemies.BRUTE, offscreen_point())
+		if i >= 0:
+			_make_big(i, body_size * e["elite_size"], e["elite_bites"])
+			enemies.elite[i] = 1
+		overlay.banner("ELITE!", "Bite it down and eat it for a crate", Color(1.0, 0.75, 0.2), 1.4)
+		Sfx.play("warn", -10.0, 1.4, true)
+
+
+## Mostly the biggest food you can eat, sometimes something smaller.
+func _spawn_herd(at: Vector3) -> void:
+	if enemies.alive_count >= Defs.MAX_ALIVE:
+		return
+	var t := next_food() - 1 if next_food() >= 0 else Defs.EAT_FOOD.size() - 1
+	if t > 0 and rng.randf() > 0.65:
+		t = rng.randi_range(0, t - 1)
+	t = maxi(t, 0)
+	var f: Dictionary = Defs.EAT_FOOD[t]
+	var n := int(f["herd"] * Defs.stage_spawn_mult(stage) * Defs.level_spawn_mult(level))
+	var spread: float = Defs.EAT["herd_spread"] * f["size"] * food_scale * sqrt(float(n))
+	var angle := rng.randf() * TAU
+	for k in n:
+		var a := rng.randf() * TAU
+		var i := enemies.spawn(t, map.clamp_inside(at + Vector3(cos(a), 0, sin(a)) * spread * sqrt(rng.randf()) * 0.5, 3.0))
+		if i >= 0:
+			enemies.herd[i] = angle
+
+
+## The next food you can't eat yet, or a brute once everything is food.
+func _spawn_threat() -> void:
+	var e := Defs.EAT
+	var t := next_food()
+	var i := enemies.spawn(t if t >= 0 else Enemies.BRUTE, offscreen_point())
+	if i >= 0:
+		_make_big(i, enemies.sizes[i] if t >= 0 else body_size * e["elite_size"], e["threat_bites"])
+		enemies.speed[i] *= e["threat_speed"]
+		enemies.dmg[i] *= e["threat_dmg"]
+
+
+## `bites` counts plain bites at your size right now.
+func _make_big(i: int, size: float, bites: float) -> void:
+	enemies.set_body(i, size)
+	enemies.hp[i] = bites * plain_bite()
+	enemies.max_hp[i] = enemies.hp[i]
 
 
 func enemy_hp_mult() -> float:
@@ -568,7 +836,6 @@ func hit_enemy(i: int, amount: float, knock_dir: Vector3, knock_force: float, sh
 		amount *= Defs.CRIT_MULT
 	enemies.hp[i] -= amount
 	enemies.flash[i] = 0.08
-	_damage_acc += amount
 	var t := enemies.etype[i]
 	if knock_force > 0.0:
 		knock_dir.y = 0.0
@@ -584,7 +851,7 @@ func hit_enemy(i: int, amount: float, knock_dir: Vector3, knock_force: float, sh
 			_kill(i, true)
 
 
-## Attacks can't kill what is bigger than you: it drops and waits to be eaten.
+## What is bigger than you doesn't die at 0 HP: it drops and waits to be eaten.
 func _knock_down(i: int) -> void:
 	var e := Defs.EAT
 	enemies.weaken(i, e["weak_time"] * (2.0 if i == alpha else 1.0))
@@ -603,23 +870,25 @@ func _spawn_alpha() -> void:
 		return
 	alpha = i
 	_alpha_born = stage_time
-	enemies.set_body(i, body_size * e["alpha_size"])
-	enemies.hp[i] = maxf(e["alpha_min_hp"], _damage_rate * e["alpha_fight"])
-	enemies.max_hp[i] = enemies.hp[i]
+	_make_big(i, body_size * e["alpha_size"], e["alpha_bites"])
 	enemies.speed[i] = e["alpha_speed"]
 	enemies.dmg[i] = e["alpha_dmg"]
 	enemies.attack_cd[i] = e["alpha_lunge_every"]
-	overlay.banner("%s INCOMING" % String(biome["boss"]), "Shoot it down, then eat it", Color(1, 0.3, 0.25), 1.8)
+	overlay.banner("%s INCOMING" % String(biome["boss"]), "Eat to fill Frenzy, then bite it down", Color(1, 0.3, 0.25), 1.8)
 	Sfx.play("warn", -4.0, 1.0, true)
 
 
 func _on_alpha_eaten(p: Vector3) -> void:
 	alpha = -1
 	phase = Phase.FEAST
+	player.end_lunge()
+	player.boost = 1.0
+	player.set_scent(Vector3.ZERO, 1.0)
 	if autotest:
 		print("alpha eaten: stage=%d t=%.0f fight=%.1f size=%.1f level=%d hp=%d" % [stage, stage_time, stage_time - _alpha_born, body_size, level, player.hp])
 	var m: Dictionary = _eat_stage(stage)["mutation"]
-	weapons.add_weapon(m["weapon"])
+	for k in 2:
+		weapons.add_passive(m["trait"])
 	player.add_mutation(m["part"], m["color"])
 	_celebrate(p, "%s EATEN" % String(biome["boss"]), "Mutation: %s  ·  %s" % [m["name"], m["desc"]])
 
@@ -657,12 +926,31 @@ func _grow(mass: float) -> void:
 	body_mass += mass
 	body_size = sqrt(body_mass)
 	player.set_body_size(body_size)
+	update_pace()
 	if next_food() != was:
 		overlay.banner("%s ARE FOOD NOW" % Defs.EAT_FOOD[was]["name"], "", Color(0.5, 1.0, 0.4), 1.2)
 		if autotest:
 			print("food: stage=%d t=%.0f %s size=%.1f" % [stage, stage_time, Defs.EAT_FOOD[was]["name"], body_size])
 		Sfx.play("reward", -3.0, 0.9, true)
 		fx.ring(player.global_position, player.radius * 4.0, Color(0.5, 1.0, 0.4, 0.9), 0.5)
+	var form := player.form
+	while form + 1 < Defs.EAT_FORMS.size() and body_size >= Defs.EAT_FORMS[form + 1]["size"]:
+		form += 1
+	if form != player.form:
+		_evolve(form)
+
+
+func _evolve(form: int) -> void:
+	player.set_form(form)
+	overlay.banner("EVOLVED", String(Defs.EAT_FORMS[form]["name"]).to_upper(), Color(1.0, 0.35, 0.2), 1.6)
+	if autotest:
+		print("form: stage=%d t=%.0f %s size=%.1f" % [stage, stage_time, Defs.EAT_FORMS[form]["name"], body_size])
+	Sfx.play("big_boom", -6.0, 0.8, true)
+	Sfx.play("reward", -3.0, 0.6, true)
+	fx.shake(0.6)
+	fx.ring(player.global_position, player.radius * 6.0, Color(1.0, 0.3, 0.2, 0.9), 0.6)
+	fx.burst(player.global_position + Vector3(0, 1, 0), Color(0.9, 0.1, 0.1), 40, 1.5 + body_size * 0.4)
+	_slowmo(0.5, 0.35)
 
 
 func _kill(i: int, drops: bool, eaten := false) -> void:
@@ -671,6 +959,7 @@ func _kill(i: int, drops: bool, eaten := false) -> void:
 	var p := enemies.pos[i]
 	var was_alpha := i == alpha
 	var bite := enemies.sizes[i]
+	var was_elite := enemies.elite[i] == 1
 	enemies.remove(i)
 	kills += 1
 	combo += 1
@@ -686,9 +975,9 @@ func _kill(i: int, drops: bool, eaten := false) -> void:
 		fx.burst(p + Vector3(0, 0.5, 0), d["color"], 14, 1.0 + bite * 0.3)
 		Sfx.play("pickup", -6.0, 0.8 + minf(combo, 40) * 0.02)
 		fx.shake(0.04 + 0.03 * bite)
-		player.gulp()
-		add_xp(d["xp"])
-		_grow(bite * bite * Defs.EAT["growth"])
+		add_xp(d["xp"] * Defs.EAT["xp"])
+		_feed(d)
+		_grow(bite * bite * Defs.EAT["growth"] / food_scale)
 		if was_alpha:
 			_on_alpha_eaten(p)
 			return
@@ -698,7 +987,7 @@ func _kill(i: int, drops: bool, eaten := false) -> void:
 		return
 	if rng.randf() < Defs.REPAIR_CHANCE:
 		pickups.drop_repair(p)
-	if t == Enemies.BRUTE:
+	if t == Enemies.BRUTE and (was_elite or not eat_mode):
 		fx.shake(0.35)
 		_hitstop(0.07)
 		Sfx.play("boom", -2.0)
@@ -725,8 +1014,11 @@ func explode(p: Vector3, r: float, amount: float, napalm: bool) -> void:
 
 
 func on_enemy_contact(i: int) -> void:
-	if eat_mode and enemies.edible(i):
-		_kill(i, true, true)
+	if eat_mode:
+		if enemies.edible(i):
+			_kill(i, enemies.weak[i] > 0.0, true)
+		elif player.can_be_hit():
+			player_hit(enemies.dmg[i])
 		return
 	if enemies.ram_cd[i] <= 0.0 and enemies.etype[i] != Enemies.BOSS:
 		enemies.ram_cd[i] = Defs.RAM_COOLDOWN
@@ -761,14 +1053,12 @@ func _revive() -> void:
 	_revives -= 1
 	player.hp = player.max_hp * float(Defs.GARAGE["revive"]["value"])
 	player.invuln = 2.0
-	overlay.banner("SPARE ENGINE!", "", Color(0.4, 1.0, 0.5), 1.0)
+	overlay.banner("SECOND STOMACH!" if eat_mode else "SPARE ENGINE!", "", Color(0.4, 1.0, 0.5), 1.0)
 	Sfx.play("reward", -2.0, 0.8, true)
 	fx.shake(0.5)
 
 
-func add_xp(amount: int) -> void:
-	if eat_mode:
-		_grow(amount * Defs.EAT["crumb_growth"])
+func add_xp(amount: float) -> void:
 	_xp_frac += amount * _xp_mult
 	var whole := int(_xp_frac)
 	_xp_frac -= whole
@@ -979,10 +1269,14 @@ func _snap_camera_map() -> void:
 	_place_camera()
 
 
+func _target_zoom() -> float:
+	return 1.0 + (body_size - 1.0) * Defs.EAT["zoom"]
+
+
 func _update_camera_map(delta: float) -> void:
 	if eat_mode:
-		view_zoom = lerpf(view_zoom, 1.0 + (body_size - 1.0) * Defs.EAT["zoom"], 1.0 - exp(-3.0 * delta))
-		_env.fog_density = 0.012 / view_zoom
+		view_zoom = lerpf(view_zoom, _target_zoom(), 1.0 - exp(-3.0 * delta))
+		_env.fog_density = 0.003 / view_zoom  # sand-coloured fog washes out who is who
 	var t := _map_cam_targets()
 	var k := 1.0 - exp(-8.0 * delta)
 	_cam_pos = _cam_pos.lerp(t[0], k)

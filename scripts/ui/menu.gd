@@ -42,7 +42,7 @@ func _ready() -> void:
 			cards.add_child(_class_card(id))
 
 	var raccoon := Button.new()
-	raccoon.text = "Play the Raccoon (eat and grow prototype)"
+	raccoon.text = "Play the Raccoon (hunt and evolve prototype)"
 	raccoon.custom_minimum_size = Vector2(620, 60)
 	raccoon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	raccoon.pressed.connect(func():

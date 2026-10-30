@@ -30,6 +30,7 @@ func steer(run: Run, delta: float) -> Vector2:
 		want += away / d * (danger - d) / danger * 2.0
 	if run.eat_mode:
 		want += _toward_food(run, car)
+		want += _toward_alpha(run, car)
 	want += _toward_pickup(run, car)
 	# Saws only reach what is next to the car, so a healthy car goes to the enemies.
 	if run.weapons.owned.has("saws") and run.player.hp > run.player.max_hp * 0.5:
@@ -48,7 +49,7 @@ func steer(run: Run, delta: float) -> Vector2:
 func _toward_food(run: Run, car: Vector3) -> Vector2:
 	var enemies := run.enemies
 	var best := -1
-	var best_d := (HUNT_RANGE * run.view_zoom) ** 2
+	var best_d := INF
 	for i in enemies.used:
 		if enemies.alive[i] == 1 and enemies.edible(i):
 			var d2 := car.distance_squared_to(enemies.pos[i]) * (0.2 if enemies.weak[i] > 0.0 else 1.0)
@@ -58,6 +59,14 @@ func _toward_food(run: Run, car: Vector3) -> Vector2:
 	if best < 0:
 		return Vector2.ZERO
 	return Vector2(enemies.pos[best].x - car.x, enemies.pos[best].z - car.z).normalized() * 2.5
+
+
+## Goes for the boss once Frenzy is up, or whenever it is down.
+func _toward_alpha(run: Run, car: Vector3) -> Vector2:
+	var e := run.enemies
+	if run.alpha < 0 or (run.frenzy < 0.4 and e.weak[run.alpha] <= 0.0):
+		return Vector2.ZERO
+	return Vector2(e.pos[run.alpha].x - car.x, e.pos[run.alpha].z - car.z).normalized() * 5.0
 
 
 func _toward_pickup(run: Run, car: Vector3) -> Vector2:

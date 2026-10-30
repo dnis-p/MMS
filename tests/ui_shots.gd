@@ -59,7 +59,6 @@ func _process(delta: float) -> void:
 			for k in 12:
 				_run().enemies.spawn(k % 4, _run().player.global_position + Vector3(cos(k) * 16.0, 0, sin(k) * 12.0), 1e6)],
 		[25.0, func(): _shot("raccoon_grown")],
-		[25.1, func(): _run().weapons.add_weapon("saws")],
 		[25.2, func(): _run()._spawn_alpha()],
 		[28.0, func(): _shot("raccoon_boss")],
 		[28.1, func(): _run().hit_enemy(_run().alpha, 1e9, Vector3.LEFT, 0.0, false)],

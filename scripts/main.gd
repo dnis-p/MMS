@@ -66,13 +66,13 @@ func start_run(class_id: String) -> void:
 	run.exit_to_menu.connect(show_menu)
 	run.retry_requested.connect(start_run)
 	_set_current(run)
-	if run.autotest and not fair:
+	if run.autotest and not fair and not run.eat_mode:
 		# Pre-level a build so evolutions and every weapon get exercised.
 		for id in Defs.WEAPONS:
 			run.weapons.add_weapon(id)
 			for k in 4:
 				run.weapons.add_weapon(id)
-		for id in Defs.PASSIVES:
+		for id in run.weapons.passive_pool():
 			run.weapons.add_passive(id)
 
 
@@ -105,7 +105,7 @@ func _process(delta: float) -> void:
 		print("AUTOTEST DONE elapsed=%.1f" % _elapsed)
 		if _current is Run:
 			var r: Run = _current
-			print("stage=%d level=%d kills=%d score=%d phase=%d enemies=%d size=%.1f" % [r.stage, r.level, r.kills, r.score, r.phase, r.enemies.alive_count, r.body_size])
+			print("stage=%d level=%d kills=%d score=%d phase=%d enemies=%d size=%.1f hungriest=%.2f" % [r.stage, r.level, r.kills, r.score, r.phase, r.enemies.alive_count, r.body_size, r.hungriest])
 		get_tree().quit()
 
 

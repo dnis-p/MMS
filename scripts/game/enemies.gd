@@ -13,7 +13,8 @@ const BRUTE := 3
 const BOSS := 4
 const RECYCLE_DIST := 80.0  # enemies left this far behind reappear just off screen
 const WEAK_COLOR := Color(1.0, 0.8, 0.1)
-const DANGER_COLOR := Color(0.25, 0.02, 0.05)
+const DANGER_COLOR := Color(0.08, 0.01, 0.02)
+const DANGER_PULSE := Color(0.75, 0.04, 0.08)
 
 var run: Run
 var walls: Map  # set during the map phase, null in the boss arena
@@ -43,6 +44,9 @@ var yaw := PackedFloat32Array()
 var scales := PackedFloat32Array()
 var sizes := PackedFloat32Array()  # food size, eat mode only
 var weak := PackedFloat32Array()  # seconds left knocked down and edible, eat mode only
+var herd := PackedFloat32Array()  # calm prey of a herd wander together along this angle
+var elite := PackedByteArray()  # eat mode: a brute that drops a crate
+var threat_count := 0  # eat mode: alive things too big to eat
 var _eat: Dictionary = Defs.EAT
 var _reach := 3.0
 var _free: Array[int] = []
@@ -71,6 +75,8 @@ func _ready() -> void:
 	scales.resize(MAX)
 	sizes.resize(MAX)
 	weak.resize(MAX)
+	herd.resize(MAX)
+	elite.resize(MAX)
 	for t in Defs.ENEMY_ORDER.size():
 		var d := Defs.enemy_def(t)
 		_type_color.append(d["color"])
@@ -169,6 +175,8 @@ func spawn(type_id: int, p: Vector3, hp_mult := 1.0) -> int:
 	yaw[i] = 0.0
 	scales[i] = d["scale"]
 	weak[i] = 0.0
+	herd[i] = 0.0
+	elite[i] = 0
 	if run.eat_mode and type_id < Defs.EAT_FOOD.size():
 		set_body(i, Defs.EAT_FOOD[type_id]["size"] * run.food_scale)
 	alive_count += 1
@@ -217,6 +225,7 @@ func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> 
 	var food := run.eat_mode
 	var recycle := RECYCLE_DIST * run.view_zoom
 	var flee_range: float = _eat["flee_range"] * run.view_zoom
+	var threats := 0
 	for i in used:
 		if alive[i] == 0:
 			continue
@@ -232,7 +241,10 @@ func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> 
 		to.y = 0.0
 		var d := to.length()
 		if d > recycle and walls:
-			pos[i] = run.offscreen_point()
+			if food and can_swallow(i):  # new herds replace lost prey
+				remove(i)
+			else:
+				pos[i] = run.offscreen_point()
 			continue
 		if food and weak[i] > 0.0:
 			weak[i] -= delta
@@ -243,10 +255,15 @@ func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> 
 			continue
 		var dir := to / d if d > 0.001 else Vector3.ZERO
 		var v := dir * speed[i] * speed_mult
-		var scared := food and d < flee_range and can_swallow(i)
-		if scared:
-			v *= -_eat["flee_speed"]
-			dir = -dir
+		if food and can_swallow(i):
+			if d < flee_range:
+				var side := (float(i & 3) - 1.5) * 0.3  # a herd fans out as it bolts
+				dir = (Vector3(dir.z, 0.0, -dir.x) * side - dir).normalized()
+				v = dir * speed[i] * speed_mult * _eat["flee_speed"]
+			else:
+				var a := herd[i] + sin(_time * 0.4 + herd[i]) * 1.2
+				dir = Vector3(cos(a), 0.0, sin(a))
+				v = dir * speed[i] * speed_mult * _eat["wander"]
 		elif i == run.alpha:
 			attack_cd[i] -= delta
 			if attack_cd[i] < _eat["alpha_lunge_time"]:
@@ -273,8 +290,11 @@ func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> 
 		pos[i] = p
 		if d > 0.001:
 			yaw[i] = atan2(dir.x, dir.z)
+		if food and not can_swallow(i):
+			threats += 1
 		if d < radius[i] + car_radius:
 			run.on_enemy_contact(i)
+	threat_count = threats
 	_render()
 
 
@@ -349,6 +369,41 @@ func nearest(center: Vector3, max_r: float, exclude := {}) -> int:
 	return best
 
 
+## What to pounce at: food first, something bigger only when no food is in reach. Only what is
+## ahead counts, unless `any_way` is set, which is how bites chain.
+func bite_target(center: Vector3, facing: Vector3, reach: float, any_way: bool) -> int:
+	var best := -1
+	var best_score := INF
+	var ahead: float = _eat["ahead"]
+	for i in used:
+		if alive[i] == 0:
+			continue
+		var diff := pos[i] - center
+		diff.y = 0.0
+		var length := diff.length()
+		var gap := length - radius[i]
+		if gap > reach or (not any_way and gap > 1.0 and diff.dot(facing) < ahead * length):
+			continue
+		var score := gap if edible(i) else gap + reach
+		if score < best_score:
+			best_score = score
+			best = i
+	return best
+
+
+## The closest thing that can be eaten, however far away.
+func nearest_food(center: Vector3) -> int:
+	var best := -1
+	var best_d := INF
+	for i in used:
+		if alive[i] == 1 and edible(i):
+			var d2 := center.distance_squared_to(pos[i])
+			if d2 < best_d:
+				best_d = d2
+				best = i
+	return best
+
+
 func _render() -> void:
 	var counts := [0, 0, 0, 0]
 	var white := Color(1, 1, 1)
@@ -378,8 +433,10 @@ func _render() -> void:
 			if weak[i] > 0.0:  # knocked down: pulses gold, lies flat
 				color = WEAK_COLOR.lerp(white, pulse)
 				basis = basis.scaled(Vector3(1.2, 0.55, 1.2))
-			elif not can_swallow(i):  # too big: dark and dangerous
-				color = color.lerp(DANGER_COLOR, 0.85)
+			elif can_swallow(i):  # food stays bright
+				color = color.lightened(0.2)
+			else:  # too big: black with a red pulse
+				color = DANGER_COLOR.lerp(DANGER_PULSE, pulse)
 		var k: int = counts[t]
 		_mm[t].set_instance_transform(k, Transform3D(basis, Vector3(p.x, lift + bob, p.z)))
 		_mm[t].set_instance_color(k, white if flash[i] > 0.0 else color)

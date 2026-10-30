@@ -30,8 +30,16 @@ var boost := 1.0  # speed factor while nitro burns
 var nitro := false
 var creature := false  # runs instead of driving and grows by eating
 var body_size := 1.0
+var form := 0  # index into Defs.EAT_FORMS
+var lunge_left := 0.0  # seconds left of a pounce or bounce; nothing can hit you meanwhile
+var lunge_to := Vector3.ZERO
+var _lunge_stop := 0.0
+var _lunge_face := true
 var _base_radius := 1.2
 var _gulp := 0.0
+var _model: RaccoonBody
+var _grafts: Array = []
+var _scent: MeshInstance3D
 
 var theta := 0.0
 var ring_index := 1
@@ -76,7 +84,8 @@ func _build_model(size: Vector3, color: Color) -> void:
 	_body = Node3D.new()
 	add_child(_body)
 	if creature:
-		_build_raccoon(size, color)
+		set_form(0)
+		_build_scent()
 		return
 	var wheel_r := 0.45 if class_id != "juggernaut" else 0.55
 	var hull_y := wheel_r + size.y * 0.5 - 0.1
@@ -116,48 +125,78 @@ func _build_model(size: Vector3, color: Color) -> void:
 	]
 
 
-func _build_raccoon(size: Vector3, color: Color) -> void:
-	var dark := color.darkened(0.65)
-	var y := size.y * 0.8
-	_box(Vector3(size.x, size.y, size.z * 0.6), Vector3(0, y, size.z * 0.05), color)
-	var head := -size.z * 0.38
-	_box(Vector3(size.x * 0.85, size.y * 0.8, size.z * 0.28), Vector3(0, y + 0.1, head), color.lightened(0.2))
-	_box(Vector3(size.x * 0.9, size.y * 0.22, size.z * 0.1), Vector3(0, y + 0.2, head - size.z * 0.1), dark)  # bandit mask
-	_box(Vector3(0.2, 0.15, 0.15), Vector3(0, y, head - size.z * 0.16), Color(0.05, 0.05, 0.05))  # nose
-	for side in [-1.0, 1.0]:
-		_box(Vector3(0.22, 0.28, 0.12), Vector3(side * size.x * 0.32, y + size.y * 0.55, head + 0.1), dark)  # ear
-		for z in [-size.z * 0.15, size.z * 0.25]:
-			_box(Vector3(0.24, 0.4, 0.24), Vector3(side * size.x * 0.42, 0.2, z), dark)  # leg
-	for k in 4:  # ringed tail
-		_box(Vector3(0.34, 0.34, 0.3), Vector3(0, y + 0.05 * k, size.z * 0.42 + 0.3 * k), dark if k % 2 == 0 else color.lightened(0.3))
-	var top := y + size.y * 0.5
-	_hardpoints = [
-		Vector3(0, top, -size.z * 0.1),
-		Vector3(-size.x * 0.35, top, size.z * 0.15),
-		Vector3(size.x * 0.35, top, size.z * 0.15),
-		Vector3(0, top, size.z * 0.28),
-		Vector3(-size.x * 0.35, top, -size.z * 0.15),
-		Vector3(size.x * 0.35, top, -size.z * 0.15),
-	]
+## Evolving swaps the whole body and carries the grafted boss parts over.
+func set_form(i: int) -> void:
+	form = i
+	if _model:
+		_model.free()
+	_model = RaccoonBody.new()
+	_body.add_child(_model)
+	_model.build(i, def["color"])
+	_model.scale = Vector3.ONE * float(Defs.EAT_FORMS[i]["scale"])
+	for g in _grafts:
+		_model.graft(g[0], g[1])
+	_mats = _model.mats
+	_base_colors = _model.colors
 
 
-## Bolts what a boss gave on to the body, so a run shows on the character.
 func add_mutation(part: String, color: Color) -> void:
-	var size: Vector3 = def["size"]
-	var top := size.y * 1.3
-	match part:
-		"tail":
-			for side in [-1.0, 1.0]:
-				_box(Vector3(0.12, 0.5, 1.3), Vector3(side * 0.28, top, size.z * 0.75), color)
-		"jaws":
-			for side in [-1.0, 1.0]:
-				_box(Vector3(0.5, 0.2, 0.9), Vector3(side * 0.45, size.y * 0.6, -size.z * 0.7), color)
-		"spikes":
-			for k in 5:
-				_box(Vector3(0.15, 0.7, 0.15), Vector3(0, top + 0.3, size.z * (0.25 - 0.13 * k)), color)
-		"horns":
-			for side in [-1.0, 1.0]:
-				_box(Vector3(0.18, 0.9, 0.18), Vector3(side * size.x * 0.3, top + 0.5, -size.z * 0.38), color)
+	_grafts.append([part, color])
+	_model.graft(part, color)
+
+
+## An arrow on the ground that points at the nearest food.
+func _build_scent() -> void:
+	_scent = MeshInstance3D.new()
+	var mesh := PrismMesh.new()
+	mesh.size = Vector3(1.3, 1.9, 0.05)
+	_scent.mesh = mesh
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(1.0, 0.2, 0.15)
+	_scent.material_override = mat
+	_scent.top_level = true
+	_scent.visible = false
+	add_child(_scent)
+
+
+## `dir` is flat and points at the food; zero hides the arrow.
+func set_scent(dir: Vector3, s: float) -> void:
+	_scent.visible = dir != Vector3.ZERO
+	if _scent.visible:
+		_scent.basis = Basis(dir.cross(Vector3.UP), dir, Vector3.UP).scaled(Vector3.ONE * s)
+		_scent.global_position = global_position + dir * (radius + 2.6 * s) + Vector3(0, 0.3, 0)
+
+
+## Starts a pounce (or a bounce, with `face` off) that takes `time` seconds and stops `stop` metres short.
+func lunge(to: Vector3, time: float, stop := 0.0, face := true) -> void:
+	lunge_to = to
+	lunge_left = time
+	_lunge_stop = stop
+	_lunge_face = face
+
+
+func end_lunge() -> void:
+	lunge_left = 0.0
+
+
+## One frame of a lunge: closes the gap in the time left. Returns true when it lands.
+func lunge_step(delta: float, map: Map) -> bool:
+	_common(delta)
+	var gap := lunge_to - global_position
+	gap.y = 0.0
+	var dir := gap.normalized() if gap.length_squared() > 0.0001 else heading
+	var dist := maxf(0.0, gap.length() - _lunge_stop)
+	var landed := delta >= lunge_left or dist <= 0.0
+	var p := map.resolve(global_position + dir * (dist if landed else dist * delta / lunge_left), _base_radius * 0.75)
+	lunge_left = 0.0 if landed else lunge_left - delta
+	if _lunge_face:
+		heading = dir
+	velocity = dir * speed  # the camera follows the run, not the jump
+	drive_speed = speed
+	global_position = p
+	look_at(p + heading, Vector3.UP)
+	return landed
 
 
 func set_body_size(s: float) -> void:
@@ -355,7 +394,7 @@ func switch_ring(step: int) -> bool:
 
 
 func can_be_hit() -> bool:
-	return invuln <= 0.0 and not nitro
+	return invuln <= 0.0 and not nitro and lunge_left <= 0.0
 
 
 ## Applies damage after armor. Returns the damage actually taken.
@@ -385,4 +424,6 @@ func _common(delta: float) -> void:
 		s.rotation.y = steer
 	if creature:
 		_gulp = maxf(0.0, _gulp - delta * 2.5)
-		_body.scale = _body.scale.lerp(Vector3.ONE * body_size * (1.0 + _gulp), 1.0 - exp(-14.0 * delta))
+		var stretch := 1.3 if lunge_left > 0.0 else 1.0
+		_body.scale = _body.scale.lerp(Vector3(1.0, 1.0, stretch) * body_size * (1.0 + _gulp), 1.0 - exp(-14.0 * delta))
+		_body.rotation.x = lerpf(_body.rotation.x, -0.35 if lunge_left > 0.0 else 0.0, 1.0 - exp(-18.0 * delta))
