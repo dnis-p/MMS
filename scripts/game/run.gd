@@ -360,16 +360,19 @@ func _process(delta: float) -> void:
 func _director(delta: float) -> void:
 	var sp := Defs.SPAWN
 	var t := stage_time
-	var sm := Defs.stage_spawn_mult(stage)
-	var hm: float = Defs.stage_hp_mult(stage) * (1.0 + sp["hp_ramp"] * t / float(boss_window[1]))
+	var sm := Defs.stage_spawn_mult(stage) * Defs.level_spawn_mult(level)
+	var hm: float = enemy_hp_mult() * (1.0 + sp["hp_ramp"] * t / float(boss_window[1]))
 	_cluster_timer -= delta
 	if _cluster_timer <= 0.0:
 		_cluster_timer = sp["cluster_every"]
 		_cluster_center = offscreen_point()
+	# Killing fast brings more enemies; falling behind does not snowball into a pile-up.
+	var target := mini(Defs.MAX_ALIVE, int((sp["alive_base"] + t * sp["alive_ramp"]) * sm))
 	_spawn_acc += delta * (sp["rate_base"] + t * sp["rate_ramp"]) * sm
 	while _spawn_acc >= 1.0:
 		_spawn_acc -= 1.0
-		if enemies.alive_count >= Defs.MAX_ALIVE:
+		if enemies.alive_count >= target:
+			_spawn_acc = 0.0
 			break
 		var roll := rng.randf()
 		var runner_w: float = 0.0 if t < sp["runner_from"] else sp["runner_weight"] + t * sp["runner_ramp"]
@@ -389,6 +392,10 @@ func _director(delta: float) -> void:
 		enemies.spawn(Enemies.BRUTE, offscreen_point(), hm)
 		overlay.banner("ELITE!", "Destroy it for a salvage crate", Color(1.0, 0.75, 0.2), 1.4)
 		Sfx.play("warn", -10.0, 1.4, true)
+
+
+func enemy_hp_mult() -> float:
+	return Defs.stage_hp_mult(stage) * Defs.level_hp_mult(level)
 
 
 ## Where a ray from the car in direction `d` leaves the screen, plus a margin.
@@ -503,7 +510,7 @@ func on_enemy_contact(i: int) -> void:
 func player_hit(amount: float) -> void:
 	if god_mode or phase == Phase.DEAD or phase == Phase.CLEAR:
 		return
-	var taken := player.hurt(amount * Defs.stage_dmg_mult(stage))
+	var taken := player.hurt(amount * Defs.stage_dmg_mult(stage) * Defs.level_dmg_mult(level))
 	if taken <= 0.0:
 		return
 	fx.shake(0.3)

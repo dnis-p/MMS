@@ -5,6 +5,7 @@ extends RefCounted
 ## not a stand-in for a human.
 
 const DANGER_RANGE := 11.0
+const HUNT_RANGE := 25.0
 const GEM_RANGE := 30.0
 const WALL_RANGE := 25.0
 const BEAM_DASH := 4.5
@@ -25,6 +26,11 @@ func steer(run: Run, delta: float) -> Vector2:
 		var d := maxf(away.length(), 0.5)
 		want += away / d * (DANGER_RANGE - d) / DANGER_RANGE * 2.0
 	want += _toward_pickup(run, car)
+	# Saws only reach what is next to the car, so a healthy car goes to the enemies.
+	if run.weapons.owned.has("saws") and run.player.hp > run.player.max_hp * 0.5:
+		var t := enemies.nearest(car, HUNT_RANGE)
+		if t >= 0:
+			want += Vector2(enemies.pos[t].x - car.x, enemies.pos[t].z - car.z).normalized() * 2.5
 	var map := run.map
 	if absf(car.x) > map.half.x - WALL_RANGE:
 		want.x -= signf(car.x) * 3.0
@@ -41,7 +47,7 @@ func _toward_pickup(run: Run, car: Vector3) -> Vector2:
 		if d2 < best_d:
 			best_d = d2
 			best = g
-	var pull := 1.0
+	var pull := 1.8
 	for c in run.pickups.crates:
 		best = c.global_position
 		pull = 3.0
@@ -61,6 +67,8 @@ func boss_turn(run: Run) -> void:
 			if not b._slam_rings.has(r):
 				run._ring(1 if r > p.ring_index else -1)
 				break
+	elif run.weapons.owned.has("saws") and p.ring_index > 0 and b._state == "idle":
+		run._ring(-1)  # saws only reach the boss from the inner ring
 	if b._state != "active":
 		return
 	if b._attack == "burst":
