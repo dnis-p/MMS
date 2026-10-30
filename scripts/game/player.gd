@@ -247,7 +247,7 @@ func can_be_hit() -> bool:
 func hurt(amount: float) -> float:
 	if not can_be_hit():
 		return 0.0
-	var taken := maxf(1.0, amount - armor)
+	var taken := maxf(1.0, amount * (1.0 - minf(Defs.ARMOR_BLOCK_MAX, armor * Defs.ARMOR_BLOCK)))
 	hp = maxf(0.0, hp - taken)
 	invuln = 0.45
 	_hurt_flash = 0.15

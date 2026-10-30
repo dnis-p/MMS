@@ -14,6 +14,9 @@ const CRIT_MULT := 2.0
 const MAX_ALIVE := 420
 const PICKUP_RADIUS := 3.8
 const RAM_COOLDOWN := 0.4
+## Each armor point blocks this share of a hit, up to the cap.
+const ARMOR_BLOCK := 0.06
+const ARMOR_BLOCK_MAX := 0.6
 const REPAIR_CHANCE := 0.012
 const REPAIR_HEAL := 25
 const STAGE_CLEAR_HEAL := 0.3
@@ -184,7 +187,7 @@ const WEAPONS := {
 }
 
 const PASSIVES := {
-	"plating": {"name": "Armor Plating", "desc": "+12% max HP, +1 armor", "hp": 0.12, "armor": 1.0, "color": Color(0.6, 0.6, 0.65)},
+	"plating": {"name": "Armor Plating", "desc": "+12% max HP, 6% less damage", "hp": 0.12, "armor": 1.0, "color": Color(0.6, 0.6, 0.65)},
 	"turbo": {"name": "Turbocharger", "desc": "-8% weapon cooldowns", "cooldown": 0.92, "color": Color(0.3, 0.9, 0.5)},
 	"magnet": {"name": "Scrap Magnet", "desc": "+35% pickup range", "range": 0.35, "color": Color(0.3, 0.6, 1.0)},
 	"blast": {"name": "Blast Compound", "desc": "+12% area of effect", "area": 0.12, "color": Color(1.0, 0.6, 0.2)},
