@@ -2,7 +2,7 @@ class_name Weapons
 extends Node3D
 ## Owned weapons/passives, their auto-firing behaviour, and upgrade/evolution rolls.
 
-var run: Node  # Run
+var run: Run
 
 ## weapon id -> {"level": int, "timer": float, "evolved": bool}
 var owned := {}
@@ -146,7 +146,7 @@ func level_up_options(n: int) -> Array:
 		for id in Defs.PASSIVES:
 			if not passives.has(id):
 				pool.append(_passive_option(id))
-	pool.shuffle()
+	run.shuffle(pool)
 	var picked: Array = []
 	var seen := {}
 	for o in pool:
@@ -186,7 +186,7 @@ func crate_rewards(count: int) -> Array:
 		if choices.is_empty():
 			rewards.append(_filler("heal" if rewards.size() % 2 == 0 else "score"))
 			continue
-		var c: Array = choices[randi() % choices.size()]
+		var c: Array = choices[run.rng.randi() % choices.size()]
 		var key: String = c[0] + c[1]
 		if c[0] == "w":
 			var o := _weapon_option(c[1], sim[key])
@@ -276,7 +276,7 @@ func _fire_mg(origin: Vector3, lvl: int, evo: bool, dm: float) -> float:
 	for b in barrels:
 		var spread: float = (b - (barrels - 1) * 0.5) * d["spread"]
 		if evo:
-			spread += randf_range(-d["evo_jitter"], d["evo_jitter"])
+			spread += run.rng.randf_range(-d["evo_jitter"], d["evo_jitter"])
 		run.projectiles.fire(Projectiles.BULLET, origin, dir.rotated(Vector3.UP, spread) * d["bullet_speed"], st["dmg"] * dm, d["bullet_life"], st["pierce"])
 	Sfx.play("shot", -12.0)
 	return st["cd"]
@@ -294,7 +294,7 @@ func _fire_rockets(origin: Vector3, lvl: int, evo: bool, dm: float, am: float) -
 			break
 		var to := (enemies.pos[t] - origin)
 		to.y = 0.0
-		var side := to.normalized().cross(Vector3.UP) * randf_range(-5.0, 5.0)
+		var side := to.normalized().cross(Vector3.UP) * run.rng.randf_range(-5.0, 5.0)
 		var vel := to.normalized() * 10.0 + Vector3(0, 7.0, 0) + side
 		run.projectiles.fire(Projectiles.ROCKET, origin + Vector3(0, 0.4, 0), vel.normalized() * d["rocket_speed"], st["dmg"] * dm, d["rocket_life"], 0, aoe, t, Projectiles.FLAG_HOMING)
 		fired = true
@@ -310,8 +310,8 @@ func _drop_mines(player: Player, lvl: int, evo: bool, dm: float, am: float) -> f
 	var from := player.global_position
 	from.y = 0.0
 	for k in st["count"]:
-		var a := randf() * TAU
-		var to: Vector3 = run.keep_in_play(from + Vector3(cos(a), 0, sin(a)) * randf_range(d["throw_min"], d["throw_max"]))
+		var a := run.rng.randf() * TAU
+		var to: Vector3 = run.keep_in_play(from + Vector3(cos(a), 0, sin(a)) * run.rng.randf_range(d["throw_min"], d["throw_max"]))
 		var vel: Vector3 = (to - from) / d["arm_time"]
 		run.projectiles.fire(Projectiles.MINE, from, vel, st["dmg"] * dm, d["life"], 0, st["aoe"] * am, -1, Projectiles.FLAG_NAPALM if evo else 0)
 	return st["cd"]

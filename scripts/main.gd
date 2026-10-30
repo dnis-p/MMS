@@ -5,6 +5,7 @@ extends Node
 ##   --autotest           play a run unattended (auto-picks upgrades, short stages)
 ##   --class=<id>         class for --autotest (juggernaut, interceptor, warrig)
 ##   --fair               with --autotest, normal rules: no god mode or pre-levelled build
+##   --seed=<n>           use this random seed for the run
 ##   --shots=<dir>        with --autotest, save screenshots into <dir>
 ##   --quit-after-sec=<n> with --autotest, quit after n seconds
 
@@ -42,6 +43,7 @@ func start_run(class_id: String) -> void:
 	var run := Run.new()
 	run.class_id = class_id
 	run.process_mode = Node.PROCESS_MODE_PAUSABLE
+	run.run_seed = int(_args.get("seed", "0"))
 	var fair := _args.has("fair")
 	if _args.has("autotest"):
 		run.autotest = true

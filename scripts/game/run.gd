@@ -19,7 +19,10 @@ var road_time := 0.0
 var road_duration := Defs.ROAD_DURATION
 var elite_times: Array = Defs.SPAWN["elite_times"].duplicate()
 var horde_times: Array = Defs.SPAWN["horde_times"].duplicate()
+## All gameplay randomness comes from `rng` so a seed can reproduce a run's rolls;
+## screen shake and particles keep using the global generator.
 var rng := RandomNumberGenerator.new()
+var run_seed := 0  # 0 = pick a random one
 
 var player: Player
 var road: Road
@@ -80,7 +83,11 @@ var _tmp: Array = []
 
 
 func _ready() -> void:
-	rng.randomize()
+	if run_seed != 0:
+		rng.seed = run_seed
+	else:
+		rng.randomize()
+		run_seed = rng.seed
 	_env = Environment.new()
 	_env.background_mode = Environment.BG_COLOR
 	_env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
@@ -280,7 +287,7 @@ func _game_over() -> void:
 
 ## Records the run once, however it ends. Returns the leaderboard rank (0 = none).
 func _save_score() -> int:
-	if _score_saved or score <= 0:
+	if _score_saved or score <= 0 or autotest:
 		return 0
 	_score_saved = true
 	return Save.submit(score, class_id, stage, kills)
@@ -547,6 +554,15 @@ func _update_combo(delta: float) -> void:
 
 func is_boss_phase() -> bool:
 	return phase == Phase.BOSS or phase == Phase.CLEAR
+
+
+## Array.shuffle() uses the global generator, so seeded code must use this instead.
+func shuffle(a: Array) -> void:
+	for i in range(a.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var t: Variant = a[i]
+		a[i] = a[j]
+		a[j] = t
 
 
 ## Keeps a thrown object on the arena floor during a boss fight.

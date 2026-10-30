@@ -7,7 +7,7 @@ const GEM := 0
 const REPAIR := 1
 const DESPAWN_DIST := 70.0  # gems left this far behind are lost
 
-var run: Node  # Run
+var run: Run
 
 var g_pos := PackedVector3Array()
 var g_val := PackedInt32Array()
@@ -64,14 +64,14 @@ func clear() -> void:
 func drop_gem(p: Vector3, value: int) -> void:
 	if g_pos.size() >= MAX:
 		# Too many on the field: fold the value into a random existing gem.
-		var j := randi() % g_pos.size()
+		var j := run.rng.randi() % g_pos.size()
 		g_val[j] += value
 		return
-	g_pos.append(Vector3(p.x + randf_range(-0.3, 0.3), 0.3, p.z + randf_range(-0.3, 0.3)))
+	g_pos.append(Vector3(p.x + run.rng.randf_range(-0.3, 0.3), 0.3, p.z + run.rng.randf_range(-0.3, 0.3)))
 	g_val.append(value)
 	g_kind.append(GEM)
 	g_pull.append(0.0)
-	g_hop.append(randf_range(3.0, 5.0))
+	g_hop.append(run.rng.randf_range(3.0, 5.0))
 
 
 func drop_repair(p: Vector3) -> void:
