@@ -42,6 +42,7 @@ func open(options: Array, level: int, callback: Callable) -> void:
 		c.queue_free()
 	visible = true
 	Sfx.play("levelup", -4.0, 1.0, true)
+	var first: Button = null
 	for i in options.size():
 		var o: Dictionary = options[i]
 		var b := Button.new()
@@ -53,6 +54,8 @@ func open(options: Array, level: int, callback: Callable) -> void:
 		b.add_child(content)
 		b.pressed.connect(_pick.bind(o))
 		_cards.add_child(b)
+		if not first:
+			first = b
 		b.modulate.a = 0.0
 		b.pivot_offset = b.custom_minimum_size * 0.5
 		b.scale = Vector2.ONE * 0.6
@@ -60,6 +63,8 @@ func open(options: Array, level: int, callback: Callable) -> void:
 		tw.tween_property(b, "modulate:a", 1.0, 0.18).set_delay(0.06 * i)
 		tw.tween_property(b, "scale", Vector2.ONE, 0.3).set_delay(0.06 * i).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		b.mouse_entered.connect(func(): Sfx.play("card", -14.0))
+	if not options.is_empty():
+		first.grab_focus()
 	if auto_pick:
 		get_tree().create_timer(0.4, true).timeout.connect(func(): _pick(options[0], true))
 

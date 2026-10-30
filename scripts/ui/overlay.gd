@@ -91,6 +91,7 @@ func show_panel(title: String, lines: Array, buttons: Array, title_color := Colo
 		var l := Ui.label(String(line), 26, Color(0.9, 0.9, 0.9))
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_panel_box.add_child(l)
+	var first: Button = null
 	for b in buttons:
 		var btn := Button.new()
 		btn.text = b[0]
@@ -100,7 +101,11 @@ func show_panel(title: String, lines: Array, buttons: Array, title_color := Colo
 			hide_panel()
 			cb.call())
 		_panel_box.add_child(btn)
+		if not first:
+			first = btn
 	_panel_root.visible = true
+	if first:
+		first.grab_focus()
 
 
 func hide_panel() -> void:
