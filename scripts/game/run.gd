@@ -73,6 +73,8 @@ var _touch_index := -1
 var _touch_start := Vector2.ZERO
 var _touch_start_ms := 0
 var _touch_swiped := false
+var _dash_buffer := 0.0
+var _dash_buffer_dir := 0.0
 var _tmp: Array = []
 
 
@@ -293,6 +295,11 @@ func _process(delta: float) -> void:
 				_enter_arena()
 		Phase.BOSS, Phase.CLEAR:
 			player.arena_update(delta, ARENA_CENTER)
+			if _dash_buffer > 0.0:
+				_dash_buffer -= delta
+				if player.dash_cd <= 0.0:
+					_dash_buffer = 0.0
+					_dash(_dash_buffer_dir)
 			if boss:
 				boss.update(delta)
 		Phase.DEAD:
@@ -757,6 +764,10 @@ func _dash(dir: float) -> void:
 	if player.dash(dir, camera.global_transform.basis.x):
 		Sfx.play("dash", -4.0)
 		fx.burst(player.global_position + Vector3(0, 0.5, 0), Color(0.8, 0.9, 1.0), 10, 0.6)
+	else:
+		# Swiped during the cooldown: dash as soon as it ends instead of dropping the input.
+		_dash_buffer = Defs.ARENA["dash_buffer"]
+		_dash_buffer_dir = dir
 
 
 func _ring(step: int) -> void:
