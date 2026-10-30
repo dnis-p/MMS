@@ -191,6 +191,7 @@ const PASSIVES := {
 	"turbo": {"name": "Turbocharger", "desc": "-8% weapon cooldowns", "cooldown": 0.92, "color": Color(0.3, 0.9, 0.5)},
 	"magnet": {"name": "Scrap Magnet", "desc": "+35% pickup range", "range": 0.35, "color": Color(0.3, 0.6, 1.0)},
 	"blast": {"name": "Blast Compound", "desc": "+12% area of effect", "area": 0.12, "color": Color(1.0, 0.6, 0.2)},
+	"nitro": {"name": "Nitro Injector", "desc": "+6% vehicle speed", "speed": 0.06, "color": Color(0.2, 0.95, 0.9)},
 	"hot": {"name": "Hot Rounds", "desc": "+10% damage", "damage": 0.1, "color": Color(1.0, 0.3, 0.2)},
 }
 
@@ -251,6 +252,11 @@ static func stage_hp_mult(stage: int) -> float:
 
 static func stage_spawn_mult(stage: int) -> float:
 	return 1.0 + 0.3 * (stage - 1)
+
+
+## Everything moves faster each stage: the vehicle and, by the same factor, the enemies.
+static func stage_speed_mult(stage: int) -> float:
+	return 1.0 + 0.06 * (stage - 1)
 
 
 ## Player damage taken grows with the stage.

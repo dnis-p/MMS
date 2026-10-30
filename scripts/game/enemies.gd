@@ -14,6 +14,7 @@ const BOSS := 4
 const DESPAWN_DIST := 62.0
 
 var run: Node  # Run
+var speed_mult := 1.0  # the game's pace, so a faster car cannot outrun the horde
 
 var used := 0  # high-water mark of slots
 var alive_count := 0
@@ -186,7 +187,7 @@ func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> 
 			remove(i)
 			continue
 		var dir := to / d if d > 0.001 else Vector3.ZERO
-		var v := dir * speed[i]
+		var v := dir * speed[i] * speed_mult
 		if t == SPITTER:
 			attack_cd[i] -= delta
 			if d < 11.0:
