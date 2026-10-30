@@ -96,6 +96,22 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Boss length: aim for a target fight time and set boss HP from it, and check level pace first, since level 25 by 90-150 s is one
   level every 4-6 s.
 
+**Hunter loop (suggested 2026-10-30, answer to the owner's raccoon notes in section 9; none of it is built or tested)**
+- Hunger is the pressure: a draining bar that is also your health, as in Hungry Shark. Eating refills it, standing still starves you.
+  Generous enough that it reads as "keep eating", not as a countdown.
+- Two layers on the map: food in herds that wander, notice you at a distance and scatter; threats always one size above you that hunt
+  you. Herds give multikills and a place to steer to; walls corner them. Threats keep the VS pressure and the flip moment.
+- Pounce bite, automatic: prey in range ahead makes the raccoon lunge at it and chomp everything around the landing point. Eating
+  resets the pounce (Irelia), so you chain through a herd. No guns, no button. Invulnerable during the pounce, so the attack also dodges.
+- Frenzy, the Redline of eating: a chain of bites raises speed, bite radius and pitch, and fades after a moment without food. High
+  chain is the permanent Warwick feel. Scent marks point at the nearest herd.
+- Elites and bosses without guns: a bite tears off a chunk of HP and bounces you back, so hit-and-run happens by itself on one input.
+  Frenzy multiplies the chunk, so eating the small food around a boss charges your bites. At 0 HP it drops for the swallow.
+- Forms: 5 body stages by growth or bosses eaten, and each boss eaten stays grafted on, Godrick style. Silhouette first: hunched
+  raccoon, mangy upright, long-armed ghoul, were-raccoon, asymmetric abomination with one huge grafted arm.
+- Rare golden prey that bolts across the map, as a chase and jackpot (ties into the owner's too-fast creatures).
+- Fallback if hunting still feels thin: everything rushes you like VS and the bite just mows it down, with no fleeing.
+
 **Enemies**
 - Boarders that climb on the vehicle until rammed off, chasers from behind, roadblocks, enemy rammer cars,
   flying drones, roadside artillery, swarms that slow the vehicle, environmental kills (explosive barrels,
@@ -318,3 +334,19 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - A first run should not show everything, like Hades: leave mystery and unexplored parts to motivate the next run. The owner is
   still thinking about how.
 - Art style undecided: very low poly like 90s models (Half-Life 1), or more modern and textured like Megabonk.
+
+**Owner, 2026-10-30, after playing the raccoon prototype (ideas, nothing decided or implemented; suggested answers in section 6)**
+- Main worry: standing still is safe, because food groups around you and nothing pushes you to move, unlike VS. Not sure being the
+  hunter is the best idea. It needs something that keeps the player moving, hooked and chasing the dopamine.
+- It is odd that food walks up to you and only runs when you get close. It should already run from you when it spawns, and just move
+  around normally if you are far enough away.
+- Try eating only, no guns. Add attacks slowly by evolving path: ranged spit (Kog'Maw in LoL), AOE around the body (spinning blades,
+  garlic in VS). The focus stays on AOE damage or eating, for satisfying multikills. Open question: without shooting, how do you
+  deal with elites and bosses?
+- Wanted feel: Warwick's passive in LoL, which detects low-HP enemies and lets him run fast at them, but all the time. You are about
+  to bite hard, and the bite is also AOE.
+- Models: 4-5 evolving forms, from raccoon to a fully monstrous humanoid raccoon. References: werewolf, Godrick the Grafted (Elden
+  Ring), the mutations of the main character in the Resident Evil film (2026). Not too many tentacles or arms, just some signs of
+  mutation. Static models are fine for now.
+- Later, mutation types become classes, like Hades: a fast rabid raccoon with a toxic foaming mouth that leaves a trail; one that
+  locks on at a distance and almost teleports to its target to eat it (Warwick's ult, Irelia's dash).
