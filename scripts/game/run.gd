@@ -416,8 +416,10 @@ func hit_enemy(i: int, amount: float, knock_dir: Vector3, knock_force: float, sh
 	enemies.hp[i] -= amount
 	enemies.flash[i] = 0.08
 	var t := enemies.etype[i]
-	if knock_force > 0.0 and t != Enemies.BOSS:
-		enemies.knock[i] += knock_dir * knock_force * (0.25 if t == Enemies.BRUTE else 1.0)
+	if knock_force > 0.0:
+		knock_dir.y = 0.0
+		var push: Vector3 = knock_dir * knock_force * Defs.enemy_def(t)["knock"]
+		enemies.knock[i] = (enemies.knock[i] + push).limit_length(Defs.KNOCK["max"])
 	if show_number:
 		fx.number(enemies.pos[i], amount, crit)
 	Sfx.play("hit", -16.0)
@@ -463,7 +465,7 @@ func explode(p: Vector3, r: float, amount: float, napalm: bool) -> void:
 	for j in _tmp:
 		var out: Vector3 = enemies.pos[j] - p
 		out.y = 0.0
-		hit_enemy(j, amount, out.normalized(), 7.0)
+		hit_enemy(j, amount, out.normalized(), Defs.KNOCK["blast"])
 	fx.burst(p, Color(1.0, 0.6, 0.2), 16, 1.3)
 	fx.ring(p, r, Color(1.0, 0.65, 0.25, 0.9), 0.3)
 	Sfx.play("boom", -8.0)
@@ -479,7 +481,7 @@ func on_enemy_contact(i: int) -> void:
 		var away := enemies.pos[i] - player.global_position
 		away.y = 0.0
 		var spd := clampf(player.velocity.length() / 7.0, 0.6, 1.5)
-		hit_enemy(i, player.ram_damage * spd, away.normalized(), 10.0)
+		hit_enemy(i, player.ram_damage * spd, away.normalized(), Defs.KNOCK["ram"])
 	if enemies.is_alive(i) and player.can_be_hit():
 		player_hit(enemies.dmg[i])
 

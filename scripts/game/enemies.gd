@@ -15,6 +15,9 @@ const DESPAWN_DIST := 62.0
 
 var run: Run
 var speed_mult := 1.0  # the game's pace, so a faster car cannot outrun the horde
+var _knock_decay: float = Defs.KNOCK["decay"]
+var _stagger: float = Defs.KNOCK["stagger"]
+var _spit: Dictionary = Defs.ENEMIES["spitter"]
 
 var used := 0  # high-water mark of slots
 var alive_count := 0
@@ -190,16 +193,16 @@ func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> 
 		var v := dir * speed[i] * speed_mult
 		if t == SPITTER:
 			attack_cd[i] -= delta
-			if d < 11.0:
-				# Keep pace with the car at range and lob shots.
-				v = car_vel * 0.95 + dir * (1.5 if d > 8.0 else -2.0)
+			if d < _spit["range"]:
+				# Hang back and lob shots, but slower than the car so it can run them down.
+				v = car_vel * _spit["pace"] + dir * (_spit["hold"] if d > _spit["hold_inside"] else -_spit["back_off"])
 				if attack_cd[i] <= 0.0:
 					attack_cd[i] = run.rng.randf_range(2.0, 2.8)
 					run.projectiles.enemy_shot(p + Vector3(0, 0.8, 0), dir, 9.0, dmg[i])
 		var k := knock[i]
 		if k != Vector3.ZERO:
-			v += k
-			knock[i] = k.move_toward(Vector3.ZERO, 40.0 * delta)
+			v = v * _stagger + k
+			knock[i] = k.move_toward(Vector3.ZERO, _knock_decay * delta)
 		p += v * delta + _separation(i, p) * delta
 		p.y = 0.0  # bullets knock along their own angle; the horde stays on the ground
 		pos[i] = p

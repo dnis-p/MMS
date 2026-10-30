@@ -333,7 +333,7 @@ func _fire_tesla(origin: Vector3, lvl: int, evo: bool, dm: float) -> float:
 			var to: Vector3 = enemies.pos[t] + Vector3(0, 0.6, 0)
 			run.fx.bolt(from, to, Color(0.5, 0.85, 1.0) if not evo else Color(0.8, 0.6, 1.0))
 			visited[t] = true
-			run.hit_enemy(t, dmg, Vector3.ZERO, 0.0)
+			run.hit_enemy(t, dmg, (to - from).normalized(), d["knock"])
 			any = true
 			from = to
 			t = enemies.nearest(to, d["chain_range"], visited)
