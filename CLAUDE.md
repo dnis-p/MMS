@@ -1,7 +1,7 @@
 # MMS (working title: Motorhead Madness Survival)
 
 Mobile-first (later PC) roguelike prototype in Godot 4.7, GDScript only, placeholder art/sound.
-You drive freely in 8 directions around walled biome maps; weapons auto-fire at hordes; the
+You drive freely around walled biome maps; weapons auto-fire at hordes; the
 player steers and picks upgrades. Boss fights happen in a ring arena. See README.md for gameplay,
 content tables and project layout; this file is the design intent and working agreements.
 **The full vision, decisions and idea backlog are in docs/DESIGN.md. Read it, and add any new idea or
@@ -10,7 +10,9 @@ decision the owner gives you there (mark owner's words vs your suggestions).**
 ## Design goals (from the owner, keep these in mind for every change)
 - Satisfying, simple, scalable. Vampire Survivors feel: play "without thinking", no complex builds,
   juicy feedback (hit flash, shake, damage numbers, combo, rising-pitch pickups).
-- One input during a run: 8-direction driving (keys, or drag for a virtual stick). No ability buttons.
+- One input during a run: driving with smooth, tight steering (keys, or drag for a virtual stick). No ability buttons.
+- Fast paced and vehicle-first: the Redline meter rewards keeping speed; nitro fires by itself.
+- Permanent upgrades (Garage) must never need a long grind (owner: no 80-hour goals).
 - Maps: walled rectangles, roads optional. Nothing inside may cover the player or enemies; buildings only as walls.
 - The boss arrives at a random moment in `Defs.BOSS_WINDOW`.
 - Boss arena: camera locked to the vehicle, vehicle circles the boss automatically on 3 rings;
@@ -37,7 +39,8 @@ Run from the repo root after the project has been imported once (`godot --headle
   Output ends with `stage= level= kills= score= phase=`; any `SCRIPT ERROR` is a failure. Add `--seed=<n>` to fix the rolls.
 - Boss arena checks: `godot --headless --path . res://tests/boss_check.tscn` must end with `BOSS CHECK PASSED`.
 - Open-world checks: `godot --headless --path . res://tests/map_check.tscn` must end with `MAP CHECK PASSED`.
-- Bots (--autotest) play through scripts/game/bot.gd and do not write to the leaderboard. Compare classes on several
+- Combat, menus, Redline, Garage: `godot --headless --path . res://tests/game_check.tscn` must end with `GAME CHECK PASSED`.
+- Bots (--autotest) play through scripts/game/bot.gd, ignore the Garage and do not write to the leaderboard or profile. Compare classes on several
   `--seed` values; a single run varies a lot.
 - Screenshots of every screen (needs a display or xvfb): `godot --path . res://tests/ui_shots.tscn -- --shots=<dir>`
 - Builds: `tools/android/build_apk.sh` (signed APK), `tools/web/build_web.sh` (browser build).
@@ -50,7 +53,7 @@ Parse errors that mention `Sfx`/`Save` only occur when scripts are checked stand
   Android export uses tools/android/sign_apk_v2.py so no Android SDK is required.
 
 ## Known gaps / next ideas
-- Open world and balance are bot-tested only: needs a human playtest for pacing, kickback strength and class feel.
+- Speed, steering, Redline, Garage and balance are bot-tested only: need a human playtest for pacing and feel.
 - Never tested on a real phone yet: touch feel and FPS.
 - More classes, enemy types and biomes; real art/audio; online leaderboard; PC controls polish.
 
@@ -82,4 +85,5 @@ docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 
 - Android Studio is installed; the Android SDK and Java are set in the Godot editor, so APKs can be exported
   from the editor (Project > Export). `tools/android/build_apk.sh` and `tools/web/build_web.sh` call `godot`
   from PATH, so they need a `godot` alias/shim to the console exe in Git Bash (bash itself is available).
+- Saves are in `%APPDATA%/MMS` (scores.cfg, profile.cfg). Real progress: don't delete it without asking.
 - `icon.svg.import` shows as modified after imports (line endings); ignore it, don't commit it.
