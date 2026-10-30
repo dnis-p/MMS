@@ -64,13 +64,13 @@ const DRIVE := {"accel_time": 0.25, "brake_time": 0.15, "steer_speed": 6.0, "tur
 ## (times the camera zoom). wander: share of its speed a calm prey moves at. A threat, one size above
 ## you, is added every threat_every seconds while fewer than threat_base + threat_ramp * t are alive.
 const EAT := {
-	"radius": 0.9, "growth": 0.012, "xp": 0.18, "stage_scale": 2.5, "zoom": 0.3, "pace_zoom": 0.7,
+	"radius": 0.9, "growth": 0.0075, "xp": 0.11, "stage_scale": 2.5, "zoom": 0.3, "pace_zoom": 0.7,
 	"reach": 10.0, "reach_grow": 0.6, "bite_radius": 2.6, "ahead": 0.5, "lunge_time": 0.16, "bite_cd": 0.7, "chain_time": 0.3,
 	"bounce": 5.0, "bounce_time": 0.18, "bite_dmg": 40.0, "weak_time": 4.0, "recover": 0.4,
-	"hunger_drain": 6.0, "hunger_stage": 1.0, "meal": 1.0,
+	"hunger_drain": 8.0, "hunger_stage": 1.0, "meal": 1.0,
 	"frenzy_gain": 0.05, "frenzy_hold": 1.2, "frenzy_drain": 0.5, "frenzy_speed": 0.35, "frenzy_bite": 0.5, "frenzy_tear": 2.0,
 	"scent_boost": 0.3, "scent_range": 30.0,
-	"flee_range": 24.0, "flee_speed": 0.9, "wander": 0.3, "herd_every": 3.0, "herd_ramp": 0.015, "herd_spread": 2.2, "start_herds": 4,
+	"flee_range": 24.0, "flee_speed": 0.9, "wander": 0.3, "herd_every": 1.6, "herd_ramp": 0.015, "herd_spread": 2.2, "start_herds": 8,
 	"threat_every": 4.0, "threat_base": 3.0, "threat_ramp": 0.06, "threat_speed": 0.65, "threat_dmg": 2.5, "threat_bites": 2.0,
 	"elite_size": 1.3, "elite_bites": 8.0,
 	"boss_window": [70.0, 100.0], "alpha_size": 1.5, "alpha_bites": 30.0,

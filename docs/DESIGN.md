@@ -96,6 +96,15 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Boss length: aim for a target fight time and set boss HP from it, and check level pace first, since level 25 by 90-150 s is one
   level every 4-6 s.
 
+**Raccoon jump and originality (suggested 2026-10-31, answer to the owner's jump idea in section 9; not built)**
+- Hybrid jump: pounces on food stay automatic, so chains and multikills need no thought. Big things are never jumped at by themselves:
+  Space jumps at the pointer, and that is the only way to bite them. A jump into food chains by itself. On a phone, a tap with the
+  second thumb does the same, so no button is drawn. Needs the owner's yes: it changes "No ability buttons", which is Decided.
+- The scent arrow would then need its own look or place, since the owner wants the arrow to follow the pointer.
+- Forms that change the bite, not only the look: Ghoul's long arms grab from further, Were-Raccoon's bite slams an area, Abomination's
+  arm pounds the ground. This makes evolving a mechanic and leads into the owner's classes.
+- Predators that hunt the prey too, so you steal their kills; and a town that reacts, with animal control and news vans as you eat more.
+
 **Hunter loop (suggested 2026-10-30, owner said to build it; built 2026-10-31 except golden prey and the fallback, see section 8)**
 - Hunger is the pressure: a draining bar that is also your health, as in Hungry Shark. Eating refills it, standing still starves you.
   Generous enough that it reads as "keep eating", not as a countdown.
@@ -151,6 +160,12 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-10-31, more prey for the raccoon** (owner: too much running between victims; bots only, the owner has not played it)
+- Herds now arrive every 1.6 s instead of 3 s, with 9 groups at stage start instead of 5. Bots ate about 70% more. Their longest gap
+  between meals was 2.8-3.7 s, down from 2.5-8.3 s; bots go straight to food, so people will see longer gaps.
+- Changed to keep the pacing, not asked for: growth per meal 0.012 to 0.0075, XP share 0.18 to 0.11, hunger 6 to 8 HP/s, so an empty
+  map now starves you in 15 s. Bots still reach rats at 9-15 s, pigeons at 30-35 s, cats at 60-73 s. Lowest hunger bar: 0-55%.
+
 **2026-10-31, raccoon hunter loop** (branch `prototype/raccoon-eat` only; automated checks, bots and screenshots, the owner has not played it)
 This replaces parts of the raccoon prototype below: guns, knocking down by shooting and the old spawning are gone from raccoon runs.
 - **Eating only, no guns** (owner). The raccoon starts with no weapon and never gets one. Level-ups and crates offer six traits instead:
@@ -161,8 +176,8 @@ This replaces parts of the raccoon prototype below: guns, knocking down by shoot
   0.3 s the next one can go any direction (Irelia), so bites chain through a herd. Nothing can hit you during a lunge, so biting is
   also the dodge. Reach and bite grow with size. Touching food still eats it. Steering is ignored during a lunge, so a long chain
   holds the controls for a moment: the owner should judge whether that feels good.
-- **Hunger** (suggested answer to the owner's "standing still is safe"). The health bar is now hunger. It drains 6 HP/s (+1 per stage)
-  and each meal gives back the square root of its XP. Empty means "STARVED", so with no food you die in 20 s. It flashes red below
+- **Hunger** (suggested answer to the owner's "standing still is safe"). The health bar is now hunger. It drained 6 HP/s (+1 per stage;
+  8 since the later entry above) and each meal gives back the square root of its XP. Empty means "STARVED", so with no food you die in 20 s. It flashes red below
   25%. The lowest bar on 6 bots was 0-42%, mostly around boss fights; none starved.
 - **Frenzy** (suggested). Replaces the Redline bar. Each meal adds 5%, it holds 1.2 s after the last meal, then drains. At full it gives
   +35% speed, +50% bite radius and 3 times the chunks torn from big prey, with a "FRENZY!" banner.
@@ -379,6 +394,10 @@ This replaces parts of the raccoon prototype below: guns, knocking down by shoot
 
 **Owner, 2026-10-30, on the raccoon, for later (the rest of these notes is built, see section 8, 2026-10-31)**
 - Open worry: is being the hunter the best idea? Hunger and threats are the first answer; the owner's playtest decides.
+- (2026-10-31) Problem: with only elites around, steering toward them jumps you at them by itself and you die. Idea, not decided: the
+  mouse aims and Space triggers the jump at what you point at, if food is in range; no Space, no jump. The arrow follows the pointer
+  to show where the jump would go, with a custom, more visible cursor. Changes a Decided item, so waiting for the owner (section 6).
+- (2026-10-31) The owner is still thinking about how to make the game more original and fun.
 - Add attacks slowly by evolving path: ranged spit (Kog'Maw in LoL), AOE around the body (spinning blades, garlic in VS). The focus
   stays on AOE damage or eating, for satisfying multikills.
 - Later, mutation types become classes, like Hades: a fast rabid raccoon with a toxic foaming mouth that leaves a trail; one that

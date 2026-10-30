@@ -104,6 +104,8 @@ var view_zoom := 1.0
 var alpha := -1  # enemy slot of the stage boss in eat mode
 var frenzy := 0.0
 var hungriest := 1.0  # autotest report: lowest hunger bar of the run, 0-1
+var longest_fast := 0.0  # autotest report: most seconds between two meals
+var _last_meal := 0.0
 var _alpha_born := 0.0
 var _frenzy_hold := 0.0
 var _frenzied := false  # the full-Frenzy banner already showed
@@ -279,6 +281,7 @@ func _start_stage() -> void:
 			hint = "Steer at prey: you pounce and bite by yourself  ·  keep eating or you starve"
 		hud.show_hint(hint, 6.0)
 	if eat_mode:
+		_last_meal = 0.0
 		_herd_timer = Defs.EAT["herd_every"]
 		_threat_timer = Defs.EAT["threat_every"]
 		_spawn_herd(player.global_position + player.heading * 20.0)
@@ -641,6 +644,8 @@ func _bounce(from: Vector3) -> void:
 
 func _feed(d: Dictionary) -> void:
 	var e := Defs.EAT
+	longest_fast = maxf(longest_fast, stage_time - _last_meal)
+	_last_meal = stage_time
 	player.hp = minf(player.max_hp, player.hp + sqrt(float(d["xp"])) * e["meal"])
 	var was := frenzy
 	frenzy = minf(1.0, frenzy + e["frenzy_gain"])
