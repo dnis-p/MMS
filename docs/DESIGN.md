@@ -96,7 +96,7 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Boss length: aim for a target fight time and set boss HP from it, and check level pace first, since level 25 by 90-150 s is one
   level every 4-6 s.
 
-**Hunter loop (suggested 2026-10-30, answer to the owner's raccoon notes in section 9; none of it is built or tested)**
+**Hunter loop (suggested 2026-10-30, owner said to build it; built 2026-10-31 except golden prey and the fallback, see section 8)**
 - Hunger is the pressure: a draining bar that is also your health, as in Hungry Shark. Eating refills it, standing still starves you.
   Generous enough that it reads as "keep eating", not as a countdown.
 - Two layers on the map: food in herds that wander, notice you at a distance and scatter; threats always one size above you that hunt
@@ -151,6 +151,49 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-10-31, raccoon hunter loop** (branch `prototype/raccoon-eat` only; automated checks, bots and screenshots, the owner has not played it)
+This replaces parts of the raccoon prototype below: guns, knocking down by shooting and the old spawning are gone from raccoon runs.
+- **Eating only, no guns** (owner). The raccoon starts with no weapon and never gets one. Level-ups and crates offer six traits instead:
+  Bigger Bite, Sharp Fangs, Long Leap, Iron Gut, Blood Rage, Swift Paws. Traits have no slot limit, 30 levels to pick in total.
+- **Pounce bite** (owner's Warwick feel, suggested design). With prey ahead, within 10 m at size 1, the raccoon lunges by itself in
+  0.16 s and bites around where it lands, radius 2.6 m at size 1. Everything smaller in the bite is eaten at once, with a red ring,
+  a new chomp sound and shake; 5 or more meals in one bite add a short hitstop and an extra burst. A meal resets the pounce and for
+  0.3 s the next one can go any direction (Irelia), so bites chain through a herd. Nothing can hit you during a lunge, so biting is
+  also the dodge. Reach and bite grow with size. Touching food still eats it. Steering is ignored during a lunge, so a long chain
+  holds the controls for a moment: the owner should judge whether that feels good.
+- **Hunger** (suggested answer to the owner's "standing still is safe"). The health bar is now hunger. It drains 6 HP/s (+1 per stage)
+  and each meal gives back the square root of its XP. Empty means "STARVED", so with no food you die in 20 s. It flashes red below
+  25%. The lowest bar on 6 bots was 0-42%, mostly around boss fights; none starved.
+- **Frenzy** (suggested). Replaces the Redline bar. Each meal adds 5%, it holds 1.2 s after the last meal, then drains. At full it gives
+  +35% speed, +50% bite radius and 3 times the chunks torn from big prey, with a "FRENZY!" banner.
+- **Scent** (owner's Warwick passive). A red arrow on the ground points at the nearest food when it is out of pounce reach, and
+  running at food within 30 m gives +30% speed. It points at one prey, not at a herd as proposed.
+- **Herds** (owner's fix for prey walking up to you). Prey arrives in groups of 5-16 every 3 s, faster later, with 5 groups at stage
+  start. Calm prey wanders together; from 24 m (scaled by zoom) it bolts away, fanning out, at 90% of its speed. Prey no longer walks
+  to you. Prey lost far behind is removed, not teleported. Hordes and waves are gone from raccoon runs.
+- **Threats** (suggested). A threat one food size above you hunts you, up to 3 alive plus 0.06 per second of the stage, with 2.5 times
+  the damage. Once you outgrow one it turns and runs. When everything is food, brutes 1.3 times your size take over.
+- **Elites and bosses without guns** (owner's question). A bite tears a chunk and bounces you off, so hit-and-run needs no input. HP is
+  counted in plain bites at your size when it spawns: threat 2, elite 8, boss 30. Full Frenzy makes the boss about 10 bites, and half
+  the herds during a boss spawn near it, to charge Frenzy. At 0 HP it drops for 4 s (boss 8 s) and the next pounce goes for it and
+  swallows it. Bots: 6 of 6 ate the first boss after 9-13 s of fighting and the second after 6-9 s, at level 10-14 and 21-23.
+- **Five forms** (owner). Static low-poly bodies in `scripts/game/raccoon_body.gd`, swapped with an "EVOLVED" banner, slow-mo and burst:
+  Raccoon, Mangy Beast (size 1.7, reared up, bare patches), Ghoul (2.8, ribs and spine, long arms), Were-Raccoon (4.2, huge shoulders,
+  mane), Abomination (6.5, one giant arm, one small grafted arm, bone plates, glowing tumours, five eyes). No tentacles. Forms come from
+  growth, not from bosses, so a first run sees several: bots reach Ghoul near 60 s and Abomination in stage 2.
+  **Grafts** (suggested, Godrick): each boss eaten stays on the body through later forms. Its mutation now gives 2 levels of a trait
+  instead of a weapon.
+- **Added, not proposed:** everyone's speed now rises with the camera zoom, or a grown raccoon would crawl across the screen. Food scale
+  is capped so the smallest food always fits, or you could starve with nothing to eat. Growth per meal shrinks on later stages. Fog is
+  much lighter in raccoon runs, because it was washing everything out. Threats are black with a red pulse, food is brightened.
+- **Not built:** golden prey, classes and evolving paths, spit or spinning blades, animation, and the fallback where everything rushes
+  you. Maps, enemy shapes and Garage text are still placeholders, and cats look as big as you when they first turn edible. The
+  Resident Evil look is not in: Claude does not know that film's mutations.
+- Bot runs (6 seeds, 240 s of game time, 0 script errors): rats at 10 s, pigeons 30 s, cats 60 s, 1,500-1,900 kills, all alive in stage 3
+  at size 11-12. No bot died, so difficulty is not set, and bots chase better than people. Screens can look empty after a good chaser
+  clears a herd; herd numbers are in `Defs.EAT`.
+- Tests: `tests/eat_check.tscn` rewritten. Pictures of the forms: `tests/raccoon_forms.tscn`.
+
 **2026-10-30, raccoon prototype** (branch `prototype/raccoon-eat` only; automated checks and bots, the owner has not played it)
 - **Eat and grow** (owner). New "Raccoon" button on the main menu; the three cars still play as before. Touching anything smaller
   eats it: it bursts into bits with the usual kill sound plus a chime, the body gulps and you grow. Bigger things hurt, and show
@@ -329,24 +372,15 @@ changed without asking. Add new ideas at the bottom of the right section, with t
   in a garbage container whose food runs away, with other animals attacking, or a raccoon in a lab eating mutated animals.
 
 **Owner, 2026-10-30, on the raccoon prototype (prototype built, see section 8; these are for later)**
-- Raccoon is the theme for now. Eating must keep the satisfying feel: explode into bits, satisfying sound. No slowdown from growing.
 - Special creatures too fast to eat yet, teasing you to catch them, reachable only through permanent progress.
 - A first run should not show everything, like Hades: leave mystery and unexplored parts to motivate the next run. The owner is
   still thinking about how.
 - Art style undecided: very low poly like 90s models (Half-Life 1), or more modern and textured like Megabonk.
 
-**Owner, 2026-10-30, after playing the raccoon prototype (ideas, nothing decided or implemented; suggested answers in section 6)**
-- Main worry: standing still is safe, because food groups around you and nothing pushes you to move, unlike VS. Not sure being the
-  hunter is the best idea. It needs something that keeps the player moving, hooked and chasing the dopamine.
-- It is odd that food walks up to you and only runs when you get close. It should already run from you when it spawns, and just move
-  around normally if you are far enough away.
-- Try eating only, no guns. Add attacks slowly by evolving path: ranged spit (Kog'Maw in LoL), AOE around the body (spinning blades,
-  garlic in VS). The focus stays on AOE damage or eating, for satisfying multikills. Open question: without shooting, how do you
-  deal with elites and bosses?
-- Wanted feel: Warwick's passive in LoL, which detects low-HP enemies and lets him run fast at them, but all the time. You are about
-  to bite hard, and the bite is also AOE.
-- Models: 4-5 evolving forms, from raccoon to a fully monstrous humanoid raccoon. References: werewolf, Godrick the Grafted (Elden
-  Ring), the mutations of the main character in the Resident Evil film (2026). Not too many tentacles or arms, just some signs of
-  mutation. Static models are fine for now.
+**Owner, 2026-10-30, on the raccoon, for later (the rest of these notes is built, see section 8, 2026-10-31)**
+- Open worry: is being the hunter the best idea? Hunger and threats are the first answer; the owner's playtest decides.
+- Add attacks slowly by evolving path: ranged spit (Kog'Maw in LoL), AOE around the body (spinning blades, garlic in VS). The focus
+  stays on AOE damage or eating, for satisfying multikills.
 - Later, mutation types become classes, like Hades: a fast rabid raccoon with a toxic foaming mouth that leaves a trail; one that
   locks on at a distance and almost teleports to its target to eat it (Warwick's ult, Irelia's dash).
+- More kinds of mutation as the game advances. The mutations in the Resident Evil film (2026) are still a reference to add.
