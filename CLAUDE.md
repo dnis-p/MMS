@@ -1,7 +1,7 @@
 # MMS (working title: Motorhead Madness Survival)
 
 Mobile-first (later PC) roguelike prototype in Godot 4.7, GDScript only, placeholder art/sound.
-You drive a vehicle automatically along a path through biomes; weapons auto-fire at hordes; the
+You drive freely in 8 directions around walled biome maps; weapons auto-fire at hordes; the
 player steers and picks upgrades. Boss fights happen in a ring arena. See README.md for gameplay,
 content tables and project layout; this file is the design intent and working agreements.
 **The full vision, decisions and idea backlog are in docs/DESIGN.md. Read it, and add any new idea or
@@ -10,7 +10,9 @@ decision the owner gives you there (mark owner's words vs your suggestions).**
 ## Design goals (from the owner, keep these in mind for every change)
 - Satisfying, simple, scalable. Vampire Survivors feel: play "without thinking", no complex builds,
   juicy feedback (hit flash, shake, damage numbers, combo, rising-pitch pickups).
-- One input during a run: drag to steer on the road. No ability buttons.
+- One input during a run: 8-direction driving (keys, or drag for a virtual stick). No ability buttons.
+- Maps: walled rectangles, roads optional. Nothing inside may cover the player or enemies; buildings only as walls.
+- The boss arrives at a random moment in `Defs.BOSS_WINDOW`.
 - Boss arena: camera locked to the vehicle, vehicle circles the boss automatically on 3 rings;
   swipe left/right to dash (invulnerable, also sets circling direction), up/down to switch ring. Attacks are designed around the ring.
 - Upgrades: pick 1 of 3; max-level weapon + matching passive evolves (via salvage crate).
@@ -34,6 +36,9 @@ Run from the repo root after the project has been imported once (`godot --headle
 - Balance check (normal rules): `godot --headless --path . -- --autotest --fair --class=interceptor --quit-after-sec=120`
   Output ends with `stage= level= kills= score= phase=`; any `SCRIPT ERROR` is a failure. Add `--seed=<n>` to fix the rolls.
 - Boss arena checks: `godot --headless --path . res://tests/boss_check.tscn` must end with `BOSS CHECK PASSED`.
+- Open-world checks: `godot --headless --path . res://tests/map_check.tscn` must end with `MAP CHECK PASSED`.
+- Bots (--autotest) play through scripts/game/bot.gd and do not write to the leaderboard. Compare classes on several
+  `--seed` values; a single run varies a lot.
 - Screenshots of every screen (needs a display or xvfb): `godot --path . res://tests/ui_shots.tscn -- --shots=<dir>`
 - Builds: `tools/android/build_apk.sh` (signed APK), `tools/web/build_web.sh` (browser build).
 Parse errors that mention `Sfx`/`Save` only occur when scripts are checked standalone (autoloads missing).
@@ -45,9 +50,8 @@ Parse errors that mention `Sfx`/`Save` only occur when scripts are checked stand
   Android export uses tools/android/sign_apk_v2.py so no Android SDK is required.
 
 ## Known gaps / next ideas
-- Never tested on a real phone yet: check touch feel, FPS, pacing, balance (War Rig and Interceptor
-  bots die in the first boss fight, Juggernaut clears it; the bot never dashes).
-- Enemy strength does not scale with player level yet; class balance not done (docs/DESIGN.md section 9).
+- Open world and balance are bot-tested only: needs a human playtest for pacing, kickback strength and class feel.
+- Never tested on a real phone yet: touch feel and FPS.
 - More classes, enemy types and biomes; real art/audio; online leaderboard; PC controls polish.
 
 ## How we work (agreed with the owner)

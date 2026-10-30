@@ -1,7 +1,7 @@
 # Motorhead Madness Survival (working title) — gameplay prototype
 
-A test of the core gameplay loop with placeholder art and sound. Your vehicle drives itself along a set
-path through biomes and auto-fires at hordes of enemies. You steer, pick upgrades, and dodge bosses
+A test of the core gameplay loop with placeholder art and sound. You drive freely in 8 directions around
+walled maps while your vehicle auto-fires at hordes of enemies. You steer, pick upgrades, and dodge bosses
 in a ring arena. The goal is Vampire Survivors–style "satisfying without thinking" play.
 
 Built with **Godot 4.7** (GDScript, Compatibility renderer), so the same project exports to Android,
@@ -11,21 +11,23 @@ iOS, Windows, macOS, Linux and Web.
 
 | | Phone | Keyboard |
 |---|---|---|
-| Steer on the road | Drag left / right anywhere | A / D or ← / → |
+| Drive (8 directions) | Drag anywhere for a virtual stick (mouse drag works too) | WASD or arrows |
 | Boss: dash and set circling direction | Swipe left / right, or tap a screen side | A / D or ← / → |
 | Boss: switch ring | Swipe up (inner) / down (outer) | W / S or ↑ / ↓ |
 | Pause | ‖ button or Back | Esc / P |
 
-- **Road phase (2:30):** weapons fire on their own. Destroyed enemies drop scrap (XP) and you level up by picking 1 of 3 upgrades.
-  Ramming kills weak enemies. A **HORDE** surrounds you about every 30 s, and **ELITES** drop a salvage crate.
+- **Map phase:** the car stops when you let go. Weapons fire on their own. Destroyed enemies drop scrap (XP) and you level up by picking 1 of 3 upgrades.
+  Ramming kills weak enemies, and attacks knock enemies back. **HORDES** surround you several times a stage, and
+  **ELITES** drop a salvage crate. Enemies get tougher with your level as well as the stage.
 - **Salvage crate ("Redline"):** the engine revs and a tachometer needle decides the haul:
   green = 1 item, orange = 3, redline = 5. A max-level weapon plus its partner passive **evolves** here.
+- **Boss:** turns up at a random moment 90-150 s into the stage.
 - **Boss arena:** you circle the boss automatically on one of 3 rings. A dash also sets which way you circle.
   - Radial bursts: the gap always opens within reach, so drive to it or dash through.
   - Ring slams: the target ring flashes red, so switch rings.
   - Sweeping beam: dash through it (dashing makes you briefly invulnerable).
   - Summoned adds.
-- After the boss you drive on to the next biome (Rust Wastes → Neon Sprawl → Frost Line → Toxic Bog,
+- After the boss you move on to the next map (Rust Wastes → Neon Sprawl → Frost Line → Toxic Bog,
   then it loops), and everything gets harder each stage.
 - **Score:** kills × combo multiplier (up to 5×) plus boss bonuses. The top 10 are saved on the device
   (a stand-in for an online leaderboard).
@@ -85,8 +87,9 @@ scenes/main.tscn          entry scene
 scripts/main.gd           menu <-> run switching, input map, autotest
 scripts/data/defs.gd      classes, weapons, passives, enemies, biomes, curves
 scripts/game/run.gd       a playthrough: phases, spawn director, damage/XP/score, camera, input
-scripts/game/road.gd      spline path, road mesh, ground shader, roadside props
-scripts/game/player.gd    vehicle model + road/arena driving
+scripts/game/map.gd       walled map: ground, optional roads, obstacles, wall themes, collision
+scripts/game/bot.gd       plays for --autotest (kiting, pickups, boss dodging)
+scripts/game/player.gd    vehicle model + map/arena driving
 scripts/game/enemies.gd   horde as packed arrays + MultiMesh + spatial grid
 scripts/game/projectiles.gd, pickups.gd, weapons.gd, boss.gd, fx.gd
 scripts/ui/               HUD, level-up cards, Redline crate gauge, overlays, menu, theme
@@ -94,6 +97,7 @@ scripts/autoload/sfx.gd   procedurally synthesized placeholder sounds
 scripts/autoload/save.gd  local leaderboard
 tests/ui_shots.tscn       dev tool: screenshots every screen
 tests/boss_check.tscn     dev tool: checks dash direction, swipe buffer and burst gaps
+tests/map_check.tscn      dev tool: checks movement, walls, spawns, kickback and spitters on every biome
 tools/android/            APK build + v2 signing scripts, debug signing key
 tools/web/                web build script and the gzip launcher page
 ```
@@ -111,6 +115,7 @@ godot --path .                                         # play on desktop
 godot --headless --path . -- --autotest --quit-after-sec=60    # unattended smoke test (god mode, short stages)
 godot --headless --path . -- --autotest --fair --class=interceptor --quit-after-sec=120   # balance check
 godot --headless --path . res://tests/boss_check.tscn   # boss arena checks
+godot --headless --path . res://tests/map_check.tscn    # open-world checks
 tools/android/build_apk.sh                             # signed arm64 APK -> build/mms-prototype.apk
 tools/web/build_web.sh                                 # browser build -> build/web, build/mms-web.zip
 ```
