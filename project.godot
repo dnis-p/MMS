@@ -11,6 +11,8 @@ config_version=5
 [application]
 
 config/name="MMS (working title)"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="MMS"
 config/description="Auto-driving vehicle horde shooter - gameplay prototype"
 run/main_scene="res://scenes/main.tscn"
 config/quit_on_go_back=false
