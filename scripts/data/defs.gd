@@ -12,12 +12,13 @@ const BOSS_WINDOW := [90.0, 150.0]
 const CRIT_CHANCE := 0.08
 const CRIT_MULT := 2.0
 const MAX_ALIVE := 420
-const PICKUP_RADIUS := 3.8
+const PICKUP_RADIUS := 6.0
 const RAM_COOLDOWN := 0.4
+const HIT_INVULN := 0.6
 ## Each armor point blocks this share of a hit, up to the cap.
 const ARMOR_BLOCK := 0.06
 const ARMOR_BLOCK_MAX := 0.6
-const REPAIR_CHANCE := 0.012
+const REPAIR_CHANCE := 0.02
 const REPAIR_HEAL := 25
 const STAGE_CLEAR_HEAL := 0.3
 const FILLER_HEAL := 40.0
@@ -34,13 +35,14 @@ const MAP_CAMERA := {"back": 9.0, "up": 28.0, "fov": 60.0}
 
 ## Spawn director. `t` below means seconds into the stage. Distances are metres from the car.
 const SPAWN := {
-	"rate_base": 3.0, "rate_ramp": 0.1,  # enemies per second = base + ramp * t
+	"rate_base": 3.0, "rate_ramp": 0.1,  # enemies per second = base + ramp * t, while below the alive target
+	"alive_base": 15.0, "alive_ramp": 0.35,  # alive target = (base + ramp * t) * stage and level spawn factors
 	"hp_ramp": 0.6,  # extra enemy HP by the latest moment the boss can appear
 	"cluster_every": 1.4, "cluster_jitter": 4.0,
 	"runner_from": 15.0, "runner_weight": 0.18, "runner_ramp": 1.0 / 500.0,
 	"spitter_from": 40.0, "spitter_weight": 0.1, "spitter_ramp": 1.0 / 900.0,
 	"elite_times": [40.0, 80.0],
-	"horde_times": [30.0, 60.0, 85.0, 115.0], "horde_count": 36,
+	"horde_times": [30.0, 60.0, 85.0, 115.0], "horde_count": 20,
 	# Enemies appear this far from the car, just off screen. Side distance is per unit of aspect ratio.
 	"screen_side": 24.0, "screen_up": 26.0, "screen_down": 19.0,
 	"ahead_chance": 0.65, "ahead_spread": 1.0,  # most spawns are in the direction of travel
@@ -48,7 +50,7 @@ const SPAWN := {
 
 ## Boss arena. Damage and HP also grow per stage through the *_stage values.
 const ARENA := {
-	"rings": [7.0, 10.5, 14.0], "start_ring": 1, "ring_switch_speed": 16.0, "ring_invuln": 0.2,
+	"rings": [5.8, 10.0, 14.0], "start_ring": 1, "ring_switch_speed": 16.0, "ring_invuln": 0.2,
 	"floor_radius": 16.5, "summon_radius": 17.5,
 	"dash_time": 0.22, "dash_cooldown": 0.5, "dash_speed": 3.5, "dash_invuln": 0.4, "dash_buffer": 0.5,
 }
@@ -70,7 +72,7 @@ const CLASSES := {
 		"name": "Juggernaut",
 		"tagline": "Heavy tank",
 		"desc": "Slow, armored, rams hard.\nStarts with Rocket Pod.",
-		"max_hp": 165.0, "armor": 2.0, "speed": 6.5, "ram": 45.0, "might": 1.15,
+		"max_hp": 150.0, "armor": 2.0, "speed": 7.0, "ram": 35.0, "might": 1.05,
 		"weapon": "rockets",
 		"color": Color(0.42, 0.5, 0.28),
 		"size": Vector3(2.6, 1.2, 3.8),
@@ -79,7 +81,7 @@ const CLASSES := {
 		"name": "Interceptor",
 		"tagline": "Fast raider",
 		"desc": "Fragile but quick.\nStarts with Hood MG.",
-		"max_hp": 95.0, "armor": 0.0, "speed": 9.5, "ram": 14.0, "might": 1.0,
+		"max_hp": 110.0, "armor": 1.0, "speed": 9.5, "ram": 20.0, "might": 1.05,
 		"weapon": "mg",
 		"color": Color(0.85, 0.2, 0.18),
 		"size": Vector3(1.5, 0.8, 3.0),
@@ -88,7 +90,7 @@ const CLASSES := {
 		"name": "War Rig",
 		"tagline": "Armed hauler",
 		"desc": "Balanced and sturdy.\nStarts with Saw Blades.",
-		"max_hp": 125.0, "armor": 1.0, "speed": 7.8, "ram": 28.0, "might": 1.0,
+		"max_hp": 130.0, "armor": 1.0, "speed": 8.2, "ram": 28.0, "might": 1.05,
 		"weapon": "saws",
 		"color": Color(0.9, 0.55, 0.15),
 		"size": Vector3(2.2, 1.5, 4.6),
@@ -133,15 +135,15 @@ const WEAPONS := {
 		"up": ["", "+40% damage", "+1 blade", "+wider orbit", "+1 blade, faster spin"],
 		"evo": "blast", "evo_name": "Buzzkill Halo", "evo_desc": "A huge ring of screaming saws.",
 		"color": Color(0.8, 0.85, 0.9),
-		"hit_cd": 0.35, "knock": 10.0,
+		"hit_cd": 0.28, "knock": 10.0,
 		"levels": [
-			{"dmg": 9.0, "count": 2, "orbit": 2.7, "spin": 3.0, "size": 1.0},
-			{"dmg": 12.6, "count": 2, "orbit": 2.7, "spin": 3.0, "size": 1.0},
-			{"dmg": 12.6, "count": 3, "orbit": 2.7, "spin": 3.0, "size": 1.0},
-			{"dmg": 12.6, "count": 3, "orbit": 3.5, "spin": 3.0, "size": 1.0},
-			{"dmg": 12.6, "count": 4, "orbit": 3.5, "spin": 4.0, "size": 1.0},
+			{"dmg": 13.0, "count": 2, "orbit": 3.2, "spin": 3.0, "size": 1.0},
+			{"dmg": 17.6, "count": 2, "orbit": 3.2, "spin": 3.0, "size": 1.0},
+			{"dmg": 17.6, "count": 3, "orbit": 3.2, "spin": 3.0, "size": 1.0},
+			{"dmg": 17.6, "count": 3, "orbit": 4.0, "spin": 3.0, "size": 1.0},
+			{"dmg": 17.6, "count": 4, "orbit": 4.0, "spin": 4.0, "size": 1.0},
 		],
-		"evolved": {"dmg": 22.0, "count": 6, "orbit": 4.4, "spin": 4.5, "size": 1.6},
+		"evolved": {"dmg": 26.0, "count": 6, "orbit": 4.8, "spin": 4.5, "size": 1.6},
 	},
 	"mines": {
 		"name": "Mine Dropper", "desc": "Throws mines all around you.",
@@ -202,12 +204,12 @@ const PASSIVES := {
 ## Enemy type ids index into ENEMY_ORDER.
 const ENEMY_ORDER := ["crawler", "runner", "spitter", "brute", "boss"]
 const ENEMIES := {
-	"crawler": {"hp": 10.0, "speed": 4.6, "radius": 0.65, "dmg": 6.0, "xp": 1, "score": 10, "knock": 1.0, "color": Color(0.55, 0.78, 0.3), "scale": 1.1},
-	"runner": {"hp": 20.0, "speed": 11.5, "radius": 0.7, "dmg": 9.0, "xp": 2, "score": 20, "knock": 0.8, "color": Color(0.95, 0.35, 0.25), "scale": 1.25},
-	"spitter": {"hp": 30.0, "speed": 9.0, "radius": 0.75, "dmg": 8.0, "xp": 3, "score": 30, "knock": 1.0,
+	"crawler": {"hp": 10.0, "speed": 4.6, "radius": 0.65, "dmg": 5.0, "xp": 1, "score": 10, "knock": 1.0, "color": Color(0.55, 0.78, 0.3), "scale": 1.1},
+	"runner": {"hp": 20.0, "speed": 9.5, "radius": 0.7, "dmg": 7.0, "xp": 2, "score": 20, "knock": 0.8, "color": Color(0.95, 0.35, 0.25), "scale": 1.25},
+	"spitter": {"hp": 30.0, "speed": 9.0, "radius": 0.75, "dmg": 6.0, "xp": 3, "score": 30, "knock": 1.0,
 		"range": 11.0, "pace": 0.6, "hold": 1.5, "back_off": 0.5, "hold_inside": 8.0, "color": Color(0.72, 0.38, 0.95), "scale": 1.2},
-	"brute": {"hp": 300.0, "speed": 5.0, "radius": 1.3, "dmg": 20.0, "xp": 15, "score": 300, "knock": 0.25, "color": Color(1.0, 0.78, 0.2), "scale": 2.2},
-	"boss": {"hp": 4500.0, "speed": 0.0, "radius": 2.8, "dmg": 25.0, "xp": 0, "score": 5000, "knock": 0.0, "color": Color(1, 1, 1), "scale": 1.0},
+	"brute": {"hp": 300.0, "speed": 5.0, "radius": 1.3, "dmg": 14.0, "xp": 15, "score": 300, "knock": 0.25, "color": Color(1.0, 0.78, 0.2), "scale": 2.2},
+	"boss": {"hp": 3000.0, "speed": 0.0, "radius": 2.8, "dmg": 25.0, "xp": 0, "score": 5000, "knock": 0.0, "color": Color(1, 1, 1), "scale": 1.0},
 }
 
 const BIOMES := [
@@ -257,6 +259,19 @@ static func stage_hp_mult(stage: int) -> float:
 
 static func stage_spawn_mult(stage: int) -> float:
 	return 1.0 + 0.3 * (stage - 1)
+
+
+## Enemies spawned from now on scale with the player's level, on top of the stage.
+static func level_hp_mult(level: int) -> float:
+	return 1.0 + 0.03 * (level - 1)
+
+
+static func level_dmg_mult(level: int) -> float:
+	return 1.0 + 0.012 * (level - 1)
+
+
+static func level_spawn_mult(level: int) -> float:
+	return 1.0 + 0.015 * (level - 1)
 
 
 ## Everything moves faster each stage: the vehicle and, by the same factor, the enemies.

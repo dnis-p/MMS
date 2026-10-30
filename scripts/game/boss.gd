@@ -46,7 +46,7 @@ func setup(p_run: Run, p_center: Vector3, biome: Dictionary, p_stage: int) -> vo
 	_build_arena(biome)
 	_build_model()
 	_build_beam()
-	idx = run.enemies.spawn(Enemies.BOSS, center, Defs.stage_hp_mult(stage) * (1.0 + Defs.BOSS["hp_stage"] * (stage - 1)))
+	idx = run.enemies.spawn(Enemies.BOSS, center, run.enemy_hp_mult() * (1.0 + Defs.BOSS["hp_stage"] * (stage - 1)))
 
 
 func hp_ratio() -> float:
@@ -318,7 +318,7 @@ func _do_slam() -> void:
 
 
 func _do_summon(enraged: bool) -> void:
-	var hm := Defs.stage_hp_mult(stage)
+	var hm := run.enemy_hp_mult()
 	var n: int = Defs.BOSS["summon_count_enraged"] if enraged else Defs.BOSS["summon_count"]
 	for k in n:
 		var a := run.rng.randf() * TAU

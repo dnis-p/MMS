@@ -70,10 +70,10 @@ func _class_card(id: String) -> Button:
 	names.add_child(Ui.label(d["tagline"], 20, Color(1.0, 0.8, 0.4)))
 	top.add_child(names)
 	v.add_child(top)
-	v.add_child(_stat("Hull", d["max_hp"] / 165.0, Color(0.9, 0.3, 0.3)))
+	v.add_child(_stat("Hull", d["max_hp"] / 150.0, Color(0.9, 0.3, 0.3)))
 	v.add_child(_stat("Armor", (d["armor"] + 0.5) / 2.5, Color(0.6, 0.6, 0.7)))
 	v.add_child(_stat("Speed", d["speed"] / 9.5, Color(0.3, 0.8, 1.0)))
-	v.add_child(_stat("Ram", d["ram"] / 45.0, Color(1.0, 0.6, 0.2)))
+	v.add_child(_stat("Ram", d["ram"] / 35.0, Color(1.0, 0.6, 0.2)))
 	var desc := Ui.label(d["desc"], 19, Color(0.85, 0.85, 0.85))
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(desc)

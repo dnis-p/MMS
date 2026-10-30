@@ -235,7 +235,7 @@ func hurt(amount: float) -> float:
 		return 0.0
 	var taken := maxf(1.0, amount * (1.0 - minf(Defs.ARMOR_BLOCK_MAX, armor * Defs.ARMOR_BLOCK)))
 	hp = maxf(0.0, hp - taken)
-	invuln = 0.45
+	invuln = Defs.HIT_INVULN
 	_hurt_flash = 0.15
 	return taken
 
