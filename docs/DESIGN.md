@@ -47,8 +47,15 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Path that is not perfectly straight in the finished product (curves exist already; more variety later).
 - Online **leaderboards and rankings** to drive competition.
 - Possible **PC version** as a full-scale game; keep input, UI and services platform-independent.
+- (owner, 2026-10-30) **PC is now the priority.** The owner mainly tests on PC; phone stays a target but comes after it.
 - (owner, 2026-10-30) Future PC direction: get rid of the fixed path and let the player **move freely**.
   Talk only, not to be implemented now. Keep movement/camera code separable from the road so this stays possible.
+  Owner's answers on how it would work:
+  - Movement: **8 directions, changed instantly** when the buttons are pressed, no turning animation, like Vampire Survivors.
+  - Progress to the boss: either by **enemies killed**, or the boss **appears at a random moment in a time window**
+    (for example between 90 and 150 s, the screen changes and says "[boss name] incoming").
+  - Phone: same game as PC for now, using a virtual controller to move, as Vampire Survivors does.
+  - (suggested) Free movement would also solve the far-gem problem (item deferred in section 9).
 
 ## 6. Ideas backlog (suggested by Claude, not yet approved)
 **Player agency (keep it light given the "play without thinking" rule)**
