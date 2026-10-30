@@ -76,6 +76,9 @@ var _hitstop_left := 0.0
 var _last_real_us := 0
 var _clear_ready := false
 var _score_saved := false
+var redline := 0.0
+var nitro_left := 0.0
+var _nitro_fx := 0.0
 var _skipped := false  # jumped to a boss: the run stays off the leaderboard
 var _touch_index := -1
 var _touch_start := Vector2.ZERO
@@ -199,6 +202,7 @@ func _apply_biome() -> void:
 
 func _start_boss_intro() -> void:
 	phase = Phase.BOSS_INTRO
+	_end_nitro()
 	_phase_timer = 2.6
 	overlay.banner("%s INCOMING" % String(biome["boss"]), "", Color(1, 0.3, 0.25), 1.8)
 	Sfx.play("warn", -4.0, 1.0, true)
@@ -321,6 +325,7 @@ func _process(delta: float) -> void:
 		Phase.ROAM:
 			stage_time += delta
 			player.drive(delta, _move_input(delta), map)
+			_update_redline(delta)
 			_director(delta)
 			if stage_time >= boss_time:
 				_start_boss_intro()
@@ -356,6 +361,43 @@ func _process(delta: float) -> void:
 	map.follow(_cam_look)
 	hud.refresh(self)
 	_try_open_modal()
+
+
+func _update_redline(delta: float) -> void:
+	var r := Defs.REDLINE
+	if nitro_left > 0.0:
+		nitro_left -= delta
+		_nitro_fx -= delta
+		if _nitro_fx <= 0.0:
+			_nitro_fx = 0.05
+			fx.burst(player.global_position + Vector3(0, 0.4, 0), Color(1.0, 0.55, 0.15), 4, 0.5)
+		if nitro_left <= 0.0:
+			_end_nitro()
+		return
+	if player.velocity.length() >= player.speed * r["min_speed"]:
+		redline = minf(1.0, redline + r["fill"] * delta)
+	else:
+		redline = maxf(0.0, redline - r["drain"] * delta)
+	if redline >= 1.0:
+		_start_nitro()
+
+
+func _start_nitro() -> void:
+	nitro_left = Defs.REDLINE["nitro_time"]
+	player.nitro = true
+	player.boost = Defs.REDLINE["nitro_speed"]
+	overlay.banner("NITRO!", "", Color(1.0, 0.5, 0.15), 0.8)
+	Sfx.play("big_boom", -8.0, 1.5, true)
+	fx.shake(0.4)
+
+
+func _end_nitro() -> void:
+	if not player.nitro:
+		return
+	nitro_left = 0.0
+	player.nitro = false
+	player.boost = 1.0
+	redline = Defs.REDLINE["after_nitro"]
 
 
 func _director(delta: float) -> void:
@@ -503,7 +545,9 @@ func on_enemy_contact(i: int) -> void:
 		var away := enemies.pos[i] - player.global_position
 		away.y = 0.0
 		var spd := clampf(player.velocity.length() / player.speed, 0.6, 1.0)
-		hit_enemy(i, player.ram_damage * spd, away.normalized(), Defs.KNOCK["ram"])
+		var r := Defs.REDLINE
+		var power: float = (1.0 + r["ram_bonus"] * redline) * (r["nitro_ram"] if player.nitro else 1.0)
+		hit_enemy(i, player.ram_damage * spd * power, away.normalized(), Defs.KNOCK["ram"])
 	if enemies.is_alive(i) and player.can_be_hit():
 		player_hit(enemies.dmg[i])
 
@@ -514,6 +558,7 @@ func player_hit(amount: float) -> void:
 	var taken := player.hurt(amount * Defs.stage_dmg_mult(stage) * Defs.level_dmg_mult(level))
 	if taken <= 0.0:
 		return
+	redline = maxf(0.0, redline - Defs.REDLINE["hit_loss"])
 	fx.shake(0.3)
 	hud.damage_flash()
 	Sfx.play("hurt", -4.0)

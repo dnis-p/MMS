@@ -237,7 +237,7 @@ func update(delta: float) -> void:
 	var player: Player = run.player
 	var origin := player.global_position + Vector3(0, 0.9, 0)
 	var dm := damage_mult()
-	var cdm := cooldown_mult()
+	var cdm: float = cooldown_mult() / (1.0 + Defs.REDLINE["fire_bonus"] * run.redline)
 	var am := area_mult()
 	for id in order:
 		var w: Dictionary = owned[id]
