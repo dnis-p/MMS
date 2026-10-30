@@ -12,7 +12,7 @@ iOS, Windows, macOS, Linux and Web.
 | | Phone | Keyboard |
 |---|---|---|
 | Steer on the road | Drag left / right anywhere | A / D or ← / → |
-| Boss: dash along the ring | Swipe left / right, or tap a screen side | A / D or ← / → |
+| Boss: dash and set circling direction | Swipe left / right, or tap a screen side | A / D or ← / → |
 | Boss: switch ring | Swipe up (inner) / down (outer) | W / S or ↑ / ↓ |
 | Pause | ‖ button or Back | Esc / P |
 
@@ -20,8 +20,8 @@ iOS, Windows, macOS, Linux and Web.
   Ramming kills weak enemies. A **HORDE** surrounds you about every 30 s, and **ELITES** drop a salvage crate.
 - **Salvage crate ("Redline"):** the engine revs and a tachometer needle decides the haul:
   green = 1 item, orange = 3, redline = 5. A max-level weapon plus its partner passive **evolves** here.
-- **Boss arena:** you circle the boss automatically on one of 3 rings.
-  - Radial bursts: find the gap or dash through.
+- **Boss arena:** you circle the boss automatically on one of 3 rings. A dash also sets which way you circle.
+  - Radial bursts: the gap always opens within reach, so drive to it or dash through.
   - Ring slams: the target ring flashes red, so switch rings.
   - Sweeping beam: dash through it (dashing makes you briefly invulnerable).
   - Summoned adds.
@@ -29,14 +29,14 @@ iOS, Windows, macOS, Linux and Web.
   then it loops), and everything gets harder each stage.
 - **Score:** kills × combo multiplier (up to 5×) plus boss bonuses. The top 10 are saved on the device
   (a stand-in for an online leaderboard).
-- The pause menu has **Skip to boss (test)** to reach the boss fight quickly.
+- In debug builds the pause menu has **Skip to boss (test)** to reach the boss fight quickly.
 
 ### Content
 
 - **Classes:** Juggernaut (tank, starts with Rocket Pod), Interceptor (fast and fragile, Hood MG),
   War Rig (balanced, Saw Blades).
 - **Weapons (max level 5, up to 4 slots):** Hood MG, Rocket Pod, Saw Blades, Mine Dropper, Tesla Coil, Shock Plating.
-- **Passives (up to 4 slots):** Armor Plating, Turbocharger, Scrap Magnet, Blast Compound, Hot Rounds.
+- **Passives (up to 4 slots):** Armor Plating, Turbocharger, Scrap Magnet, Blast Compound, Hot Rounds, Nitro Injector.
 - **Evolutions:**
 
   | Weapon | + Passive | Becomes |
@@ -93,6 +93,7 @@ scripts/ui/               HUD, level-up cards, Redline crate gauge, overlays, me
 scripts/autoload/sfx.gd   procedurally synthesized placeholder sounds
 scripts/autoload/save.gd  local leaderboard
 tests/ui_shots.tscn       dev tool: screenshots every screen
+tests/boss_check.tscn     dev tool: checks dash direction, swipe buffer and burst gaps
 tools/android/            APK build + v2 signing scripts, debug signing key
 tools/web/                web build script and the gzip launcher page
 ```
@@ -109,6 +110,7 @@ Open the folder in Godot 4.7 and press Play, or:
 godot --path .                                         # play on desktop
 godot --headless --path . -- --autotest --quit-after-sec=60    # unattended smoke test (god mode, short stages)
 godot --headless --path . -- --autotest --fair --class=interceptor --quit-after-sec=120   # balance check
+godot --headless --path . res://tests/boss_check.tscn   # boss arena checks
 tools/android/build_apk.sh                             # signed arm64 APK -> build/mms-prototype.apk
 tools/web/build_web.sh                                 # browser build -> build/web, build/mms-web.zip
 ```

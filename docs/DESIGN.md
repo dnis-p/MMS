@@ -30,6 +30,7 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Camera fixed to the vehicle; the vehicle constantly circles the boss and attacks.
 - All weapons and upgrades keep working. The player can swipe to move to an **outer or inner ring**.
 - Dash to dodge along the circle; the player only chooses the direction. **Decided** (built).
+- (owner, 2026-10-30) The dash direction becomes the circling direction (built, see section 8).
 
 ## 4. Decisions made so far
 | Topic | Decision |
@@ -38,7 +39,7 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 | Engine / language | Godot 4.7, GDScript. Compatibility renderer for phones and web. |
 | Orientation | Landscape (works on phone and PC). Portrait was mentioned as a possibility, not chosen. |
 | Chest | Not a slot machine. A tachometer ("Redline"): needle lands on green = 1, orange = 3, red = 5 rewards. Owner asked for a different twist. Open to a better idea. |
-| Prototype scope | 1 stage loop, 3 classes, 6 weapons, 5 passives, 6 evolutions, 4 biomes, ring boss. |
+| Prototype scope | 1 stage loop, 3 classes, 6 weapons, 6 passives, 6 evolutions, 4 biomes, ring boss. |
 | Leaderboard | Local top-10 only for now. |
 | Distribution | APK from GitHub Actions, web via GitHub Pages (needs public repo), itch.io possible later. |
 
@@ -111,22 +112,62 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-10-30** (bot and automated checks only; the owner has not played these yet, so feel is unconfirmed)
+- **Camera zoom-out** (owner: see more, especially behind). Road camera moved from 9 m back / 16.5 m up / 6.5 m
+  look-ahead to 13 / 24 / 3. About 11 m of ground is visible behind the car (was about 5) and about 35 m ahead (was
+  about 45), so the view ahead is slightly shorter. Field of view unchanged. Boss arena camera not changed.
+  Added so enemies don't appear on screen: crawlers spawn 40-50 m ahead (was 26-36), side runners 30-34 m (was
+  17-22), spitters 28-32 m out (was 15-20), elites 42 m ahead (was 30), hordes 26 m around (was 17). Enemies
+  take a little longer to arrive. Checked with one gameplay screenshot at 1280x720, not on a phone.
+- **Mine direction** (owner: throw in any direction). Mines are now thrown at a random angle, 5-12 m from the car,
+  flying 0.4 s in an arc and arming on landing (same 0.4 s arming as before). In the boss arena they land on the
+  floor. Random, not aimed at enemies. Mines thrown backward can still end up off screen as the car drives on.
+  Renamed nothing; the description now says "Throws mines all around you."
+- **Boss dash direction** (owner: swipe right = dodge and keep driving right). The dash sets the circling direction
+  and it stays that way until the next dash, on both swipes and keyboard. The car turns instantly. The sweeping
+  beam now always starts against the car's current direction.
+- **Unavoidable ring burst** (owner: far gap impossible). Confirmed: a far gap could not be reached. Now the first gap
+  of an attack is placed within what the car can reach before the shots arrive, on either side, and each later
+  gap in that attack moves at most 0.3 rad from the last. Shot speed, count and gap size are unchanged. Tested with a
+  driving bot (no dash invulnerability): 0 of 36 bursts hit it, 36 of 36 hit a bot that doesn't steer.
+  Limitation: the gap no longer appears anywhere on the ring, only near you, so dodging may feel easier.
+- **Faster pace at higher levels** (owner: speed and enemy scaling together, so you can't outrun them). New passive
+  **Nitro Injector**, +6% vehicle speed per level (up to +30%); it has no evolution. Each stage adds +6% speed. Enemies
+  always get the same speed factor, so the speed difference between car and enemies stays the same in proportion.
+  Differs from the proposal: pace rises with stage and upgrades, not with player level, and enemy strength is not
+  part of this (that is item "Enemies should scale" in section 9). Boss shots do not get faster, so bursts get easier
+  to reach at high speed. Road length now adapts to the fastest possible speed.
+- **(suggested) Score save.** The score is now saved when you quit from the pause or stage-clear menu, once per run.
+  Bot runs (--autotest) no longer write to the leaderboard.
+- **(suggested) Skip to boss** now shows only in debug builds, such as Play in the editor. It will be missing from
+  release exports, which is what CI builds. Not checked in an actual release build.
+- **(suggested) Dash buffering.** A swipe during the 0.5 s cooldown is remembered and used when it ends; the latest
+  swipe wins.
+- **(suggested) Balance numbers moved to defs.gd.** Weapon levels, boss attacks, spawn director, arena and camera
+  numbers are now data. No gameplay change intended; weapon stats were copied value by value.
+- **(suggested) Armor is now a percentage.** Each armor point blocks 6% of a hit, capped at 60%, minimum 1 damage.
+  Was a flat reduction. Juggernaut starts at 12%, or 42% with full Armor Plating. Armor Plating text changed to match.
+- **(suggested) Seeded randomness.** All gameplay rolls use one generator and `--seed=<n>` sets it (bot/command line
+  only, no daily mode yet). Two 20 s runs with the same seed and `--fixed-fps 60` gave identical results. At normal
+  frame rates runs will not replay exactly, because timing varies; replays would need more work.
+- **Bug found and fixed (not requested).** Bullets knocked enemies slightly upward and the crowd-spacing code amplified
+  it until positions became infinite, causing thousands of engine errors in an Interceptor bot run. Enemies are now kept
+  on the ground, and all three classes ran with 0 errors. It may have made enemies invisible or weapons miss in
+  MG builds, which could be part of why Interceptor felt weak; not confirmed.
+- Bot results under normal rules after all of the above: Juggernaut clears the first boss; Interceptor and War Rig die
+  in that boss fight. The bot never dashes or switches rings, so this is not a measure of real balance.
 
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
-- Zoom out camera so you have a better view of the enemies that are coming. For enemies that come from behind im not sure if it would be better to have the camera placed a bit more aback or if that would leave too little camera space on the front to see incoming enemies, bu i say this because when enemies come from the back usually u can't see very far.
 - Balance the different classes. Juggernaut is too op for example. Interceptor is the weakest of all, speaking in terms of playability. So choosing juggernaut always has an advantage right now.
 - Enemies should scale in difficulty with the player's level.
-- The pace of the game has to get faster at higher levels. (speed, either through upgrades or just normal game progression, and enemy scaling)
-- In boss fights maybe its better if the dash makes the vehicle change direction too instead of always going in the same direction. Also the attack of the balls that come out in a ring from the boss is imposible to dodge unless the opening spawns close to you. If the opening spawn on the other side of the arena then you always get hit by the ring, or at least I haven't been able to dodge it in any way.
 - Also regarding gems, when you kill enemies outside of the road if they are far away its impossible to get their gems, you can't get as close as needed, we should fix that somehow.
-- The mine upgrade throws mines towards the back but since there's so little space between the vehicle and the camera frame u can't really see if they will explode on an enemy or not. I've thought about making it throw mines in any direction instead of just towards the back. In the future I may change this upgrade to another thing.
 
 **Owner answers, 2026-10-30**
-- Items 3 and 4 (difficulty): when the player gets faster/stronger, enemies must scale too (both speed and
-  strength), otherwise you outrun or melt them. Applies to the vehicle speed gained through upgrades and progression.
-- Item 5 (boss dash): swiping right makes the vehicle dodge and then keep circling the boss toward the right of
-  the screen (swipe left = toward the left). Same circling, but the swipe picks the direction. Fits the Decided rule
-  "the player only chooses the direction".
-- Item 6 (far gems): **deferred**, leave as is for now.
-- Order: first the small and medium items (mines, boss ring burst + dash direction, camera zoom-out); then
-  difficulty/pace (3, 4), then class balance (2).
+- Enemy scaling: when the player gets faster/stronger, enemies must scale too, otherwise you outrun or melt them.
+  Enemy speed is done (section 8); scaling enemy strength with player level is still open.
+- Far gems: **deferred**, leave as is for now.
+- Order: difficulty scaling next, then class balance.
+
+**Future, not to be implemented yet (owner, 2026-10-30)**
+- Free movement replacing the fixed path: 8 directions with instant turning, boss triggered by kills or a random
+  time window, phone uses a virtual controller. Details in section 5.
