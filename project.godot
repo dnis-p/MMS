@@ -13,9 +13,9 @@ config_version=5
 config/name="MMS (working title)"
 config/description="Auto-driving vehicle horde shooter - gameplay prototype"
 run/main_scene="res://scenes/main.tscn"
+config/quit_on_go_back=false
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
-config/quit_on_go_back=false
 
 [autoload]
 
