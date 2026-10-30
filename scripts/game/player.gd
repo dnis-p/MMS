@@ -22,9 +22,10 @@ var velocity := Vector3.ZERO
 var invuln := 0.0
 
 var heading := Vector3.FORWARD  # where the nose points; stays when the car stops
-var move_dir := Vector3.FORWARD  # direction of travel, follows the nose closely
 var drive_speed := 0.0
-var turn_rate := 6.5
+var steer := 0.0  # front wheel angle in radians, positive to the car's left
+var max_steer := 0.6
+var wheelbase := 2.4  # distance between the axles
 var boost := 1.0  # speed factor while nitro burns
 var nitro := false
 
@@ -43,6 +44,7 @@ var _hurt_flash := 0.0
 var _hardpoints: Array[Vector3] = []
 var _weapon_visuals := {}
 var _wheel_nodes: Array[Node3D] = []
+var _steer_nodes: Array[Node3D] = []
 var _time := 0.0
 
 
@@ -56,10 +58,11 @@ func setup(id: String) -> void:
 	base_armor = armor
 	base_speed = def["speed"]
 	speed = base_speed
-	turn_rate = def["turn"]
 	ram_damage = def["ram"]
 	var size: Vector3 = def["size"]
 	radius = maxf(size.x, size.z) * 0.42
+	wheelbase = size.z * 0.66
+	max_steer = atan(wheelbase / float(def["turn"]))
 	_build_model(size, def["color"])
 
 
@@ -85,6 +88,14 @@ func _build_model(size: Vector3, color: Color) -> void:
 		var w := _cylinder(wheel_r, 0.45, Vector3(zx.x * (size.x * 0.5 + 0.1), wheel_r, zx.y * size.z * 0.33), wheel_color)
 		w.rotation.z = PI * 0.5
 		_wheel_nodes.append(w)
+		if zx.y < 0.0:  # front wheels sit on a pivot so they can steer and roll at once
+			var pivot := Node3D.new()
+			pivot.position = w.position
+			_body.add_child(pivot)
+			_body.remove_child(w)
+			pivot.add_child(w)
+			w.position = Vector3.ZERO
+			_steer_nodes.append(pivot)
 	var top := hull_y + size.y * 0.5
 	_hardpoints = [
 		Vector3(0, top + size.y * 0.75, size.z * 0.15),
@@ -167,8 +178,8 @@ func add_weapon_visual(weapon_id: String) -> void:
 
 func place_on_map() -> void:
 	heading = Vector3.FORWARD
-	move_dir = heading
 	drive_speed = 0.0
+	steer = 0.0
 	boost = 1.0
 	nitro = false
 	global_position = Vector3.ZERO
@@ -177,26 +188,28 @@ func place_on_map() -> void:
 	_body.rotation = Vector3.ZERO
 
 
-## `input` is screen-relative (x right, y down). The nose turns toward it at the class
-## turn rate; the car slows in hard turns and brakes to a stop with no input.
+## `input` is screen-relative (x right, y down). The front wheels steer toward it and the
+## car follows them: the rear axle rolls straight along the car and the nose swings around
+## it, so the car only turns while moving. It slows a little in hard turns and brakes to a
+## stop with no input.
 func drive(delta: float, input: Vector2, map: Map) -> void:
 	_common(delta)
 	var d := Defs.DRIVE
 	var top := speed * boost
 	var target := 0.0
-	var turning := 0.0
+	var steer_to := 0.0
 	if input != Vector2.ZERO:
 		var want := Vector3(input.x, 0.0, input.y).normalized()
 		var off := heading.signed_angle_to(want, Vector3.UP)
-		var step := clampf(off, -turn_rate * delta, turn_rate * delta)
-		heading = heading.rotated(Vector3.UP, step).normalized()
-		turning = step / maxf(delta, 0.0001)
+		steer_to = clampf(off, -max_steer, max_steer)
 		target = top * (1.0 - d["turn_slow"] * absf(off) / PI)
+	steer = move_toward(steer, steer_to, d["steer_speed"] * delta)
 	var ramp: float = d["accel_time"] if target > drive_speed else d["brake_time"]
 	drive_speed = move_toward(drive_speed, target, top / ramp * delta)
-	var slip := move_dir.signed_angle_to(heading, Vector3.UP)
-	move_dir = move_dir.rotated(Vector3.UP, slip * (1.0 - exp(-d["grip"] * delta))).normalized()
-	var p := map.resolve(global_position + move_dir * drive_speed * delta, radius * 0.75)
+	var rear := global_position - heading * wheelbase * 0.5 + heading * drive_speed * delta
+	var turning := drive_speed * tan(steer) / wheelbase
+	heading = heading.rotated(Vector3.UP, turning * delta).normalized()
+	var p := map.resolve(rear + heading * wheelbase * 0.5, radius * 0.75)
 	velocity = (p - global_position) / maxf(delta, 0.0001)
 	global_position = p
 	look_at(p + heading, Vector3.UP)
@@ -214,6 +227,7 @@ func enter_arena(center: Vector3) -> void:
 	dash_time = 0.0
 	dash_cd = 0.0
 	circle_dir = 1.0
+	steer = 0.0
 	global_position = center + Vector3(cos(theta), 0, sin(theta)) * ring_radius
 	_body.rotation = Vector3.ZERO
 
@@ -284,3 +298,5 @@ func _common(delta: float) -> void:
 	_body.position.y = absf(sin(_time * 18.0)) * 0.04
 	for w in _wheel_nodes:
 		w.rotate_object_local(Vector3.UP, velocity.length() * delta * 1.5)
+	for s in _steer_nodes:
+		s.rotation.y = steer

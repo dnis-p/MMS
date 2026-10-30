@@ -44,7 +44,9 @@ const MAP_CAMERA := {"back": 9.0, "up": 30.0, "lead": 0.35, "fov": 60.0}
 
 ## Vehicle handling. Turn rates (radians per second) are per class. Grip is how fast the
 ## direction of travel catches up with the nose; high means almost no drift.
-const DRIVE := {"accel_time": 0.25, "brake_time": 0.15, "grip": 16.0, "turn_slow": 0.35, "lean": 0.03}
+## steer_speed: how fast the front wheels turn (radians per second). Each class's "turn" is
+## its turning radius in metres, measured at the rear axle.
+const DRIVE := {"accel_time": 0.25, "brake_time": 0.15, "steer_speed": 6.0, "turn_slow": 0.2, "lean": 0.03}
 
 ## Spawn director. `t` below means seconds into the stage. Distances are metres from the car.
 const SPAWN := {
@@ -85,7 +87,7 @@ const CLASSES := {
 		"name": "Juggernaut",
 		"tagline": "Heavy tank",
 		"desc": "Slow, armored, rams hard.\nStarts with Rocket Pod.",
-		"max_hp": 150.0, "armor": 2.0, "speed": 10.0, "turn": 5.5, "ram": 35.0, "might": 1.05,
+		"max_hp": 150.0, "armor": 2.0, "speed": 10.0, "turn": 4.0, "ram": 35.0, "might": 1.05,
 		"weapon": "rockets",
 		"color": Color(0.42, 0.5, 0.28),
 		"size": Vector3(2.6, 1.2, 3.8),
@@ -94,7 +96,7 @@ const CLASSES := {
 		"name": "Interceptor",
 		"tagline": "Fast raider",
 		"desc": "Fragile but quick.\nStarts with Hood MG.",
-		"max_hp": 110.0, "armor": 1.0, "speed": 13.0, "turn": 8.0, "ram": 20.0, "might": 1.05,
+		"max_hp": 110.0, "armor": 1.0, "speed": 13.0, "turn": 3.0, "ram": 20.0, "might": 1.05,
 		"weapon": "mg",
 		"color": Color(0.85, 0.2, 0.18),
 		"size": Vector3(1.5, 0.8, 3.0),
@@ -103,7 +105,7 @@ const CLASSES := {
 		"name": "War Rig",
 		"tagline": "Armed hauler",
 		"desc": "Balanced and sturdy.\nStarts with Saw Blades.",
-		"max_hp": 130.0, "armor": 1.0, "speed": 11.5, "turn": 6.5, "ram": 28.0, "might": 1.05,
+		"max_hp": 130.0, "armor": 1.0, "speed": 11.5, "turn": 3.8, "ram": 28.0, "might": 1.05,
 		"weapon": "saws",
 		"color": Color(0.9, 0.55, 0.15),
 		"size": Vector3(2.2, 1.5, 4.6),

@@ -62,7 +62,7 @@ func _process(delta: float) -> void:
 				r.map._solid.fill(-1)  # a random obstacle would spoil the speed readings
 				_from = r.player.global_position
 				Input.action_press("move_right")
-				_wait = 0.8  # time to turn and reach speed
+				_wait = 2.0  # time to drive the arc, straighten out and reach speed
 				_step = "straight_measure"
 		"straight_measure":
 			if _wait <= 0.0:
@@ -74,7 +74,7 @@ func _process(delta: float) -> void:
 				var moved := r.player.global_position - _from
 				_check("right moves +x only at speed", moved.x > 0.0 and absf(moved.z) < 0.01 and absf(moved.length() / _elapsed_of(r) - 1.0) < 0.2)
 				Input.action_press("move_up")
-				_wait = 0.6
+				_wait = 1.5
 				_step = "diagonal_measure"
 		"diagonal_measure":
 			if _wait <= 0.0:
