@@ -22,10 +22,10 @@ func _ready() -> void:
 	var root := VBoxContainer.new()
 	Ui.full_rect(root)
 	root.alignment = BoxContainer.ALIGNMENT_CENTER
-	root.add_theme_constant_override("separation", 18)
+	root.add_theme_constant_override("separation", 10)
 	add_child(root)
 
-	var title := Ui.label("MMS", 80, Color(1.0, 0.65, 0.2))
+	var title := Ui.label("MMS", 64, Color(1.0, 0.65, 0.2))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_constant_override("outline_size", 16)
 	root.add_child(title)

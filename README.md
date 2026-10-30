@@ -1,6 +1,6 @@
 # Motorhead Madness Survival (working title) — gameplay prototype
 
-A test of the core gameplay loop with placeholder art and sound. You drive freely in 8 directions around
+A test of the core gameplay loop with placeholder art and sound. You drive freely around
 walled maps while your vehicle auto-fires at hordes of enemies. You steer, pick upgrades, and dodge bosses
 in a ring arena. The goal is Vampire Survivors–style "satisfying without thinking" play.
 
@@ -11,7 +11,8 @@ iOS, Windows, macOS, Linux and Web.
 
 | | Phone | Keyboard |
 |---|---|---|
-| Drive (8 directions) | Drag anywhere for a virtual stick (mouse drag works too) | WASD or arrows |
+| Drive | Drag anywhere for a virtual stick (mouse drag works too) | WASD or arrows |
+| Menus and upgrades | Tap | Arrows or WASD to select, Space or Enter to confirm |
 | Boss: dash and set circling direction | Swipe left / right, or tap a screen side | A / D or ← / → |
 | Boss: switch ring | Swipe up (inner) / down (outer) | W / S or ↑ / ↓ |
 | Pause | ‖ button or Back | Esc / P |
@@ -31,7 +32,11 @@ iOS, Windows, macOS, Linux and Web.
   then it loops), and everything gets harder each stage.
 - **Score:** kills × combo multiplier (up to 5×) plus boss bonuses. The top 10 are saved on the device
   (a stand-in for an online leaderboard).
-- In debug builds the pause menu has **Skip to boss (test)** to reach the boss fight quickly.
+- The pause menu has **Skip to boss (test)** to reach the boss fight quickly. That run stays off the leaderboard.
+- **Redline:** driving fast fills the bar at the bottom, raising fire rate and ram damage. Slowing down drains it and
+  hits take 30%. When full, **nitro** fires by itself: 2.5 s of extra speed, no damage taken and huge rams.
+- **Garage:** every run earns parts, even failed ones. Spend them on permanent upgrades from the main menu.
+  Progress is saved on the device.
 
 ### Content
 
@@ -94,10 +99,11 @@ scripts/game/enemies.gd   horde as packed arrays + MultiMesh + spatial grid
 scripts/game/projectiles.gd, pickups.gd, weapons.gd, boss.gd, fx.gd
 scripts/ui/               HUD, level-up cards, Redline crate gauge, overlays, menu, theme
 scripts/autoload/sfx.gd   procedurally synthesized placeholder sounds
-scripts/autoload/save.gd  local leaderboard
+scripts/autoload/save.gd  everything kept between runs: leaderboard, parts, garage upgrades
 tests/ui_shots.tscn       dev tool: screenshots every screen
 tests/boss_check.tscn     dev tool: checks dash direction, swipe buffer and burst gaps
 tests/map_check.tscn      dev tool: checks movement, walls, spawns, kickback and spitters on every biome
+tests/game_check.tscn     dev tool: checks targeting, keyboard menus, Redline, nitro and the Garage
 tools/android/            APK build + v2 signing scripts, debug signing key
 tools/web/                web build script and the gzip launcher page
 ```
@@ -116,6 +122,7 @@ godot --headless --path . -- --autotest --quit-after-sec=60    # unattended smok
 godot --headless --path . -- --autotest --fair --class=interceptor --quit-after-sec=120   # balance check
 godot --headless --path . res://tests/boss_check.tscn   # boss arena checks
 godot --headless --path . res://tests/map_check.tscn    # open-world checks
+godot --headless --path . res://tests/game_check.tscn   # combat, menus, Redline, Garage
 tools/android/build_apk.sh                             # signed arm64 APK -> build/mms-prototype.apk
 tools/web/build_web.sh                                 # browser build -> build/web, build/mms-web.zip
 ```

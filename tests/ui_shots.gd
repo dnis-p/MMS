@@ -22,8 +22,12 @@ func _process(delta: float) -> void:
 	_t += delta
 	var steps := [
 		[1.0, func(): _shot("menu")],
-		[1.2, func(): _main.start_run("juggernaut")],
+		[1.1, func(): _main.show_garage()],
+		[1.6, func(): _shot("garage")],
+		[1.7, func(): _main.show_menu()],
+		[2.0, func(): _main.start_run("juggernaut")],
 		[4.0, func(): _run().pending_levelups += 1],
+		[3.6, func(): _shot("drive")],
 		[5.0, func(): _shot("levelup")],
 		[5.2, func(): _run().levelup_ui._pick(_run().weapons.level_up_options(1)[0], true)],
 		[6.0, func():
@@ -49,7 +53,7 @@ func _process(delta: float) -> void:
 	]
 	while _step < steps.size() and _t >= steps[_step][0]:
 		# Level-ups can pop up between steps; take them so the script stays on track.
-		if _step > 4 and _run() and _run().levelup_ui.visible:
+		if _step > 8 and _run() and _run().levelup_ui.visible:
 			_run().levelup_ui._pick(_run().weapons.level_up_options(1)[0], true)
 			return
 		steps[_step][1].call()

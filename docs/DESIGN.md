@@ -38,7 +38,7 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 | Topic | Decision |
 |---|---|
 | Camera | 3D scene, nearly top-down with a slight tilt (about 18 degrees from vertical), fixed orientation. Can still be changed by moving the camera. |
-| Movement | (owner, 2026-10-30) Free driving in 8 directions on walled open maps, instant turning. Touch uses a virtual stick. |
+| Movement | (owner, 2026-10-30) Free driving on walled open maps with smooth, tight steering ("flowy", little drift). Replaces instant 8-direction turning. Touch uses an analog virtual stick. |
 | Maps | (owner, 2026-10-30) Roads optional per map. No big structures that cover the player or enemies; buildings only as map walls. |
 | Boss trigger | Random moment 90-150 s into a stage (owner offered this or kills; Claude picked this one, not confirmed yet). |
 | Engine / language | Godot 4.7, GDScript. Compatibility renderer for phones and web. |
@@ -127,6 +127,47 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-10-30, third batch** (checked by automated tests and bots; the owner has not played these yet)
+- **MG firing at far enemies** (owner saw this). There was no bug in choosing the target: it was always the closest at
+  the moment of firing. The bullets just missed it, for two reasons, and flew on to enemies behind. (1) They aimed where
+  the enemy was, not where it was going, and extra barrels fanned outward. With a moving car and no kickback in the test,
+  high-level MG hit 56-75% of the time. Now it leads the target and all barrels converge: 90%, and all 3 barrels on target
+  in game_check. (2) The kickback added last batch pushed the closest enemy out of reach at high fire rates, so MG kick now
+  drops as the MG levels up (9 per bullet down to 1.2 evolved), and the kick cap went from 22 to 14. Level 1 stayed about
+  the same, around 80-90%. Other weapons do not lead targets except mines, and rockets home in anyway.
+- **Closest-enemy firing** (owner). Rockets now take the closest enemy, then the next closest; spare rockets go to the
+  closest. Their random launch swerve is much smaller. Mines are thrown at the closest enemy within 18 m, where it will be
+  on landing, and only go in a random direction when nothing is in range. This replaces last batch's "any direction".
+  Hood MG and Tesla already used the closest. Saw Blades and Shock Plating hit all around you, so no targeting applies.
+- **Keyboard menus** (owner). Arrows or WASD move, Space or Enter confirm, on level-ups, the main menu, Garage and all
+  panels. The selected button has a gold border. Level-up keeps a 0.35 s delay so a key press can't pick by accident. The
+  crate screen now closes only on Space or Enter (any key closed it before; the on-screen text still says "Tap to continue").
+  Tested on level-ups with simulated input; the others use the same system but were not tested one by one.
+- **Skip to boss** (owner) is in the pause menu in every build again. Runs that use it stay off the leaderboard but still
+  earn parts while we are testing.
+- **Vehicle speed** (owner). Juggernaut 7 to 10, War Rig 8.2 to 11.5, Interceptor 9.5 to 13. Enemy speed went up less, about
+  20%: crawler 5.5, runner 11.5, spitter 10.5, brute 6. Maps are 1.5 times larger with twice the obstacles. The camera sits a
+  little higher and looks ahead by 0.35 s of travel. The boss arena uses 72% of vehicle speed, so it plays as before.
+- **Smooth steering** (owner, replaces the instant 8-direction decision). Keys still give 8 target directions, but the nose
+  turns toward them at a fixed rate per class (Juggernaut 315, War Rig 372, Interceptor 458 degrees per second). The stick is
+  now fully analog. The car takes 0.25 s to reach speed, brakes in 0.15 s, slows up to 35% in hard turns and leans a little. High
+  grip keeps drift very small. Tuning is in `Defs.DRIVE` and the "turn" stat of each class; feel needs the owner's judgment.
+- **Redline meter** (owner approved, my proposal). A bar at the bottom of the screen fills in about 11 s of driving at 70%+ speed,
+  drains when slower, and loses 30% per hit. It raises fire rate by up to 35% and ram damage up to 2.5x. When full, **nitro**
+  fires by itself: 2.5 s of 1.4x speed, no damage taken, 4x ram damage, then the meter restarts at 25%. It only fills on the map;
+  in the boss arena it stays at its last value and still gives its bonus, with no nitro.
+- **Garage** (owner: permanent progress). Parts are earned every run, even failed ones: 1 per 10 kills, 15 per stage reached,
+  40 per boss (times its stage). The Garage opens from the main menu and has 8 upgrades (hull, damage, speed, pickup range,
+  XP, armor, starting Redline, one revive). Costs rise with level. About 3,250 parts buys everything, which at the rough 70
+  parts per run the bots suggest is around 45 runs, or 2-3 hours. That is an estimate, not measured. There is a reset button
+  that needs two presses, and a "+500 parts" test button in debug builds. Bots ignore the Garage, so balance checks measure
+  the base game. Upgrades have a "class" field ready for class-specific ones, not used yet.
+- **Saving.** Progress is in a local profile file handled only by `scripts/autoload/save.gd`, with a version number. It is saved
+  after every boss, death and quit. Saves now live in a fixed folder (`%APPDATA%/MMS` on Windows) so renaming the project can't
+  lose them; the existing scores were copied there. Progress is per device: per browser on web, and lost on uninstalling on Android.
+- Bot results after all of this, 6 seeds per class, 220 s limit at double speed: past the first boss, Juggernaut 3, War Rig 2,
+  Interceptor 1. Small sample, and the bot doesn't use speed well. Balance not retuned, on purpose, until the owner has played it.
+
 **2026-10-30, second batch** (bot and automated checks only; the owner has not played these yet, so feel is unconfirmed)
 - **Enemy kickback** (owner: so they don't swarm you this easily). Every attack except burn pools now pushes enemies
   away and they walk at 35% speed until the push fades. One MG bullet moves a crawler about 2 m. Pushes stack up to a
@@ -219,15 +260,8 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
 - Procedural levels: idea only, not to be implemented yet (see section 5).
 
-**Owner requests, 2026-10-30 (approved, in progress)**
-- Permanent progress between runs: points earned in runs, spent on upgrades outside runs, to help get past runs you are stuck on.
-- Every upgrade should fire at the closest enemy.
-- Pick upgrades with the keyboard: move keys to select, Space or Enter to confirm.
-- Skip to boss in the menu again, also in normal builds.
-- More starting vehicle speed; gameplay should be fast paced. Check how that affects swarming.
-- Less snappy turning: more than 8 directions or smoother transitions, "flowy" like a normal car game, but with good
-  control and not too much drifting.
-- A gameplay/mechanic twist so it is more addictive and not just a copy of VS.
+- Leaderboard: multiplayer entries with build, time, score and kills; whether permanent upgrades count is undecided (see section 6).
+- Burnout ring and roads as fast lanes: saved for later review (see section 6).
 
 **Future, not to be implemented yet (owner, 2026-10-30)**
 - Upgrades specific to each vehicle class, both in runs and in the permanent upgrades between runs.
