@@ -10,8 +10,6 @@ signal retry_requested(class_id: String)
 enum Phase { ROAD, BOSS_INTRO, BOSS, CLEAR, DEAD }
 
 const ARENA_CENTER := Vector3(0, 0, 4000)
-const MAX_ALIVE := 420
-const CRIT_CHANCE := 0.08
 
 var class_id := ""
 var stage := 1
@@ -19,8 +17,8 @@ var biome: Dictionary
 var phase := Phase.ROAD
 var road_time := 0.0
 var road_duration := Defs.ROAD_DURATION
-var elite_times := [45.0, 100.0]
-var horde_times := [30.0, 65.0, 95.0, 125.0]
+var elite_times: Array = Defs.SPAWN["elite_times"].duplicate()
+var horde_times: Array = Defs.SPAWN["horde_times"].duplicate()
 var rng := RandomNumberGenerator.new()
 
 var player: Player
@@ -117,7 +115,7 @@ func _ready() -> void:
 	add_child(weapons)
 	weapons.add_weapon(player.def["weapon"])
 	camera = Camera3D.new()
-	camera.fov = 60.0
+	camera.fov = Defs.ROAD_CAMERA["fov"]
 	camera.far = 260.0
 	add_child(camera)
 	camera.make_current()
@@ -217,7 +215,7 @@ func _collect_all_gems() -> void:
 func _on_boss_killed(p: Vector3) -> void:
 	phase = Phase.CLEAR
 	boss.die()
-	add_score(5000 * stage)
+	add_score(Defs.BOSS_KILL_SCORE * stage)
 	_slowmo(1.4, 0.3)
 	fx.shake(1.0)
 	Sfx.play("big_boom", 0.0, 1.0, true)
@@ -242,7 +240,7 @@ func _on_boss_killed(p: Vector3) -> void:
 
 func _next_stage() -> void:
 	stage += 1
-	player.hp = minf(player.max_hp, player.hp + player.max_hp * 0.3)
+	player.hp = minf(player.max_hp, player.hp + player.max_hp * Defs.STAGE_CLEAR_HEAL)
 	_start_stage()
 
 
@@ -316,52 +314,61 @@ func _process(delta: float) -> void:
 
 
 func _director(delta: float) -> void:
+	var sp := Defs.SPAWN
 	var t := road_time
 	var sm := Defs.stage_spawn_mult(stage)
-	var hm := Defs.stage_hp_mult(stage) * (1.0 + 0.6 * t / road_duration)
+	var hm: float = Defs.stage_hp_mult(stage) * (1.0 + sp["hp_ramp"] * t / road_duration)
 	var f := player.forward
 	var right := f.cross(Vector3.UP).normalized()
 	var car := player.global_position
 	_cluster_timer -= delta
 	if _cluster_timer <= 0.0:
-		_cluster_timer = 1.4
-		_cluster_center = car + f * rng.randf_range(26.0, 36.0) + right * rng.randf_range(-9.0, 9.0)
-	_spawn_acc += delta * (3.0 + t * 0.1) * sm
+		_cluster_timer = sp["cluster_every"]
+		_cluster_center = car + f * _range(sp["cluster_ahead"]) + right * rng.randf_range(-sp["cluster_side"], sp["cluster_side"])
+	_spawn_acc += delta * (sp["rate_base"] + t * sp["rate_ramp"]) * sm
 	while _spawn_acc >= 1.0:
 		_spawn_acc -= 1.0
-		if enemies.alive_count >= MAX_ALIVE:
+		if enemies.alive_count >= Defs.MAX_ALIVE:
 			break
 		var roll := rng.randf()
-		var runner_w := 0.0 if t < 15.0 else 0.18 + t / 500.0
-		var spitter_w := 0.0 if t < 40.0 else 0.1 + t / 900.0
+		var runner_w: float = 0.0 if t < sp["runner_from"] else sp["runner_weight"] + t * sp["runner_ramp"]
+		var spitter_w: float = 0.0 if t < sp["spitter_from"] else sp["spitter_weight"] + t * sp["spitter_ramp"]
 		if roll < spitter_w:
-			var side := -1.0 if rng.randf() < 0.5 else 1.0
-			enemies.spawn(Enemies.SPITTER, car + f * rng.randf_range(4.0, 18.0) + right * side * rng.randf_range(15.0, 20.0), hm)
+			enemies.spawn(Enemies.SPITTER, car + f * _range(sp["spitter_ahead"]) + right * _side() * _range(sp["spitter_side"]), hm)
 		elif roll < spitter_w + runner_w:
-			var from_side := rng.randf() < 0.4
-			var p := car - f * rng.randf_range(16.0, 24.0) + right * rng.randf_range(-8.0, 8.0)
-			if from_side:
-				p = car + f * rng.randf_range(-6.0, 6.0) + right * (-1.0 if rng.randf() < 0.5 else 1.0) * rng.randf_range(17.0, 22.0)
+			var p: Vector3 = car - f * _range(sp["runner_behind"]) + right * rng.randf_range(-sp["runner_behind_side"], sp["runner_behind_side"])
+			if rng.randf() < sp["runner_side_chance"]:
+				p = car + f * rng.randf_range(-sp["runner_side_along"], sp["runner_side_along"]) + right * _side() * _range(sp["runner_side"])
 			enemies.spawn(Enemies.RUNNER, p, hm)
 		else:
-			enemies.spawn(Enemies.CRAWLER, _cluster_center + Vector3(rng.randf_range(-4, 4), 0, rng.randf_range(-4, 4)), hm)
+			var j: float = sp["cluster_jitter"]
+			enemies.spawn(Enemies.CRAWLER, _cluster_center + Vector3(rng.randf_range(-j, j), 0, rng.randf_range(-j, j)), hm)
 	if _next_horde < horde_times.size() and t >= horde_times[_next_horde]:
 		_next_horde += 1
 		_spawn_horde(car, hm, sm)
 	if _next_elite < elite_times.size() and t >= elite_times[_next_elite]:
 		_next_elite += 1
-		enemies.spawn(Enemies.BRUTE, car + f * 30.0 + right * rng.randf_range(-3.0, 3.0), hm)
+		enemies.spawn(Enemies.BRUTE, car + f * sp["elite_ahead"] + right * rng.randf_range(-sp["elite_side"], sp["elite_side"]), hm)
 		overlay.banner("ELITE!", "Destroy it for a salvage crate", Color(1.0, 0.75, 0.2), 1.4)
 		Sfx.play("warn", -10.0, 1.4, true)
+
+
+func _range(r: Array) -> float:
+	return rng.randf_range(r[0], r[1])
+
+
+func _side() -> float:
+	return -1.0 if rng.randf() < 0.5 else 1.0
 
 
 func _spawn_horde(car: Vector3, hm: float, sm: float) -> void:
 	overlay.banner("HORDE!", "", Color(0.6, 1.0, 0.3), 1.0)
 	Sfx.play("warn", -8.0, 0.8, true)
-	var n := int(36 * sm)
+	var n := int(Defs.SPAWN["horde_count"] * sm)
+	var r: float = Defs.SPAWN["horde_radius"]
 	for k in n:
 		var a := TAU * k / n
-		enemies.spawn(Enemies.CRAWLER, car + Vector3(cos(a), 0, sin(a)) * 17.0, hm)
+		enemies.spawn(Enemies.CRAWLER, car + Vector3(cos(a), 0, sin(a)) * r, hm)
 
 
 # --- combat events -----------------------------------------------------------
@@ -369,9 +376,9 @@ func _spawn_horde(car: Vector3, hm: float, sm: float) -> void:
 func hit_enemy(i: int, amount: float, knock_dir: Vector3, knock_force: float, show_number := true) -> void:
 	if not enemies.is_alive(i):
 		return
-	var crit := rng.randf() < CRIT_CHANCE
+	var crit := rng.randf() < Defs.CRIT_CHANCE
 	if crit:
-		amount *= 2.0
+		amount *= Defs.CRIT_MULT
 	enemies.hp[i] -= amount
 	enemies.flash[i] = 0.08
 	var t := enemies.etype[i]
@@ -391,7 +398,7 @@ func _kill(i: int, drops: bool) -> void:
 	enemies.remove(i)
 	kills += 1
 	combo += 1
-	combo_timer = 2.5
+	combo_timer = Defs.COMBO_WINDOW
 	best_combo = maxi(best_combo, combo)
 	add_score(int(d["score"] * combo_mult()))
 	fx.burst(p + Vector3(0, 0.5, 0), d["color"], 16 if t >= Enemies.BRUTE else 10)
@@ -402,7 +409,7 @@ func _kill(i: int, drops: bool) -> void:
 	pickups.drop_gem(p, d["xp"])
 	if not drops:
 		return
-	if rng.randf() < 0.012:
+	if rng.randf() < Defs.REPAIR_CHANCE:
 		pickups.drop_repair(p)
 	if t == Enemies.BRUTE:
 		fx.shake(0.35)
@@ -428,12 +435,13 @@ func explode(p: Vector3, r: float, amount: float, napalm: bool) -> void:
 	Sfx.play("boom", -8.0)
 	fx.shake(0.06)
 	if napalm:
-		projectiles.add_zone(p, r * 0.8, 22.0 * weapons.damage_mult(), 3.0)
+		var mines: Dictionary = Defs.WEAPONS["mines"]
+		projectiles.add_zone(p, r * mines["napalm_radius"], mines["napalm_dps"] * weapons.damage_mult(), mines["napalm_life"])
 
 
 func on_enemy_contact(i: int) -> void:
 	if enemies.ram_cd[i] <= 0.0 and enemies.etype[i] != Enemies.BOSS:
-		enemies.ram_cd[i] = 0.4
+		enemies.ram_cd[i] = Defs.RAM_COOLDOWN
 		var away := enemies.pos[i] - player.global_position
 		away.y = 0.0
 		var spd := clampf(player.velocity.length() / 7.0, 0.6, 1.5)
@@ -445,7 +453,7 @@ func on_enemy_contact(i: int) -> void:
 func player_hit(amount: float) -> void:
 	if god_mode or phase == Phase.DEAD or phase == Phase.CLEAR:
 		return
-	var taken := player.hurt(amount * (1.0 + 0.1 * (stage - 1)))
+	var taken := player.hurt(amount * Defs.stage_dmg_mult(stage))
 	if taken <= 0.0:
 		return
 	fx.shake(0.3)
@@ -624,8 +632,9 @@ func _update_time_scale(_delta: float) -> void:
 
 func _road_cam_targets() -> Array:
 	var f := player.forward
-	var pos := player.global_position - f * 9.0 + Vector3.UP * 16.5
-	var look := player.global_position + f * 6.5
+	var cam := Defs.ROAD_CAMERA
+	var pos: Vector3 = player.global_position - f * cam["back"] + Vector3.UP * cam["up"]
+	var look: Vector3 = player.global_position + f * cam["look"]
 	return [pos, look]
 
 

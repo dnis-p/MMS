@@ -18,7 +18,7 @@ var dead := false
 var _state := "idle"
 var _attack := ""
 var _last_attack := ""
-var _timer := 2.5
+var _timer: float = Defs.BOSS["first_attack"]
 var _volleys := 0
 var _slam_rings: Array[int] = []
 var _beam_angle := 0.0
@@ -44,7 +44,7 @@ func setup(p_run: Node, p_center: Vector3, biome: Dictionary, p_stage: int) -> v
 	_build_arena(biome)
 	_build_model()
 	_build_beam()
-	idx = run.enemies.spawn(Enemies.BOSS, center, Defs.stage_hp_mult(stage) * (1.0 + 0.25 * (stage - 1)))
+	idx = run.enemies.spawn(Enemies.BOSS, center, Defs.stage_hp_mult(stage) * (1.0 + Defs.BOSS["hp_stage"] * (stage - 1)))
 
 
 func hp_ratio() -> float:
@@ -56,8 +56,8 @@ func hp_ratio() -> float:
 func _build_arena(biome: Dictionary) -> void:
 	var floor_mi := MeshInstance3D.new()
 	var disk := CylinderMesh.new()
-	disk.top_radius = 16.5
-	disk.bottom_radius = 16.8
+	disk.top_radius = Defs.ARENA["floor_radius"]
+	disk.bottom_radius = disk.top_radius + 0.3
 	disk.height = 0.1
 	disk.radial_segments = 48
 	floor_mi.mesh = disk
@@ -174,11 +174,11 @@ func update(delta: float) -> void:
 	_model.rotation.y = lerp_angle(_model.rotation.y, atan2(-to_player.x, -to_player.z), 3.0 * delta)
 	var squash := 1.0 + (0.06 if flashing else 0.0)
 	_model.scale = Vector3(squash, 1.0 / squash, squash)
-	var enraged := hp_ratio() < 0.5
+	var enraged: bool = hp_ratio() < Defs.BOSS["enrage_at"]
 	_eye_mat.emission_energy_multiplier = 2.0 + (2.0 + sin(_time * 12.0) * 1.5 if enraged else 0.0)
 	match _state:
 		"idle":
-			_timer -= delta * (1.6 if enraged else 1.0)
+			_timer -= delta * (Defs.BOSS["enrage_rush"] if enraged else 1.0)
 			if _timer <= 0.0:
 				_start_attack(enraged)
 		"telegraph":
@@ -195,9 +195,9 @@ func _start_attack(enraged: bool) -> void:
 	_state = "telegraph"
 	match _attack:
 		"burst":
-			_timer = 0.7
+			_timer = Defs.BOSS["burst_telegraph"]
 		"slam":
-			_timer = 1.3
+			_timer = Defs.BOSS["slam_telegraph"]
 			_slam_rings.clear()
 			_slam_rings.append(run.player.ring_index)
 			if enraged:
@@ -205,15 +205,15 @@ func _start_attack(enraged: bool) -> void:
 				_slam_rings.append(other)
 			Sfx.play("warn", -10.0, 1.6, true)
 		"sweep":
-			_timer = 1.1
+			_timer = Defs.BOSS["sweep_telegraph"]
 			_beam_dir = -1.0  # sweep against the car's travel so the player must dash through
 			_beam_angle = run.player.theta + PI
-			_beam_left = TAU * 1.15
+			_beam_left = TAU * Defs.BOSS["sweep_turns"]
 			_beam_pivot.visible = true
 			_set_beam(_beam_angle)
 			_beam_mat.albedo_color = Color(1, 0.2, 0.2, 0.25)
 		"summon":
-			_timer = 0.6
+			_timer = Defs.BOSS["summon_telegraph"]
 
 
 func _telegraph(delta: float, enraged: bool) -> void:
@@ -233,7 +233,7 @@ func _telegraph(delta: float, enraged: bool) -> void:
 	_state = "active"
 	match _attack:
 		"burst":
-			_volleys = 4 if enraged else 3
+			_volleys = Defs.BOSS["burst_volleys_enraged"] if enraged else Defs.BOSS["burst_volleys"]
 			_timer = 0.0
 		"slam":
 			_do_slam()
@@ -251,11 +251,11 @@ func _active(delta: float, enraged: bool) -> void:
 			if _timer <= 0.0:
 				_fire_burst(enraged)
 				_volleys -= 1
-				_timer = 0.55 if enraged else 0.7
+				_timer = Defs.BOSS["burst_interval_enraged"] if enraged else Defs.BOSS["burst_interval"]
 				if _volleys <= 0:
 					_end_attack()
 		"sweep":
-			var speed := 2.0 if enraged else 1.55
+			var speed: float = Defs.BOSS["sweep_speed_enraged"] if enraged else Defs.BOSS["sweep_speed"]
 			var step := speed * delta
 			_beam_angle += _beam_dir * step
 			_beam_left -= step
@@ -270,35 +270,37 @@ func _active(delta: float, enraged: bool) -> void:
 
 func _end_attack() -> void:
 	_state = "idle"
-	_timer = 1.0 if hp_ratio() < 0.5 else 1.6
+	_timer = Defs.BOSS["rest_enraged"] if hp_ratio() < Defs.BOSS["enrage_at"] else Defs.BOSS["rest"]
 	for m in _ring_mats:
 		m.albedo_color = _ring_base
 
 
 func _fire_burst(enraged: bool) -> void:
-	var n := 26 if enraged else 22
+	var b := Defs.BOSS
+	var n: int = b["burst_shots_enraged"] if enraged else b["burst_shots"]
 	var gap_start := randi() % n
-	var gap := 3
+	var gap: int = b["burst_gap"]
+	var spd: float = b["burst_speed_enraged"] if enraged else b["burst_speed"]
 	var offset := randf() * TAU
-	var dmg := 18.0 * (1.0 + 0.2 * (stage - 1))
+	var dmg: float = b["burst_dmg"] * _dmg_mult()
 	for k in n:
 		if (k - gap_start + n) % n < gap:
 			continue
 		var a := offset + TAU * k / n
-		run.projectiles.enemy_shot(center + Vector3(0, 1.0, 0), Vector3(cos(a), 0, sin(a)), 7.0 if not enraged else 8.5, dmg, 0.5, 4.0)
+		run.projectiles.enemy_shot(center + Vector3(0, 1.0, 0), Vector3(cos(a), 0, sin(a)), spd, dmg, b["burst_shot_radius"], b["burst_life"])
 	Sfx.play("shot", -4.0, 0.45)
 	run.fx.shake(0.08)
 
 
 func _do_slam() -> void:
 	var player: Player = run.player
-	var dmg := 35.0 * (1.0 + 0.2 * (stage - 1))
+	var dmg: float = Defs.BOSS["slam_dmg"] * _dmg_mult()
 	for r in _slam_rings:
 		var rr: float = Player.RINGS[r]
 		for k in 12:
 			var a := TAU * k / 12.0 + _time
 			run.fx.burst(center + Vector3(cos(a), 0.3, sin(a)) * rr, Color(1, 0.5, 0.2), 8, 1.2)
-		if absf(player.ring_radius - rr) < 1.6 and player.can_be_hit():
+		if absf(player.ring_radius - rr) < Defs.BOSS["slam_width"] and player.can_be_hit():
 			run.player_hit(dmg)
 	Sfx.play("slam", 0.0)
 	run.fx.shake(0.5)
@@ -307,13 +309,17 @@ func _do_slam() -> void:
 
 func _do_summon(enraged: bool) -> void:
 	var hm := Defs.stage_hp_mult(stage)
-	var n := 12 if enraged else 8
+	var n: int = Defs.BOSS["summon_count_enraged"] if enraged else Defs.BOSS["summon_count"]
 	for k in n:
 		var a := randf() * TAU
-		run.enemies.spawn(Enemies.CRAWLER if k % 3 != 0 else Enemies.RUNNER, center + Vector3(cos(a), 0, sin(a)) * 17.5, hm)
+		run.enemies.spawn(Enemies.CRAWLER if k % 3 != 0 else Enemies.RUNNER, center + Vector3(cos(a), 0, sin(a)) * Defs.ARENA["summon_radius"], hm)
 	run.fx.ring(center, 16.0, Color(0.8, 0.3, 1.0, 0.8), 0.6)
 	Sfx.play("warn", -12.0, 2.0, true)
 	_end_attack()
+
+
+func _dmg_mult() -> float:
+	return 1.0 + Defs.BOSS["dmg_stage"] * (stage - 1)
 
 
 func _set_beam(angle: float) -> void:
@@ -325,7 +331,7 @@ func _check_beam_hit() -> void:
 	var player: Player = run.player
 	var diff := wrapf(player.theta - _beam_angle, -PI, PI)
 	if absf(diff) * player.ring_radius < BEAM_HALF_WIDTH + player.radius * 0.6 and player.can_be_hit():
-		run.player_hit(26.0 * (1.0 + 0.2 * (stage - 1)))
+		run.player_hit(Defs.BOSS["sweep_dmg"] * _dmg_mult())
 
 
 func die() -> void:

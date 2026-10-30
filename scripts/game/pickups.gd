@@ -78,7 +78,7 @@ func drop_repair(p: Vector3) -> void:
 	if g_pos.size() >= MAX:
 		return
 	g_pos.append(Vector3(p.x, 0.3, p.z))
-	g_val.append(25)
+	g_val.append(Defs.REPAIR_HEAL)
 	g_kind.append(REPAIR)
 	g_pull.append(0.0)
 	g_hop.append(5.0)

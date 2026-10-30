@@ -42,6 +42,7 @@ var _mm_orb: MultiMesh
 var _mm_zone: MultiMesh
 var _tmp: Array = []
 var _time := 0.0
+var _mine_arm_life: float = Defs.WEAPONS["mines"]["life"] - Defs.WEAPONS["mines"]["arm_time"]
 
 
 func _ready() -> void:
@@ -150,11 +151,11 @@ func update(delta: float) -> void:
 		var kind := p_kind[i]
 		p_life[i] -= delta
 		if kind == MINE:
-			var armed := p_life[i] < 8.6
+			var armed := p_life[i] < _mine_arm_life
 			var trigger := p_life[i] <= 0.0
 			if armed and not trigger:
 				_tmp.clear()
-				enemies.query(p_pos[i], 1.3, _tmp)
+				enemies.query(p_pos[i], Defs.WEAPONS["mines"]["trigger_radius"], _tmp)
 				trigger = not _tmp.is_empty()
 			if trigger:
 				run.explode(p_pos[i], p_aoe[i], p_dmg[i], (p_flags[i] & FLAG_NAPALM) != 0)
