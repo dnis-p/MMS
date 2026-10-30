@@ -41,7 +41,7 @@ func _process(delta: float) -> void:
 			_run()._resume()],
 		[12.0, func():
 			_run().pending_levelups = 0
-			_run().road_time = _run().road_duration],
+			_run().stage_time = _run().boss_time],
 		[17.0, func(): _shot("boss")],
 		[17.5, func(): _run().player_hit(9999.0)],
 		[20.0, func(): _shot("game_over")],

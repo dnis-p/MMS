@@ -5,7 +5,6 @@ extends Node3D
 const MAX := 400
 const GEM := 0
 const REPAIR := 1
-const DESPAWN_DIST := 70.0  # gems left this far behind are lost
 
 var run: Run
 
@@ -141,10 +140,6 @@ func update(delta: float) -> void:
 				p += diff / d * step
 			# Checked after moving: at low frame rates the car can outrun a 1 m radius.
 			reached = reached or step >= d - 1.0
-		elif d2 > DESPAWN_DIST * DESPAWN_DIST:
-			for arr in [g_pos, g_val, g_kind, g_pull, g_hop]:
-				_swap_remove(arr, i)
-			continue
 		if reached:
 			if g_kind[i] == GEM:
 				run.add_xp(g_val[i])
@@ -177,9 +172,6 @@ func _update_crates(delta: float, car: Vector3) -> void:
 		if diff.length() < 3.0 and age > 0.4:
 			crates.remove_at(i)
 			run.open_crate(int(c.get_meta("guaranteed")))
-			c.queue_free()
-		elif diff.length() > 90.0:
-			crates.remove_at(i)
 			c.queue_free()
 
 

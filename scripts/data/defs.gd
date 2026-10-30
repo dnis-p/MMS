@@ -6,8 +6,8 @@ const MAX_PASSIVE_LEVEL := 5
 const MAX_WEAPON_SLOTS := 4
 const MAX_PASSIVE_SLOTS := 4
 
-## Seconds of road before the boss arena.
-const ROAD_DURATION := 150.0
+## The boss turns up at a random moment in this window (seconds into the stage).
+const BOSS_WINDOW := [90.0, 150.0]
 
 const CRIT_CHANCE := 0.08
 const CRIT_MULT := 2.0
@@ -29,21 +29,21 @@ const BOSS_KILL_SCORE := 5000
 ## Each enemy type has its own "knock" factor; the push strength is set per weapon.
 const KNOCK := {"decay": 18.0, "stagger": 0.35, "max": 22.0, "ram": 16.0, "blast": 12.0}
 
-## Road camera, relative to the car: metres back, metres up, look-ahead metres.
-const ROAD_CAMERA := {"back": 13.0, "up": 24.0, "look": 3.0, "fov": 60.0}
+## Map camera, fixed orientation, relative to the car: metres south, metres up.
+const MAP_CAMERA := {"back": 9.0, "up": 28.0, "fov": 60.0}
 
 ## Spawn director. `t` below means seconds into the stage. Distances are metres from the car.
 const SPAWN := {
 	"rate_base": 3.0, "rate_ramp": 0.1,  # enemies per second = base + ramp * t
-	"hp_ramp": 0.6,  # extra enemy HP by the end of a stage
-	"cluster_every": 1.4, "cluster_ahead": [40.0, 50.0], "cluster_side": 9.0, "cluster_jitter": 4.0,
-	"runner_from": 15.0, "runner_weight": 0.18, "runner_ramp": 1.0 / 500.0, "runner_side_chance": 0.4,
-	"runner_behind": [16.0, 24.0], "runner_behind_side": 8.0,
-	"runner_side": [30.0, 34.0], "runner_side_along": 6.0,
+	"hp_ramp": 0.6,  # extra enemy HP by the latest moment the boss can appear
+	"cluster_every": 1.4, "cluster_jitter": 4.0,
+	"runner_from": 15.0, "runner_weight": 0.18, "runner_ramp": 1.0 / 500.0,
 	"spitter_from": 40.0, "spitter_weight": 0.1, "spitter_ramp": 1.0 / 900.0,
-	"spitter_side": [28.0, 32.0], "spitter_ahead": [4.0, 18.0],
-	"elite_times": [45.0, 100.0], "elite_ahead": 42.0, "elite_side": 3.0,
-	"horde_times": [30.0, 65.0, 95.0, 125.0], "horde_count": 36, "horde_radius": 26.0,
+	"elite_times": [40.0, 80.0],
+	"horde_times": [30.0, 60.0, 85.0, 115.0], "horde_count": 36,
+	# Enemies appear this far from the car, just off screen. Side distance is per unit of aspect ratio.
+	"screen_side": 24.0, "screen_up": 26.0, "screen_down": 19.0,
+	"ahead_chance": 0.65, "ahead_spread": 1.0,  # most spawns are in the direction of travel
 }
 
 ## Boss arena. Damage and HP also grow per stage through the *_stage values.
@@ -70,7 +70,7 @@ const CLASSES := {
 		"name": "Juggernaut",
 		"tagline": "Heavy tank",
 		"desc": "Slow, armored, rams hard.\nStarts with Rocket Pod.",
-		"max_hp": 165.0, "armor": 2.0, "speed": 6.5, "steer": 6.5, "ram": 45.0, "might": 1.15,
+		"max_hp": 165.0, "armor": 2.0, "speed": 6.5, "ram": 45.0, "might": 1.15,
 		"weapon": "rockets",
 		"color": Color(0.42, 0.5, 0.28),
 		"size": Vector3(2.6, 1.2, 3.8),
@@ -79,7 +79,7 @@ const CLASSES := {
 		"name": "Interceptor",
 		"tagline": "Fast raider",
 		"desc": "Fragile but quick.\nStarts with Hood MG.",
-		"max_hp": 95.0, "armor": 0.0, "speed": 9.5, "steer": 11.0, "ram": 14.0, "might": 1.0,
+		"max_hp": 95.0, "armor": 0.0, "speed": 9.5, "ram": 14.0, "might": 1.0,
 		"weapon": "mg",
 		"color": Color(0.85, 0.2, 0.18),
 		"size": Vector3(1.5, 0.8, 3.0),
@@ -88,7 +88,7 @@ const CLASSES := {
 		"name": "War Rig",
 		"tagline": "Armed hauler",
 		"desc": "Balanced and sturdy.\nStarts with Saw Blades.",
-		"max_hp": 125.0, "armor": 1.0, "speed": 7.8, "steer": 8.0, "ram": 28.0, "might": 1.0,
+		"max_hp": 125.0, "armor": 1.0, "speed": 7.8, "ram": 28.0, "might": 1.0,
 		"weapon": "saws",
 		"color": Color(0.9, 0.55, 0.15),
 		"size": Vector3(2.2, 1.5, 4.6),
@@ -202,7 +202,7 @@ const PASSIVES := {
 ## Enemy type ids index into ENEMY_ORDER.
 const ENEMY_ORDER := ["crawler", "runner", "spitter", "brute", "boss"]
 const ENEMIES := {
-	"crawler": {"hp": 10.0, "speed": 3.4, "radius": 0.65, "dmg": 6.0, "xp": 1, "score": 10, "knock": 1.0, "color": Color(0.55, 0.78, 0.3), "scale": 1.1},
+	"crawler": {"hp": 10.0, "speed": 4.6, "radius": 0.65, "dmg": 6.0, "xp": 1, "score": 10, "knock": 1.0, "color": Color(0.55, 0.78, 0.3), "scale": 1.1},
 	"runner": {"hp": 20.0, "speed": 11.5, "radius": 0.7, "dmg": 9.0, "xp": 2, "score": 20, "knock": 0.8, "color": Color(0.95, 0.35, 0.25), "scale": 1.25},
 	"spitter": {"hp": 30.0, "speed": 9.0, "radius": 0.75, "dmg": 8.0, "xp": 3, "score": 30, "knock": 1.0,
 		"range": 11.0, "pace": 0.6, "hold": 1.5, "back_off": 0.5, "hold_inside": 8.0, "color": Color(0.72, 0.38, 0.95), "scale": 1.2},
@@ -212,28 +212,28 @@ const ENEMIES := {
 
 const BIOMES := [
 	{
-		"name": "Rust Wastes", "boss": "WARLORD MAXIMUS",
+		"name": "Rust Wastes", "boss": "WARLORD MAXIMUS", "half": [170.0, 150.0], "roads": "winding", "solids": 120, "decor": 160,
 		"sky": Color(0.86, 0.6, 0.38), "fog": Color(0.86, 0.62, 0.4),
 		"ground_a": Color(0.72, 0.5, 0.3), "ground_b": Color(0.58, 0.38, 0.22),
 		"road": Color(0.32, 0.29, 0.27), "line": Color(0.95, 0.85, 0.5), "edge": Color(0.5, 0.42, 0.35),
 		"grid": 0.0, "grid_color": Color(0, 0, 0), "props": "waste", "boss_color": Color(0.75, 0.3, 0.15),
 	},
 	{
-		"name": "Neon Sprawl", "boss": "NEON HYDRA",
+		"name": "Neon Sprawl", "boss": "NEON HYDRA", "half": [150.0, 150.0], "roads": "grid", "solids": 90, "decor": 120,
 		"sky": Color(0.08, 0.04, 0.16), "fog": Color(0.18, 0.06, 0.3),
 		"ground_a": Color(0.1, 0.08, 0.16), "ground_b": Color(0.06, 0.05, 0.1),
 		"road": Color(0.12, 0.12, 0.16), "line": Color(0.1, 1.0, 0.95), "edge": Color(1.0, 0.2, 0.75),
 		"grid": 1.0, "grid_color": Color(0.9, 0.2, 1.0), "props": "neon", "boss_color": Color(0.2, 0.95, 1.0),
 	},
 	{
-		"name": "Frost Line", "boss": "FROST TITAN",
+		"name": "Frost Line", "boss": "FROST TITAN", "half": [180.0, 140.0], "roads": "none", "solids": 140, "decor": 160,
 		"sky": Color(0.72, 0.84, 0.95), "fog": Color(0.8, 0.88, 0.96),
 		"ground_a": Color(0.9, 0.94, 1.0), "ground_b": Color(0.72, 0.8, 0.9),
 		"road": Color(0.4, 0.45, 0.52), "line": Color(0.95, 0.95, 1.0), "edge": Color(0.6, 0.68, 0.78),
 		"grid": 0.0, "grid_color": Color(0, 0, 0), "props": "frost", "boss_color": Color(0.5, 0.75, 1.0),
 	},
 	{
-		"name": "Toxic Bog", "boss": "BOG MOTHER",
+		"name": "Toxic Bog", "boss": "BOG MOTHER", "half": [150.0, 130.0], "roads": "none", "solids": 110, "decor": 180,
 		"sky": Color(0.3, 0.38, 0.2), "fog": Color(0.36, 0.45, 0.22),
 		"ground_a": Color(0.25, 0.35, 0.15), "ground_b": Color(0.35, 0.5, 0.12),
 		"road": Color(0.24, 0.22, 0.2), "line": Color(0.7, 1.0, 0.2), "edge": Color(0.3, 0.3, 0.25),

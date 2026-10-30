@@ -1,22 +1,24 @@
 class_name Run
 extends Node3D
-## One playthrough: stage after stage of road (auto-drive, hordes, level-ups)
+## One playthrough: stage after stage on an open map (free driving, hordes, level-ups)
 ## followed by a ring-arena boss. Owns every subsystem and routes events
 ## between them (damage, kills, XP, crates, modals, camera, input).
 
 signal exit_to_menu
 signal retry_requested(class_id: String)
 
-enum Phase { ROAD, BOSS_INTRO, BOSS, CLEAR, DEAD }
+enum Phase { ROAM, BOSS_INTRO, BOSS, CLEAR, DEAD }
 
 const ARENA_CENTER := Vector3(0, 0, 4000)
+const STICK_DEADZONE := 18.0
 
 var class_id := ""
 var stage := 1
 var biome: Dictionary
-var phase := Phase.ROAD
-var road_time := 0.0
-var road_duration := Defs.ROAD_DURATION
+var phase := Phase.ROAM
+var stage_time := 0.0
+var boss_window: Array = Defs.BOSS_WINDOW.duplicate()
+var boss_time := 0.0  # when the boss turns up this stage, rolled from boss_window
 var elite_times: Array = Defs.SPAWN["elite_times"].duplicate()
 var horde_times: Array = Defs.SPAWN["horde_times"].duplicate()
 ## All gameplay randomness comes from `rng` so a seed can reproduce a run's rolls;
@@ -25,7 +27,8 @@ var rng := RandomNumberGenerator.new()
 var run_seed := 0  # 0 = pick a random one
 
 var player: Player
-var road: Road
+var map: Map
+var bot := Bot.new()
 var enemies: Enemies
 var projectiles: Projectiles
 var pickups: Pickups
@@ -77,6 +80,9 @@ var _touch_index := -1
 var _touch_start := Vector2.ZERO
 var _touch_start_ms := 0
 var _touch_swiped := false
+var _stick_index := -1
+var _stick_base := Vector2.ZERO
+var _stick_dir := Vector2.ZERO
 var _dash_buffer := 0.0
 var _dash_buffer_dir := 0.0
 var _tmp: Array = []
@@ -104,8 +110,8 @@ func _ready() -> void:
 	_sun.shadow_enabled = false
 	add_child(_sun)
 
-	road = Road.new()
-	add_child(road)
+	map = Map.new()
+	add_child(map)
 	enemies = Enemies.new()
 	enemies.run = self
 	add_child(enemies)
@@ -125,7 +131,7 @@ func _ready() -> void:
 	add_child(weapons)
 	weapons.add_weapon(player.def["weapon"])
 	camera = Camera3D.new()
-	camera.fov = Defs.ROAD_CAMERA["fov"]
+	camera.fov = Defs.MAP_CAMERA["fov"]
 	camera.far = 260.0
 	add_child(camera)
 	camera.make_current()
@@ -160,10 +166,10 @@ func _start_stage() -> void:
 	biome = Defs.biome(stage)
 	_apply_biome()
 	update_pace()
-	# Long enough for the fastest this stage can get, with every speed upgrade.
-	var top_speed := player.base_speed * Defs.stage_speed_mult(stage) * (1.0 + float(Defs.PASSIVES["nitro"]["speed"]) * Defs.MAX_PASSIVE_LEVEL)
-	road.build(biome, rng, top_speed * road_duration + 100.0)
-	road.visible = true
+	map.build(biome, rng)
+	map.visible = true
+	enemies.walls = map
+	boss_time = rng.randf_range(boss_window[0], boss_window[1])
 	enemies.clear()
 	projectiles.clear()
 	pickups.clear()
@@ -171,16 +177,16 @@ func _start_stage() -> void:
 	if boss:
 		boss.queue_free()
 		boss = null
-	phase = Phase.ROAD
-	road_time = 0.0
+	phase = Phase.ROAM
+	stage_time = 0.0
 	_spawn_acc = 0.0
 	_next_elite = 0
 	_next_horde = 0
-	player.place_on_road(road)
-	_snap_camera_road()
+	player.place_on_map()
+	_snap_camera_map()
 	overlay.banner("STAGE %d" % stage, String(biome["name"]).to_upper(), Color(1, 0.85, 0.3), 1.8)
 	if stage == 1:
-		hud.show_hint("Drag left / right to steer  ·  weapons fire on their own", 5.0)
+		hud.show_hint("WASD / arrows or drag to drive  ·  weapons fire on their own", 5.0)
 
 
 func _apply_biome() -> void:
@@ -193,10 +199,10 @@ func _apply_biome() -> void:
 func _start_boss_intro() -> void:
 	phase = Phase.BOSS_INTRO
 	_phase_timer = 2.6
-	overlay.banner("BOSS INCOMING", String(biome["boss"]), Color(1, 0.3, 0.25), 1.8)
+	overlay.banner("%s INCOMING" % String(biome["boss"]), "", Color(1, 0.3, 0.25), 1.8)
 	Sfx.play("warn", -4.0, 1.0, true)
 	pickups.vacuum = true
-	# Clear the road with a satisfying chain of pops; the XP still drops and gets vacuumed.
+	# Clear the map with a satisfying chain of pops; the XP still drops and gets vacuumed.
 	for i in enemies.used:
 		if enemies.alive[i] == 1:
 			_kill(i, false)
@@ -210,7 +216,9 @@ func _enter_arena() -> void:
 	enemies.clear()
 	projectiles.clear()
 	pickups.clear()
-	road.visible = false
+	map.visible = false
+	enemies.walls = null
+	_stick_reset()
 	boss = Boss.new()
 	add_child(boss)
 	boss.setup(self, ARENA_CENTER, biome, stage)
@@ -309,19 +317,21 @@ func _quit_to_menu() -> void:
 func _process(delta: float) -> void:
 	_update_time_scale(delta)
 	match phase:
-		Phase.ROAD:
-			road_time += delta
-			player.road_update(delta, road, Input.get_axis("steer_left", "steer_right"))
+		Phase.ROAM:
+			stage_time += delta
+			player.drive(delta, _move_input(delta), map)
 			_director(delta)
-			if road_time >= road_duration:
+			if stage_time >= boss_time:
 				_start_boss_intro()
 		Phase.BOSS_INTRO:
-			player.road_update(delta, road, Input.get_axis("steer_left", "steer_right"))
+			player.drive(delta, _move_input(delta), map)
 			_phase_timer -= delta
 			if _phase_timer <= 0.0:
 				_enter_arena()
 		Phase.BOSS, Phase.CLEAR:
 			player.arena_update(delta, ARENA_CENTER)
+			if autotest:
+				bot.boss_turn(self)
 			if _dash_buffer > 0.0:
 				_dash_buffer -= delta
 				if player.dash_cd <= 0.0:
@@ -338,27 +348,24 @@ func _process(delta: float) -> void:
 		pickups.update(delta)
 	fx.update(delta)
 	_update_combo(delta)
-	if phase == Phase.ROAD or phase == Phase.BOSS_INTRO:
-		_update_camera_road(delta)
+	if phase == Phase.ROAM or phase == Phase.BOSS_INTRO:
+		_update_camera_map(delta)
 	elif phase != Phase.DEAD:
 		_update_camera_arena(delta)
-	road.follow(_cam_look)
+	map.follow(_cam_look)
 	hud.refresh(self)
 	_try_open_modal()
 
 
 func _director(delta: float) -> void:
 	var sp := Defs.SPAWN
-	var t := road_time
+	var t := stage_time
 	var sm := Defs.stage_spawn_mult(stage)
-	var hm: float = Defs.stage_hp_mult(stage) * (1.0 + sp["hp_ramp"] * t / road_duration)
-	var f := player.forward
-	var right := f.cross(Vector3.UP).normalized()
-	var car := player.global_position
+	var hm: float = Defs.stage_hp_mult(stage) * (1.0 + sp["hp_ramp"] * t / float(boss_window[1]))
 	_cluster_timer -= delta
 	if _cluster_timer <= 0.0:
 		_cluster_timer = sp["cluster_every"]
-		_cluster_center = car + f * _range(sp["cluster_ahead"]) + right * rng.randf_range(-sp["cluster_side"], sp["cluster_side"])
+		_cluster_center = offscreen_point()
 	_spawn_acc += delta * (sp["rate_base"] + t * sp["rate_ramp"]) * sm
 	while _spawn_acc >= 1.0:
 		_spawn_acc -= 1.0
@@ -368,41 +375,50 @@ func _director(delta: float) -> void:
 		var runner_w: float = 0.0 if t < sp["runner_from"] else sp["runner_weight"] + t * sp["runner_ramp"]
 		var spitter_w: float = 0.0 if t < sp["spitter_from"] else sp["spitter_weight"] + t * sp["spitter_ramp"]
 		if roll < spitter_w:
-			enemies.spawn(Enemies.SPITTER, car + f * _range(sp["spitter_ahead"]) + right * _side() * _range(sp["spitter_side"]), hm)
+			enemies.spawn(Enemies.SPITTER, offscreen_point(), hm)
 		elif roll < spitter_w + runner_w:
-			var p: Vector3 = car - f * _range(sp["runner_behind"]) + right * rng.randf_range(-sp["runner_behind_side"], sp["runner_behind_side"])
-			if rng.randf() < sp["runner_side_chance"]:
-				p = car + f * rng.randf_range(-sp["runner_side_along"], sp["runner_side_along"]) + right * _side() * _range(sp["runner_side"])
-			enemies.spawn(Enemies.RUNNER, p, hm)
+			enemies.spawn(Enemies.RUNNER, offscreen_point(), hm)
 		else:
 			var j: float = sp["cluster_jitter"]
 			enemies.spawn(Enemies.CRAWLER, _cluster_center + Vector3(rng.randf_range(-j, j), 0, rng.randf_range(-j, j)), hm)
 	if _next_horde < horde_times.size() and t >= horde_times[_next_horde]:
 		_next_horde += 1
-		_spawn_horde(car, hm, sm)
+		_spawn_horde(hm, sm)
 	if _next_elite < elite_times.size() and t >= elite_times[_next_elite]:
 		_next_elite += 1
-		enemies.spawn(Enemies.BRUTE, car + f * sp["elite_ahead"] + right * rng.randf_range(-sp["elite_side"], sp["elite_side"]), hm)
+		enemies.spawn(Enemies.BRUTE, offscreen_point(), hm)
 		overlay.banner("ELITE!", "Destroy it for a salvage crate", Color(1.0, 0.75, 0.2), 1.4)
 		Sfx.play("warn", -10.0, 1.4, true)
 
 
-func _range(r: Array) -> float:
-	return rng.randf_range(r[0], r[1])
+## Where a ray from the car in direction `d` leaves the screen, plus a margin.
+func _screen_edge(d: Vector3) -> Vector3:
+	var sp := Defs.SPAWN
+	var side: float = sp["screen_side"] * get_viewport().get_visible_rect().size.aspect()
+	var vertical: float = sp["screen_down"] if d.z > 0.0 else sp["screen_up"]
+	return player.global_position + d * minf(side / maxf(absf(d.x), 0.01), vertical / maxf(absf(d.z), 0.01))
 
 
-func _side() -> float:
-	return -1.0 if rng.randf() < 0.5 else 1.0
+## A spot just off screen and inside the map, usually in the direction of travel.
+func offscreen_point() -> Vector3:
+	var sp := Defs.SPAWN
+	for k in 6:
+		var a := rng.randf() * TAU
+		if k == 0 and player.velocity.length_squared() > 0.25 and rng.randf() < sp["ahead_chance"]:
+			a = atan2(player.heading.z, player.heading.x) + rng.randf_range(-sp["ahead_spread"], sp["ahead_spread"])
+		var p := _screen_edge(Vector3(cos(a), 0, sin(a)))
+		if map.contains(p, 3.0):
+			return p
+	return map.clamp_inside(_screen_edge(Vector3(cos(rng.randf() * TAU), 0, sin(rng.randf() * TAU)).normalized()), 3.0)
 
 
-func _spawn_horde(car: Vector3, hm: float, sm: float) -> void:
+func _spawn_horde(hm: float, sm: float) -> void:
 	overlay.banner("HORDE!", "", Color(0.6, 1.0, 0.3), 1.0)
 	Sfx.play("warn", -8.0, 0.8, true)
 	var n := int(Defs.SPAWN["horde_count"] * sm)
-	var r: float = Defs.SPAWN["horde_radius"]
 	for k in n:
 		var a := TAU * k / n
-		enemies.spawn(Enemies.CRAWLER, car + Vector3(cos(a), 0, sin(a)) * r, hm)
+		enemies.spawn(Enemies.CRAWLER, map.clamp_inside(_screen_edge(Vector3(cos(a), 0, sin(a))), 3.0), hm)
 
 
 # --- combat events -----------------------------------------------------------
@@ -451,10 +467,8 @@ func _kill(i: int, drops: bool) -> void:
 		fx.shake(0.35)
 		_hitstop(0.07)
 		Sfx.play("boom", -2.0)
-		if phase == Phase.ROAD:
-			var s := player.s + 22.0
-			var c := road.point_at(s) + road.forward_at(s).cross(Vector3.UP).normalized() * rng.randf_range(-2.5, 2.5)
-			pickups.drop_crate(c)
+		if phase == Phase.ROAM:
+			pickups.drop_crate(map.clamp_inside(p, 3.0))
 		else:
 			pickups.drop_crate(player.global_position)
 
@@ -567,10 +581,10 @@ func shuffle(a: Array) -> void:
 		a[j] = t
 
 
-## Keeps a thrown object on the arena floor during a boss fight.
+## Keeps a thrown object on the map, or on the arena floor during a boss fight.
 func keep_in_play(p: Vector3) -> Vector3:
 	if not is_boss_phase():
-		return p
+		return map.clamp_inside(p, 1.0)
 	return ARENA_CENTER + (p - ARENA_CENTER).limit_length(Defs.ARENA["floor_radius"])
 
 
@@ -599,6 +613,7 @@ func _try_open_modal() -> void:
 			m = _modal_queue[0]
 	_modal_queue.pop_front()
 	_modal_open = true
+	_stick_reset()
 	get_tree().paused = true
 	match m["kind"]:
 		"levelup":
@@ -637,12 +652,13 @@ func _open_pause() -> void:
 	if _modal_open or phase == Phase.DEAD or _paused_by_menu:
 		return
 	_paused_by_menu = true
+	_stick_reset()
 	get_tree().paused = true
 	var buttons := [["Resume", _resume]]
-	if phase == Phase.ROAD and OS.is_debug_build():
+	if phase == Phase.ROAM and OS.is_debug_build():
 		buttons.append(["Skip to boss (test)", func():
 			_resume()
-			road_time = road_duration])
+			stage_time = boss_time])
 	buttons.append(["Quit to menu", _quit_to_menu])
 	overlay.show_panel("PAUSED", ["Stage %d  ·  %s" % [stage, biome["name"]]], buttons)
 
@@ -682,26 +698,24 @@ func _update_time_scale(_delta: float) -> void:
 
 # --- camera ------------------------------------------------------------------------
 
-func _road_cam_targets() -> Array:
-	var f := player.forward
-	var cam := Defs.ROAD_CAMERA
-	var pos: Vector3 = player.global_position - f * cam["back"] + Vector3.UP * cam["up"]
-	var look: Vector3 = player.global_position + f * cam["look"]
-	return [pos, look]
+func _map_cam_targets() -> Array:
+	var cam := Defs.MAP_CAMERA
+	var car := player.global_position
+	return [car + Vector3(0, cam["up"], cam["back"]), car]
 
 
-func _snap_camera_road() -> void:
-	var t := _road_cam_targets()
+func _snap_camera_map() -> void:
+	var t := _map_cam_targets()
 	_cam_pos = t[0]
 	_cam_look = t[1]
 	_place_camera()
 
 
-func _update_camera_road(delta: float) -> void:
-	var t := _road_cam_targets()
-	var k := 1.0 - exp(-6.0 * delta)
+func _update_camera_map(delta: float) -> void:
+	var t := _map_cam_targets()
+	var k := 1.0 - exp(-8.0 * delta)
 	_cam_pos = _cam_pos.lerp(t[0], k)
-	_cam_look = _cam_look.lerp(t[1], 1.0 - exp(-10.0 * delta))
+	_cam_look = _cam_look.lerp(t[1], k)
 	_place_camera()
 
 
@@ -760,20 +774,59 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if is_boss_phase():
 		_boss_input(event)
-	elif phase == Phase.ROAD or phase == Phase.BOSS_INTRO:
-		if event is InputEventScreenDrag:
-			var width := get_viewport().get_visible_rect().size.x
-			player.steer_by(event.relative.x * (Player.LATERAL_LIMIT * 2.0) / (width * 0.45))
+	elif phase == Phase.ROAM or phase == Phase.BOSS_INTRO:
+		_stick_input(event)
+
+
+## Screen-relative move direction, always one of 8 directions.
+func _move_input(delta: float) -> Vector2:
+	var v := Input.get_vector("move_left", "move_right", "move_up", "move_down", 0.0)
+	if autotest:
+		v = bot.steer(self, delta)
+	elif _stick_dir != Vector2.ZERO:
+		v = _stick_dir
+	if v == Vector2.ZERO:
+		return v
+	return Vector2.RIGHT.rotated(snappedf(v.angle(), TAU / 8.0))
+
+
+func _stick_input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		if event.pressed and _stick_index == -1:
+			_stick_start(event.index, event.position)
+		elif not event.pressed and event.index == _stick_index:
+			_stick_reset()
+	elif event is InputEventScreenDrag:
+		if _stick_index == -1:
+			_stick_start(event.index, event.position)
+		if event.index == _stick_index:
+			var d: Vector2 = event.position - _stick_base
+			_stick_base = event.position - d.limit_length(Joystick.RADIUS)
+			_stick_dir = d if d.length() > STICK_DEADZONE else Vector2.ZERO
+			hud.joystick.show_at(_stick_base, event.position)
+
+
+func _stick_start(index: int, at: Vector2) -> void:
+	_stick_index = index
+	_stick_base = at
+	_stick_dir = Vector2.ZERO
+	hud.joystick.show_at(at, at)
+
+
+func _stick_reset() -> void:
+	_stick_index = -1
+	_stick_dir = Vector2.ZERO
+	hud.joystick.visible = false
 
 
 func _boss_input(event: InputEvent) -> void:
-	if event.is_action_pressed("steer_left"):
+	if event.is_action_pressed("move_left"):
 		_dash(-1.0)
-	elif event.is_action_pressed("steer_right"):
+	elif event.is_action_pressed("move_right"):
 		_dash(1.0)
-	elif event.is_action_pressed("ring_in"):
+	elif event.is_action_pressed("move_up"):
 		_ring(-1)
-	elif event.is_action_pressed("ring_out"):
+	elif event.is_action_pressed("move_down"):
 		_ring(1)
 	if event is InputEventScreenTouch:
 		if event.pressed and _touch_index == -1:

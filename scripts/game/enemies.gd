@@ -11,10 +11,12 @@ const RUNNER := 1
 const SPITTER := 2
 const BRUTE := 3
 const BOSS := 4
-const DESPAWN_DIST := 62.0
+const RECYCLE_DIST := 80.0  # enemies left this far behind reappear just off screen
 
 var run: Run
+var walls: Map  # set during the map phase, null in the boss arena
 var speed_mult := 1.0  # the game's pace, so a faster car cannot outrun the horde
+var _frame := 0
 var _knock_decay: float = Defs.KNOCK["decay"]
 var _stagger: float = Defs.KNOCK["stagger"]
 var _spit: Dictionary = Defs.ENEMIES["spitter"]
@@ -171,6 +173,7 @@ func is_alive(i: int) -> bool:
 
 func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> void:
 	_time += delta
+	_frame += 1
 	_rebuild_grid()
 	for i in used:
 		if alive[i] == 0:
@@ -186,8 +189,8 @@ func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> 
 		var to := car - p
 		to.y = 0.0
 		var d := to.length()
-		if d > DESPAWN_DIST:
-			remove(i)
+		if d > RECYCLE_DIST and walls:
+			pos[i] = run.offscreen_point()
 			continue
 		var dir := to / d if d > 0.001 else Vector3.ZERO
 		var v := dir * speed[i] * speed_mult
@@ -205,6 +208,8 @@ func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> 
 			knock[i] = k.move_toward(Vector3.ZERO, _knock_decay * delta)
 		p += v * delta + _separation(i, p) * delta
 		p.y = 0.0  # bullets knock along their own angle; the horde stays on the ground
+		if walls and (i + _frame) & 1 == 0:  # every other frame is plenty at these speeds
+			p = walls.resolve(p, radius[i])
 		pos[i] = p
 		if d > 0.001:
 			yaw[i] = atan2(dir.x, dir.z)
