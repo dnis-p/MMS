@@ -47,6 +47,8 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Path that is not perfectly straight in the finished product (curves exist already; more variety later).
 - Online **leaderboards and rankings** to drive competition.
 - Possible **PC version** as a full-scale game; keep input, UI and services platform-independent.
+- (owner, 2026-10-30) Future PC direction: get rid of the fixed path and let the player **move freely**.
+  Talk only, not to be implemented now. Keep movement/camera code separable from the road so this stays possible.
 
 ## 6. Ideas backlog (suggested by Claude, not yet approved)
 **Player agency (keep it light given the "play without thinking" rule)**
@@ -111,3 +113,13 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - In boss fights maybe its better if the dash makes the vehicle change direction too instead of always going in the same direction. Also the attack of the balls that come out in a ring from the boss is imposible to dodge unless the opening spawns close to you. If the opening spawn on the other side of the arena then you always get hit by the ring, or at least I haven't been able to dodge it in any way.
 - Also regarding gems, when you kill enemies outside of the road if they are far away its impossible to get their gems, you can't get as close as needed, we should fix that somehow.
 - The mine upgrade throws mines towards the back but since there's so little space between the vehicle and the camera frame u can't really see if they will explode on an enemy or not. I've thought about making it throw mines in any direction instead of just towards the back. In the future I may change this upgrade to another thing.
+
+**Owner answers, 2026-10-30**
+- Items 3 and 4 (difficulty): when the player gets faster/stronger, enemies must scale too (both speed and
+  strength), otherwise you outrun or melt them. Applies to the vehicle speed gained through upgrades and progression.
+- Item 5 (boss dash): swiping right makes the vehicle dodge and then keep circling the boss toward the right of
+  the screen (swipe left = toward the left). Same circling, but the swipe picks the direction. Fits the Decided rule
+  "the player only chooses the direction".
+- Item 6 (far gems): **deferred**, leave as is for now.
+- Order: first the small and medium items (mines, boss ring burst + dash direction, camera zoom-out); then
+  difficulty/pace (3, 4), then class balance (2).
