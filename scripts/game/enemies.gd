@@ -201,6 +201,7 @@ func update(delta: float, car: Vector3, car_vel: Vector3, car_radius: float) -> 
 			v += k
 			knock[i] = k.move_toward(Vector3.ZERO, 40.0 * delta)
 		p += v * delta + _separation(i, p) * delta
+		p.y = 0.0  # bullets knock along their own angle; the horde stays on the ground
 		pos[i] = p
 		if d > 0.001:
 			yaw[i] = atan2(dir.x, dir.z)
