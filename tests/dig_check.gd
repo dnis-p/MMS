@@ -214,10 +214,25 @@ func _check_pause(r: Run) -> void:
 
 func _check_pulse(r: Run) -> void:
 	var m := r.mine
-	_fill(r, Vector3(0, 0, -3), 2, 1)
-	var before := r.cubes
-	r.tools._pulse(m, Vector3.ZERO)
-	_check("the pulse breaks rock the moment it fires (%d)" % (r.cubes - before), r.cubes > before and m._q_time.is_empty())
+	var at := Vector3.ZERO
+	var r_size := r.tools.size("pulse")
+	var time: float = Defs.TOOLS["pulse"]["ring_time"]
+	_fill(r, Vector3(0, 0, -2), 0, 1)
+	_fill(r, Vector3(0, 0, -4.5), 0, 1)
+	var near := m.cell_of(0.0) + m.cell_of(-2.0) * Mine.SIZE
+	var far := m.cell_of(0.0) + m.cell_of(-4.5) * Mine.SIZE
+	_check("cubes wait for the pulse ring (%d)" % m.hit_ring(at, r_size, 1e9, time), m.kind[near] == 1 and m.kind[far] == 1)
+	var near_time := Fx.ring_arrival(2.0, r_size, time)
+	var far_time := Fx.ring_arrival(4.5, r_size, time)
+	m.update(near_time - 0.02)
+	_check("the ring reaches near cubes first", m.kind[near] == 1)
+	m.update(0.04)
+	_check("near cubes break as it passes (%.3f s)" % near_time, m.kind[near] == 0 and m.kind[far] == 1)
+	m.update(far_time - near_time - 0.04)
+	_check("far cubes are still waiting", m.kind[far] == 1)
+	m.update(0.04)
+	_check("far cubes break as it passes (%.3f s)" % far_time, m.kind[far] == 0)
+	_check("the ring's timing matches its growth", absf(Fx.ring_arrival(r_size, r_size, time) - time) < 0.001 and Fx.ring_arrival(0.2, r_size, time) == 0.0)
 
 
 func _check_tools(r: Run) -> void:

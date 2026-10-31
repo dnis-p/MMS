@@ -73,7 +73,7 @@ const TOOLS := {
 	"bombs": {"name": "Bombs", "desc": "Thrown into nearby rock. Boom.", "color": Color(1.0, 0.3, 0.2),
 		"dmg": 60.0, "dmg_up": 0.4, "size": 3.0, "size_up": 0.12, "cd": 2.2, "cd_up": 0.93, "throw": 8.0},
 	"pulse": {"name": "Shock Pulse", "desc": "A ring bursts out from you.", "color": Color(0.5, 0.75, 1.0),
-		"dmg": 30.0, "dmg_up": 0.4, "size": 5.0, "size_up": 0.12, "cd": 3.0, "cd_up": 0.93},
+		"dmg": 30.0, "dmg_up": 0.4, "size": 5.0, "size_up": 0.12, "cd": 3.0, "cd_up": 0.93, "ring_time": 0.35},
 	"beam": {"name": "Mining Beam", "desc": "A long line of rock pops at once.", "color": Color(0.4, 1.0, 0.7),
 		"dmg": 40.0, "dmg_up": 0.4, "size": 14.0, "size_up": 0.12, "cd": 2.4, "cd_up": 0.93},
 }

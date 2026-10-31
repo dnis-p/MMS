@@ -413,6 +413,23 @@ func hit_circle(center: Vector3, r: float, dmg: float, from: Vector3, wave := 0.
 	return count
 
 
+## Hits every cube inside a Fx ring of this radius and duration, each one as the ring reaches it.
+func hit_ring(center: Vector3, r: float, dmg: float, duration: float) -> int:
+	var count := 0
+	for z in range(maxi(cell_of(center.z - r), 0), mini(cell_of(center.z + r), SIZE - 1) + 1):
+		var dz := _world(z) - center.z
+		for x in range(maxi(cell_of(center.x - r), 0), mini(cell_of(center.x + r), SIZE - 1) + 1):
+			var c := x + z * SIZE
+			if kind[c] == 0 or not can_see(c):
+				continue
+			var dx := _world(x) - center.x
+			var d := sqrt(dx * dx + dz * dz)
+			if d <= r:
+				count += 1
+				strike(c, dmg, Fx.ring_arrival(d, r, duration))
+	return count
+
+
 ## Hits every cube in the fan: within `r` of `from`, within `half_angle` of `dir`.
 func hit_arc(from: Vector3, dir: Vector3, r: float, half_angle: float, dmg: float, wave: float) -> int:
 	return _arc(from, dir, r, half_angle, dmg, wave, true)

@@ -160,8 +160,9 @@ entries are the first ones in sections 8 and 9.
   the dark, so a lost gem can still be spotted.
 - **Switch** (owner). "Fog of war: ON/OFF" is on the main menu and the pause menu, and is remembered between sessions. There is no
   separate options screen yet. With it off, the game plays as before and the player light is off too.
-- **Pulse** (owner: there was a delay). Rock now breaks the moment Pulse fires, and its ring plays in 0.14 s instead of 0.35 s. Bombs
-  and the level-up blast keep their ripple.
+- **Pulse** (owner: effect and animation didn't match). The ring keeps its 0.35 s speed, and each cube is hit at the moment the ring
+  reaches it, using the ring's own growth curve. A first try that broke everything at once with a faster ring felt too fast, the owner
+  said. Bombs and the level-up blast keep their own ripple.
 - About 150 fps at 1080p on this PC with a bot.
 
 **2026-10-31, digging prototype** (branch `prototype/dig`; rule checks, a bot and screenshots, the owner has not played it and nobody has listened to the sounds)

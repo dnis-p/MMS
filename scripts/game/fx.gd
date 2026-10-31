@@ -7,6 +7,7 @@ const BURSTS := 28
 const NUMBERS := 40
 const RINGS := 12
 const BOLT_SEGMENTS := 256
+const RING_START := 0.2  # radius every ring grows from
 
 var trauma := 0.0
 var _bursts: Array[CPUParticles3D] = []
@@ -150,8 +151,15 @@ func ring(p: Vector3, radius: float, color: Color, duration := 0.35) -> void:
 	_next_ring = (_next_ring + 1) % RINGS
 	(m.material_override as StandardMaterial3D).albedo_color = color
 	m.global_position = p + Vector3(0, 0.25, 0)
-	m.scale = Vector3.ONE * 0.2
+	m.scale = Vector3.ONE * RING_START
 	m.visible = true
+
+
+## When a ring of this radius and duration reaches `dist`, so hits can land exactly as it passes.
+## The inverse of the growth curve in update().
+static func ring_arrival(dist: float, radius: float, duration: float) -> float:
+	var k := clampf((dist - RING_START) / (radius - RING_START), 0.0, 1.0)
+	return (1.0 - pow(1.0 - k, 1.0 / 3.0)) * duration
 
 
 func bolt(a: Vector3, b: Vector3, color := Color(0.6, 0.9, 1.0)) -> void:
@@ -197,7 +205,7 @@ func update(delta: float) -> void:
 		_ring_life[i] -= delta
 		var m := _rings[i]
 		var t := 1.0 - _ring_life[i] / _ring_len[i]
-		var r := lerpf(0.2, _ring_r[i], 1.0 - pow(1.0 - t, 3.0))
+		var r := lerpf(RING_START, _ring_r[i], 1.0 - pow(1.0 - t, 3.0))
 		m.scale = Vector3(r, 1.0, r)
 		var mat := m.material_override as StandardMaterial3D
 		mat.albedo_color.a = 1.0 - t

@@ -316,8 +316,9 @@ func _update_bombs(delta: float, mine: Mine, at: Vector3) -> void:
 
 func _pulse(mine: Mine, at: Vector3) -> void:
 	var r := size("pulse")
-	if mine.hit_circle(at, r, dmg("pulse"), at) > 0:
-		run.fx.ring(at, r, Color(0.6, 0.8, 1.0, 0.9), 0.14)
+	var time: float = Defs.TOOLS["pulse"]["ring_time"]
+	if mine.hit_ring(at, r, dmg("pulse"), time) > 0:
+		run.fx.ring(at, r, Color(0.6, 0.8, 1.0, 0.9), time)
 		run.fx.shake(0.12)
 		Sfx.play("thud", -5.0, 1.4)
 
