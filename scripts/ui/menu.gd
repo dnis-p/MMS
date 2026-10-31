@@ -33,3 +33,11 @@ func _ready() -> void:
 		start_pressed.emit())
 	root.add_child(start)
 	start.grab_focus.call_deferred()
+	var fog := Button.new()
+	fog.text = Options.fog_text()
+	fog.custom_minimum_size = Vector2(400, 56)
+	fog.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	fog.pressed.connect(func():
+		Options.toggle_fog()
+		fog.text = Options.fog_text())
+	root.add_child(fog)

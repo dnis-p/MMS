@@ -148,6 +148,22 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-01, fog of war and Pulse** (branch `prototype/dig`; rule checks, a bot and screenshots, the owner has not played it)
+- **Fog of war** (owner), on by default. You see 10 m at most and the rest is black, like an ARPG dungeon. Light follows real sight
+  lines: it passes through 4 cubes of rock and then stops, so you see into the wall ahead and down open caves, but not through the
+  mountain. The owner asked for blocks in proximity; the sight lines are how "only what you can directly see" was read.
+- **Atmosphere** (owner). The air gets hazier and dustier toward the edge of your light. **Player light** (owner): a warm, slightly
+  flickering light around the digger.
+- **Dig only what you see** (owner). Shovel, Drill, Beam, Saws, Pulse and Bombs can't touch unlit cubes, so upgraded tools stop at the
+  edge of what you can see. Exceptions: crystal chain reactions continue into the dark, and a level-up blast reaches it.
+- **Added, not proposed:** places you have seen stay dimly visible, so your tunnels can be read on the way back. Gem stars show through
+  the dark, so a lost gem can still be spotted.
+- **Switch** (owner). "Fog of war: ON/OFF" is on the main menu and the pause menu, and is remembered between sessions. There is no
+  separate options screen yet. With it off, the game plays as before and the player light is off too.
+- **Pulse** (owner: there was a delay). Rock now breaks the moment Pulse fires, and its ring plays in 0.14 s instead of 0.35 s. Bombs
+  and the level-up blast keep their ripple.
+- About 150 fps at 1080p on this PC with a bot.
+
 **2026-10-31, digging prototype** (branch `prototype/dig`; rule checks, a bot and screenshots, the owner has not played it and nobody has listened to the sounds)
 - **Raccoon deleted** (owner): the branch `prototype/raccoon-eat` is gone from this PC and GitHub. Lessons kept: hunting alone wasn't
   satisfying; what the owner liked was density, lots of things dying at once.

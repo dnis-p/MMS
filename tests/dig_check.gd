@@ -12,6 +12,7 @@ var _peak := 0.0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	Options.fog = false  # set directly, so the player's saved choice stays as it is
 	_main = load("res://scenes/main.tscn").instantiate()
 	add_child(_main)
 	_main._clear()
@@ -33,6 +34,8 @@ func _process(delta: float) -> void:
 			_check_shovel(r)
 			_check_hits(r)
 			_check_chain(r)
+			_check_fog(r)
+			_check_pause(r)
 			_check_tools(r)
 			_clear_around(r)
 			Input.action_press("move_right")
@@ -175,6 +178,48 @@ func _clear_gems(r: Run) -> void:
 		arr.clear()
 
 
+func _check_fog(r: Run) -> void:
+	var m := r.mine
+	Options.fog = true
+	r.apply_fog()
+	_fill(r, Vector3(0, 0, 0), 60, 0)
+	var wall := Vector3(0, 0, -6)
+	_fill(r, wall, 8, 1)
+	r.player.global_position = Vector3.ZERO
+	m.scan_light(Vector3.ZERO)
+	_check("you can see open floor nearby", m.can_see_at(Vector3(3, 0, 2)))
+	_check("you can see a little into rock", m.can_see_at(Vector3(0, 0, -2.6)))
+	_check("you can't see deep into rock", not m.can_see_at(Vector3(0, 0, -7)))
+	_fill(r, wall, 8, 0)
+	m.scan_light(Vector3.ZERO)
+	_check("digging lets your light through", m.can_see_at(Vector3(0, 0, -7)))
+	_check("you can't see past your light", not m.can_see_at(Vector3(0, 0, 11)))
+	var far := Vector3(0, 0, 14)
+	_fill(r, far, 1, 1)
+	var c := m.cell_of(far.x) + m.cell_of(far.z) * Mine.SIZE
+	_check("tools can't reach what you can't see", m.hit_circle(far, 2.0, 1e9, far) == 0 and m.kind[c] == 1)
+	_check("a level-up blast still reaches into the dark", m.hit_circle(far, 2.0, 1e9, far, 0.0, true) > 0 and m.kind[c] == 0)
+	Options.fog = false
+	r.apply_fog()
+	_fill(r, far, 1, 1)
+	_check("with fog off you can hit anything", m.hit_circle(far, 2.0, 1e9, far) > 0)
+
+
+func _check_pause(r: Run) -> void:
+	r._open_pause()
+	_check("the pause menu opens with the fog switch", r._paused_by_menu and r.overlay._panel_root.visible)
+	r.overlay.hide_panel()
+	r._resume()
+
+
+func _check_pulse(r: Run) -> void:
+	var m := r.mine
+	_fill(r, Vector3(0, 0, -3), 2, 1)
+	var before := r.cubes
+	r.tools._pulse(m, Vector3.ZERO)
+	_check("the pulse breaks rock the moment it fires (%d)" % (r.cubes - before), r.cubes > before and m._q_time.is_empty())
+
+
 func _check_tools(r: Run) -> void:
 	var t := r.tools
 	var options := t.level_up_options(3)
@@ -187,6 +232,8 @@ func _check_tools(r: Run) -> void:
 	for id in Defs.BOOSTS:
 		t.add_boost(id)
 	_check("every tool can be owned", t.order.size() == Defs.TOOLS.size())
+	r.mine.update(1.0)
+	_check_pulse(r)
 	t.update(0.016)
 	t.update(0.5)
 	r.level_blast()

@@ -12,6 +12,7 @@ new idea or decision the owner gives you there (mark owner's words vs your sugge
 - Movement is instantly responsive, like 2D games such as VS or Enter the Gungeon, and separate from aiming: the mouse aims.
 - Even the starter shovel hits multiple cubes.
 - No threats for now. No theme yet, so no specific models.
+- Fog of war, like an ARPG dungeon: the digger's light shows what is near, and you can only dig what you can see. It has a switch in the menus.
 - PC only for now (owner, 2026-10-31). Keep input as actions and UI anchored.
 
 ## Technical rules

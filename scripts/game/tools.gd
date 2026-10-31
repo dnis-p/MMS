@@ -283,7 +283,7 @@ func _throw_bomb(at: Vector3) -> bool:
 		var to := at + Vector3(cos(a), 0, sin(a)) * run.rng.randf_range(range_m * 0.5, range_m)
 		if k == 0:
 			to = at + (run.aim_point - at).limit_length(range_m)
-		if run.mine.kind_at(to) == 0:
+		if run.mine.kind_at(to) == 0 or not run.mine.can_see_at(to):
 			continue
 		for b in MAX_BOMBS:
 			if _bomb_t[b] < 0.0:
@@ -316,8 +316,8 @@ func _update_bombs(delta: float, mine: Mine, at: Vector3) -> void:
 
 func _pulse(mine: Mine, at: Vector3) -> void:
 	var r := size("pulse")
-	if mine.hit_circle(at, r, dmg("pulse"), at, Defs.WORLD["blast_wave"]) > 0:
-		run.fx.ring(at, r, Color(0.6, 0.8, 1.0, 0.9), 0.35)
+	if mine.hit_circle(at, r, dmg("pulse"), at) > 0:
+		run.fx.ring(at, r, Color(0.6, 0.8, 1.0, 0.9), 0.14)
 		run.fx.shake(0.12)
 		Sfx.play("thud", -5.0, 1.4)
 

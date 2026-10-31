@@ -22,6 +22,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 Sfx="*res://scripts/autoload/sfx.gd"
+Options="*res://scripts/autoload/options.gd"
 
 [display]
 

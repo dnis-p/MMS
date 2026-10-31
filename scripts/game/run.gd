@@ -47,6 +47,8 @@ var _gem_chain := 0
 var _gem_chain_timer := 0.0
 var _pops_this_frame := 0
 var _big_pop_cd := 0.0
+var _scan_timer := 0.0
+var _lamp: OmniLight3D
 var _cam_pos := Vector3.ZERO
 var _cam_look := Vector3.ZERO
 var _kick := Vector3.ZERO
@@ -94,6 +96,12 @@ func _ready() -> void:
 	tools.run = self
 	add_child(tools)
 	tools.add_tool("shovel")
+	_lamp = OmniLight3D.new()
+	_lamp.position.y = 3.0
+	_lamp.light_color = Color(1.0, 0.85, 0.65)
+	_lamp.light_energy = 1.6
+	_lamp.omni_range = Defs.WORLD["light"]
+	player.add_child(_lamp)
 	camera = Camera3D.new()
 	camera.fov = Defs.CAMERA["fov"]
 	camera.far = 120.0
@@ -115,6 +123,7 @@ func _ready() -> void:
 	_cam_pos = t[0]
 	_cam_look = t[1]
 	_place_camera()
+	apply_fog()
 	Input.set_custom_mouse_cursor(Ui.crosshair(Color(1, 1, 1)), Input.CURSOR_ARROW, Vector2(24, 24))
 	hud.show_hint("WASD to move  ·  aim with the mouse  ·  your tools dig by themselves", 6.0)
 
@@ -124,6 +133,24 @@ func _exit_tree() -> void:
 	Input.set_custom_mouse_cursor(null)
 	if get_tree():
 		get_tree().paused = false
+
+
+func apply_fog() -> void:
+	mine.set_fog(Options.fog)
+	_lamp.visible = Options.fog
+	_scan_timer = 0.0
+
+
+func _update_light(delta: float) -> void:
+	if not Options.fog:
+		return
+	var at := player.global_position
+	mine.light_at(at)
+	_lamp.light_energy = 1.6 + sin(run_time * 11.0) * 0.06  # a living flame, barely
+	_scan_timer -= delta
+	if _scan_timer <= 0.0:
+		_scan_timer = Defs.WORLD["scan_every"]
+		mine.scan_light(at)
 
 
 func apply_boosts() -> void:
@@ -140,6 +167,7 @@ func _process(delta: float) -> void:
 	_big_pop_cd -= delta
 	_update_aim()
 	player.move(minf(delta, 0.05), _move_input(delta), mine)
+	_update_light(delta)
 	tools.update(delta)
 	mine.update(delta)
 	debris.update(delta)
@@ -263,7 +291,7 @@ func level_blast() -> void:
 	var at := player.global_position
 	at.y = 0.0
 	var r: float = Defs.WORLD["level_blast"]
-	mine.hit_circle(at, r, 1e9, at, Defs.WORLD["blast_wave"])
+	mine.hit_circle(at, r, 1e9, at, Defs.WORLD["blast_wave"], true)
 	fx.ring(at, r, Color(1.0, 0.9, 0.4, 0.9), 0.4)
 	fx.shake(0.4)
 	Sfx.play("boom", -5.0, 0.8)
@@ -303,7 +331,18 @@ func _open_pause() -> void:
 		return
 	_paused_by_menu = true
 	get_tree().paused = true
-	overlay.show_panel("PAUSED", ["%d cubes  ·  best combo x%d" % [cubes, best_combo]], [["Resume", _resume], ["New mine", _new_mine], ["Quit to menu", _quit_to_menu]])
+	_show_pause()
+
+
+func _show_pause() -> void:
+	overlay.show_panel("PAUSED", ["%d cubes  ·  best combo x%d" % [cubes, best_combo]], [["Resume", _resume], [Options.fog_text(), _toggle_fog], ["New mine", _new_mine], ["Quit to menu", _quit_to_menu]])
+
+
+func _toggle_fog() -> void:
+	Options.toggle_fog()
+	apply_fog()
+	_update_light(0.0)
+	_show_pause()
 
 
 func _resume() -> void:
