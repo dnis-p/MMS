@@ -94,7 +94,7 @@ func drop_gem(p: Vector3, value: float, color: Color) -> void:
 		return
 	g_pos.append(Vector3(p.x + run.rng.randf_range(-0.2, 0.2), 0.9, p.z + run.rng.randf_range(-0.2, 0.2)))
 	g_val.append(value)
-	g_col.append(color.lightened(0.15))
+	g_col.append(color)
 	g_pull.append(0.0)
 	g_hop.append(run.rng.randf_range(4.0, 6.0))
 
@@ -159,12 +159,12 @@ func _render() -> void:
 		var big := 1.0 + minf(g_val[i], 8.0) * 0.1
 		var s := big * (1.0 + 0.15 * sin(_time * 7.0 + i))
 		_mm.set_instance_transform(n, Transform3D(Basis(Vector3.UP, _time * 3.0 + i).scaled(Vector3(s, s, s)), p))
-		_mm.set_instance_color(n, g_col[i].lerp(white, 0.3 + 0.3 * sin(_time * 9.0 + i * 2.0)))
+		_mm.set_instance_color(n, g_col[i].lerp(white, 0.1 + 0.1 * sin(_time * 9.0 + i * 2.0)))
 		var twinkle := pow(absf(sin(_time * 3.5 + i * 1.7)), 6.0)
 		var size := big * (0.55 + 0.75 * twinkle)
 		var turn := Basis(_star_basis.z, _time * 0.8 + i)
 		_stars.set_instance_transform(n, Transform3D((turn * _star_basis).scaled(Vector3(size, size, size)), p))
-		_stars.set_instance_color(n, g_col[i].lerp(white, twinkle * 0.6))
+		_stars.set_instance_color(n, g_col[i].lerp(white, twinkle * twinkle * 0.5) * 0.5)
 		n += 1
 	_mm.visible_instance_count = n
 	_stars.visible_instance_count = n
