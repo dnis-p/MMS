@@ -131,3 +131,17 @@ static func option_card_content(o: Dictionary, compact := false) -> VBoxContaine
 		hint.custom_minimum_size.x = 180 if compact else 230
 		v.add_child(hint)
 	return v
+
+
+## The in-game pointer: a ring with a cross, big enough to find on a busy screen.
+static func crosshair(color: Color) -> ImageTexture:
+	var img := Image.create(48, 48, false, Image.FORMAT_RGBA8)
+	for y in 48:
+		for x in 48:
+			var d := Vector2(x - 23.5, y - 23.5)
+			var ring := absf(d.length() - 16.0)
+			if ring < 2.0 or (minf(absf(d.x), absf(d.y)) < 1.2 and d.length() > 8.0 and d.length() < 23.0):
+				img.set_pixel(x, y, color)
+			elif ring < 3.5:
+				img.set_pixel(x, y, Color(0, 0, 0, 0.8))
+	return ImageTexture.create_from_image(img)

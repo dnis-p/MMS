@@ -1,7 +1,6 @@
 class_name Hud
 extends Control
-## In-run heads-up display. Touches pass straight through to the game except
-## on the pause button.
+## In-run heads-up display.
 
 signal pause_pressed
 
@@ -18,16 +17,12 @@ var _hint: Label
 var _fps_label: Label
 var _last_combo := 0
 var _icon_key := ""
-var joystick: Joystick
 
 
 func _ready() -> void:
 	theme = Ui.theme()
 	Ui.full_rect(self)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	joystick = Joystick.new()
-	add_child(joystick)
 
 	_xp_bar = Ui.bar(Color(0.3, 0.65, 1.0), 16)
 	_xp_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)

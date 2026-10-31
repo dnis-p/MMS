@@ -7,8 +7,9 @@ const COMBO_WINDOW := 1.2
 const FILLER_SCORE := 500
 
 ## Camera, fixed orientation, relative to the digger: metres south, metres up, and how many
-## seconds of travel it looks ahead.
-const CAMERA := {"back": 7.0, "up": 19.0, "lead": 0.12, "fov": 60.0}
+## seconds of travel it looks ahead. aim_lead: share of the way to the pointer it leans, up to
+## aim_lead_max metres.
+const CAMERA := {"back": 7.0, "up": 19.0, "lead": 0.12, "aim_lead": 0.18, "aim_lead_max": 3.0, "fov": 60.0}
 
 const DIGGER := {"speed": 7.5, "pickup": 3.5, "color": Color(0.2, 0.75, 0.8)}
 

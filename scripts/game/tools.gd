@@ -275,12 +275,14 @@ func _update_saws(delta: float, mine: Mine, at: Vector3) -> void:
 			mine.hit_circle(c, t["cut"], dmg("saws"), c)
 
 
-## Thrown at solid rock nearby. Returns false if there is none.
+## Thrown at the rock you aim at, or at rock nearby. Returns false if there is none.
 func _throw_bomb(at: Vector3) -> bool:
 	var range_m: float = Defs.TOOLS["bombs"]["throw"]
-	for k in 8:
+	for k in 9:
 		var a := run.rng.randf() * TAU
 		var to := at + Vector3(cos(a), 0, sin(a)) * run.rng.randf_range(range_m * 0.5, range_m)
+		if k == 0:
+			to = at + (run.aim_point - at).limit_length(range_m)
 		if run.mine.kind_at(to) == 0:
 			continue
 		for b in MAX_BOMBS:

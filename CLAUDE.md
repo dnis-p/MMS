@@ -9,10 +9,10 @@ new idea or decision the owner gives you there (mark owner's words vs your sugge
 - It should feel like popping bubble wrap, with Vampire Survivors rewards: juicy visuals and sound come first.
 - Hit cubes flash white and vibrate; broken cubes explode into bits; ore leaves something shiny you pick up when close.
 - Top-down 3D for now. World of small cubes, smaller than Minecraft's.
-- Movement is instantly responsive, like 2D games such as VS or Enter the Gungeon.
+- Movement is instantly responsive, like 2D games such as VS or Enter the Gungeon, and separate from aiming: the mouse aims.
 - Even the starter shovel hits multiple cubes.
 - No threats for now. No theme yet, so no specific models.
-- Must stay multiplatform: PC first, then Android and web. Keep input as actions, UI anchored.
+- PC only for now (owner, 2026-10-31). Keep input as actions and UI anchored.
 
 ## Technical rules
 - Cubes, gems and chips are packed arrays drawn with MultiMesh: no node per cube. Keep per-frame GDScript cheap.
@@ -31,7 +31,7 @@ Parse errors that mention `Sfx` only occur when scripts are checked standalone (
 ## Known gaps / next ideas
 - Feel and sound are unproven until the owner plays: nobody has listened to the sounds.
 - No goal, no saves, no meta progression, no evolutions, no unlocks yet.
-- Never tested on a real phone: touch feel and FPS with this many cubes.
+- Mouse aiming is untested with a real mouse.
 
 ## How we work (agreed with the owner)
 docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 = done list** (since v1.0).

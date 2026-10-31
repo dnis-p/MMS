@@ -6,13 +6,16 @@ one thing: breaking cubes should feel like popping bubble wrap. There are no thr
 This is the `prototype/dig` branch. The car game (MMS) is on the default branch, unchanged.
 
 ## How it plays
-| Action | Touch | Keyboard |
-| --- | --- | --- |
-| Move | Drag anywhere for a virtual stick (mouse drag works too) | WASD or arrows |
-| Menus and upgrades | Tap | Arrows or WASD to select, Space or Enter to confirm |
-| Pause | Pause button | Esc or P |
+PC only for now.
 
-Movement is instant, like a 2D game. Tools dig by themselves. Cubes give a little XP, ore drops shiny gems worth more,
+| Action | Control |
+| --- | --- |
+| Move | WASD or arrows |
+| Aim | Mouse |
+| Menus and upgrades | Mouse, or arrows and Enter |
+| Pause | Esc or P |
+
+Movement is instant, like a 2D game, and separate from aiming. Tools dig by themselves where you aim. Cubes give a little XP, ore drops shiny gems worth more,
 and each level-up lets you pick 1 of 3 tools or boosts and blasts the rock around you. Crystal goes off as a chain reaction.
 
 ## Commands

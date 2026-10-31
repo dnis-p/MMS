@@ -52,6 +52,7 @@ func _process(delta: float) -> void:
 				r.player.move(0.016, Vector2.ZERO, r.mine)
 				_check("stopping is instant", r.player.velocity == Vector3.ZERO)
 				_check_walls(r)
+				_check_aim(r)
 				_max_everything(r)
 				_wait = 4.0
 				_step = "late"
@@ -191,6 +192,34 @@ func _check_tools(r: Run) -> void:
 	r.level_blast()
 	_check("all tools run", true)
 	r.mine.update(1.0)
+
+
+## With a mouse, you can walk one way and dig another.
+func _check_aim(r: Run) -> void:
+	var m := r.mine
+	r.player.global_position = Vector3.ZERO
+	r.player.aiming = true
+	r.player.heading = Vector3.RIGHT
+	r.player.move(0.016, Vector2.LEFT, m)
+	_check("moving doesn't turn your aim", r.player.heading == Vector3.RIGHT and r.player.velocity.x < 0.0)
+	_fill(r, Vector3(1.5, 0, 0), 1, 1)
+	_fill(r, Vector3(-1.5, 0, 0), 1, 1)
+	r.player.global_position = Vector3.ZERO
+	r.tools._swing(m, r.player, Vector3.ZERO)
+	m.update(1.0)
+	var right := m.cell_of(1.5) + m.cell_of(0.0) * Mine.SIZE
+	_check("tools dig where you aim, not where you walk", m.kind[right] == 0 or m.hp[right] < 10.0)
+	_check("the rock behind you stays", m.kind_at(Vector3(-1.5, 0, 0)) == 1 and m.hp[m.cell_of(-1.5) + m.cell_of(0.0) * Mine.SIZE] == 10.0)
+	_fill(r, Vector3(1.5, 0, 0), 1, 0)
+	_fill(r, Vector3(-1.5, 0, 0), 1, 0)
+	r.player.aiming = false
+	r._mouse_seen = true
+	r.player.heading = Vector3.ZERO
+	r._update_aim()
+	_check("the mouse sets your aim", r.player.aiming and r.player.heading.is_normalized() and r.aim_point.y == 0.0)
+	r._mouse_seen = false
+	r.player.aiming = false
+	r.player.heading = Vector3.FORWARD
 
 
 func _check_walls(r: Run) -> void:

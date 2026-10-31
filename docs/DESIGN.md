@@ -172,6 +172,14 @@ entries are the first ones in sections 8 and 9.
 - **Buzz removed** (owner: a really annoying deep buzzing while digging). The Drill's looping engine sound, left over from the cars,
   is deleted, so the Drill has no sound of its own now. Pops and hit ticks could repeat every frame, which blurs into a low hum, so
   they now wait 40-72 ms and 70-126 ms at random. Found by reading the code; Claude can't hear the result.
+- **Gems** (owner). Every shiny mineral now drops a gem every time: crystal used to drop one in eight, and at most 500 gems could lie
+  around. Each crystal gem is worth 0.15 XP so blobs don't level you too fast; the limit is 1,500. Gems have a twinkling star that shows
+  through rock, keep their mineral's colour and throw sparks when collected.
+- **Mouse aim** (owner's idea, Enter the Gungeon). Tools point at the mouse and WASD moves separately. Shovel, Drill and Beam follow the
+  aim and bombs land on the pointer when rock is in range; Saws and Pulse go all around. Tools still fire by themselves with no click,
+  Claude's choice: holding a button would be one small change. The camera leans up to 3 m toward the pointer. There is a ring-and-cross
+  cursor, and until the mouse moves, tools point the way you walk. Tested by checks and a bot, not with a real mouse.
+- **PC only on this branch** (owner). Touch controls and the virtual stick are removed.
 - **Constant shake** (owner: way too much late game, shouldn't grow with upgrades). Shakes no longer add up: the strongest current
   one wins. Single cube pops no longer shake at all. Biggest shake is the level-up blast, 0.4 at most even with every tool at max,
   about 11 cm of camera movement. Also capped the camera punch and limited the big-pop freeze and thud to once per 0.6 s, which would have stuttered late game.

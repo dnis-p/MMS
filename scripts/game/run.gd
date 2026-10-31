@@ -6,7 +6,6 @@ extends Node3D
 signal exit_to_menu
 signal retry_requested
 
-const STICK_DEADZONE := 18.0
 const PENTATONIC := [0, 2, 4, 7, 9]  # any run of these notes sounds good
 
 ## All gameplay randomness comes from `rng` so a seed can reproduce a run.
@@ -53,9 +52,8 @@ var _cam_look := Vector3.ZERO
 var _kick := Vector3.ZERO
 var _hitstop_left := 0.0
 var _last_real_us := 0
-var _stick_index := -1
-var _stick_base := Vector2.ZERO
-var _stick_dir := Vector2.ZERO
+var aim_point := Vector3.ZERO  # the spot on the rock under the pointer
+var _mouse_seen := false  # until the mouse moves, tools point the way you walk
 
 
 func _ready() -> void:
@@ -117,11 +115,13 @@ func _ready() -> void:
 	_cam_pos = t[0]
 	_cam_look = t[1]
 	_place_camera()
-	hud.show_hint("WASD / arrows or drag to move  ·  your tools dig by themselves", 6.0)
+	Input.set_custom_mouse_cursor(Ui.crosshair(Color(1, 1, 1)), Input.CURSOR_ARROW, Vector2(24, 24))
+	hud.show_hint("WASD to move  ·  aim with the mouse  ·  your tools dig by themselves", 6.0)
 
 
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
+	Input.set_custom_mouse_cursor(null)
 	if get_tree():
 		get_tree().paused = false
 
@@ -138,6 +138,7 @@ func _process(delta: float) -> void:
 	run_time += delta
 	_pops_this_frame = 0
 	_big_pop_cd -= delta
+	_update_aim()
 	player.move(minf(delta, 0.05), _move_input(delta), mine)
 	tools.update(delta)
 	mine.update(delta)
@@ -149,6 +150,23 @@ func _process(delta: float) -> void:
 	_update_camera(delta)
 	hud.refresh(self)
 	_try_open_modal()
+
+
+## Points the tools at the mouse. Aiming stays flat, at the height of the rock's top.
+func _update_aim() -> void:
+	var at := player.global_position
+	if not _mouse_seen or autotest:
+		aim_point = at + player.heading * 5.0
+		return
+	var screen := get_viewport().get_mouse_position()
+	var from := camera.project_ray_origin(screen)
+	var dir := camera.project_ray_normal(screen)
+	aim_point = from + dir * (Mine.HEIGHT - from.y) / minf(dir.y, -0.01)
+	aim_point.y = 0.0
+	var to := aim_point - Vector3(at.x, 0.0, at.z)
+	if to.length_squared() > 0.01:
+		player.aiming = true
+		player.heading = to.normalized()
 
 
 func _update_depth() -> void:
@@ -266,7 +284,6 @@ func _try_open_modal() -> void:
 	if _modal_open or _paused_by_menu or pending_levelups <= 0:
 		return
 	_modal_open = true
-	_stick_reset()
 	get_tree().paused = true
 	levelup_ui.open(tools.level_up_options(3), level - pending_levelups + 1, func(o: Dictionary):
 		tools.apply(o)
@@ -285,7 +302,6 @@ func _open_pause() -> void:
 	if _modal_open or _paused_by_menu:
 		return
 	_paused_by_menu = true
-	_stick_reset()
 	get_tree().paused = true
 	overlay.show_panel("PAUSED", ["%d cubes  ·  best combo x%d" % [cubes, best_combo]], [["Resume", _resume], ["New mine", _new_mine], ["Quit to menu", _quit_to_menu]])
 
@@ -330,7 +346,12 @@ func kick(dir: Vector3, amount: float) -> void:
 
 func _cam_targets() -> Array:
 	var cam := Defs.CAMERA
-	var look: Vector3 = player.global_position + player.velocity * cam["lead"]
+	var at := player.global_position
+	var look: Vector3 = at + player.velocity * cam["lead"]
+	if _mouse_seen:
+		var ahead := aim_point - at
+		ahead.y = 0.0
+		look += (ahead * cam["aim_lead"]).limit_length(cam["aim_lead_max"])
 	return [look + Vector3(0, cam["up"], cam["back"]), look]
 
 
@@ -366,48 +387,19 @@ func _toggle_pause() -> void:
 		_open_pause()
 
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		_mouse_seen = true
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
 		_toggle_pause()
-		return
-	if not get_tree().paused:
-		_stick_input(event)
 
 
-## Screen-relative move direction. Keys give 8 directions, the stick any angle.
+## Screen-relative move direction, in 8 directions.
 func _move_input(delta: float) -> Vector2:
 	var v := Input.get_vector("move_left", "move_right", "move_up", "move_down", 0.0)
 	if autotest:
 		v = bot.steer(self, delta)
-	elif _stick_dir != Vector2.ZERO:
-		v = _stick_dir
 	return v
-
-
-func _stick_input(event: InputEvent) -> void:
-	if event is InputEventScreenTouch:
-		if event.pressed and _stick_index == -1:
-			_stick_start(event.index, event.position)
-		elif not event.pressed and event.index == _stick_index:
-			_stick_reset()
-	elif event is InputEventScreenDrag:
-		if _stick_index == -1:
-			_stick_start(event.index, event.position)
-		if event.index == _stick_index:
-			var d: Vector2 = event.position - _stick_base
-			_stick_base = event.position - d.limit_length(Joystick.RADIUS)
-			_stick_dir = d if d.length() > STICK_DEADZONE else Vector2.ZERO
-			hud.joystick.show_at(_stick_base, event.position)
-
-
-func _stick_start(index: int, at: Vector2) -> void:
-	_stick_index = index
-	_stick_base = at
-	_stick_dir = Vector2.ZERO
-	hud.joystick.show_at(at, at)
-
-
-func _stick_reset() -> void:
-	_stick_index = -1
-	_stick_dir = Vector2.ZERO
-	hud.joystick.visible = false

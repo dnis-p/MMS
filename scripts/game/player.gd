@@ -1,7 +1,9 @@
 class_name Player
 extends Node3D
 ## The digger: a neutral placeholder body, no theme yet. Turning and stopping are instant, like a 2D
-## game: where you press is where you go, at full speed, on the next frame.
+## game: where you press is where you go, at full speed, on the next frame. Movement and aim are
+## separate, as in Enter the Gungeon: `heading` is where the tools point, which is the mouse once
+## there is one, and otherwise the way you walk.
 
 const RADIUS := 0.55
 
@@ -12,6 +14,7 @@ var pickup_radius: float = Defs.DIGGER["pickup"]
 var base_pickup: float = Defs.DIGGER["pickup"]
 var velocity := Vector3.ZERO
 var heading := Vector3.FORWARD  # stays when you stop, so tools keep working where you face
+var aiming := false  # the mouse sets `heading`, moving doesn't
 
 var _body: Node3D
 var _tool: Node3D
@@ -51,8 +54,10 @@ func move(delta: float, input: Vector2, mine: Mine) -> void:
 	_time += delta
 	velocity = Vector3.ZERO
 	if input != Vector2.ZERO:
-		heading = Vector3(input.x, 0.0, input.y).normalized()
-		velocity = heading * speed
+		var dir := Vector3(input.x, 0.0, input.y).normalized()
+		velocity = dir * speed
+		if not aiming:
+			heading = dir
 	var p := mine.resolve(global_position + velocity * delta, radius)
 	global_position = p
 	look_at(p + heading, Vector3.UP)
