@@ -1,133 +1,33 @@
-# Motorhead Madness Survival (working title) — gameplay prototype
+# DIG (working title)
 
-A test of the core gameplay loop with placeholder art and sound. You drive freely around
-walled maps while your vehicle auto-fires at hordes of enemies. You steer, pick upgrades, and dodge bosses
-in a ring arena. The goal is Vampire Survivors–style "satisfying without thinking" play.
+Top-down 3D digging prototype in Godot 4.7, GDScript only, placeholder art and sound. The goal right now is
+one thing: breaking cubes should feel like popping bubble wrap. There are no threats and no way to lose yet.
 
-Built with **Godot 4.7** (GDScript, Compatibility renderer), so the same project exports to Android,
-iOS, Windows, macOS, Linux and Web.
+This is the `prototype/dig` branch. The car game (MMS) is on the default branch, unchanged.
 
-## How to play
-
-| | Phone | Keyboard |
-|---|---|---|
-| Drive | Drag anywhere for a virtual stick (mouse drag works too) | WASD or arrows |
+## How it plays
+| Action | Touch | Keyboard |
+| --- | --- | --- |
+| Move | Drag anywhere for a virtual stick (mouse drag works too) | WASD or arrows |
 | Menus and upgrades | Tap | Arrows or WASD to select, Space or Enter to confirm |
-| Boss: dash and set circling direction | Swipe left / right, or tap a screen side | A / D or ← / → |
-| Boss: switch ring | Swipe up (inner) / down (outer) | W / S or ↑ / ↓ |
-| Pause | ‖ button or Back | Esc / P |
+| Pause | Pause button | Esc or P |
 
-- **Map phase:** the car stops when you let go. Weapons fire on their own. Destroyed enemies drop scrap (XP) and you level up by picking 1 of 3 upgrades.
-  Ramming kills weak enemies, and attacks knock enemies back. **HORDES** surround you several times a stage, and
-  **ELITES** drop a salvage crate. Enemies get tougher with your level as well as the stage.
-- **Salvage crate ("Redline"):** the engine revs and a tachometer needle decides the haul:
-  green = 1 item, orange = 3, redline = 5. A max-level weapon plus its partner passive **evolves** here.
-- **Boss:** turns up at a random moment 90-150 s into the stage.
-- **Boss arena:** you circle the boss automatically on one of 3 rings. A dash also sets which way you circle.
-  - Radial bursts: the gap always opens within reach, so drive to it or dash through.
-  - Ring slams: the target ring flashes red, so switch rings.
-  - Sweeping beam: dash through it (dashing makes you briefly invulnerable).
-  - Summoned adds.
-- After the boss you move on to the next map (Rust Wastes → Neon Sprawl → Frost Line → Toxic Bog,
-  then it loops), and everything gets harder each stage.
-- **Score:** kills × combo multiplier (up to 5×) plus boss bonuses. The top 10 are saved on the device
-  (a stand-in for an online leaderboard).
-- The pause menu has **Skip to boss (test)** to reach the boss fight quickly. That run stays off the leaderboard.
-- **Redline:** driving fast fills the bar at the bottom, raising fire rate and ram damage. Slowing down drains it and
-  hits take 30%. When full, **nitro** fires by itself: 2.5 s of extra speed, no damage taken and huge rams.
-- **Garage:** every run earns parts, even failed ones. Spend them on permanent upgrades from the main menu.
-  Progress is saved on the device.
+Movement is instant, like a 2D game. Tools dig by themselves. Cubes give a little XP, ore drops shiny gems worth more,
+and each level-up lets you pick 1 of 3 tools or boosts and blasts the rock around you. Crystal goes off as a chain reaction.
 
-### Content
-
-- **Classes:** Juggernaut (tank, starts with Rocket Pod), Interceptor (fast and fragile, Hood MG),
-  War Rig (balanced, Saw Blades).
-- **Weapons (max level 5, up to 4 slots):** Hood MG, Rocket Pod, Saw Blades, Mine Dropper, Tesla Coil, Shock Plating.
-- **Passives (up to 4 slots):** Armor Plating, Turbocharger, Scrap Magnet, Blast Compound, Hot Rounds, Nitro Injector.
-- **Evolutions:**
-
-  | Weapon | + Passive | Becomes |
-  |---|---|---|
-  | Hood MG | Hot Rounds | Shredder Minigun |
-  | Rocket Pod | Turbocharger | Swarm Barrage |
-  | Saw Blades | Blast Compound | Buzzkill Halo |
-  | Mine Dropper | Hot Rounds | Napalm Mines |
-  | Tesla Coil | Scrap Magnet | Storm Rod |
-  | Shock Plating | Armor Plating | Thunder Hull |
-
-All numbers live in [`scripts/data/defs.gd`](scripts/data/defs.gd), so balancing means editing that file.
-
-## Playing in a browser
-
-The Web export needs no code changes (it uses the single-threaded template, so no special server
-headers are required). `tools/web/build_web.sh` produces:
-
-- `build/web/` and `build/mms-web.zip`: the standard export. Upload the zip to **itch.io** as an HTML
-  game (Kind of project: HTML, "This file will be played in the browser", viewport 1280×720, enable
-  the mobile-friendly and fullscreen-button options). It can stay a draft or restricted page with a
-  secret link.
-- `build/web-packed/`: the same game started by `tools/web/launcher.html`, with the 39 MB engine
-  gzipped to about 10 MB and unpacked in the browser. Use this for hosts that cap file size.
-
-Every CI run uploads the itch.io-ready folder as the `mms-web-itch-io` artifact.
-
-**GitHub Pages (auto-deploy):** with the repo public and Settings → Pages → Source set to
-"GitHub Actions", every push to the default branch publishes the web build at
-`https://<user>.github.io/<repo>/`.
-Browsers need WebGL 2: current Chrome, Edge, Firefox and Safari all qualify, on desktop and phone.
-
-## Installing the APK on Android
-
-1. Copy `mms-prototype.apk` to the phone and open it.
-2. Allow "install unknown apps" for the app you opened it with (Files, Chrome, …).
-3. If Play Protect warns about an unknown developer, choose **Install anyway**. It's a debug-signed build.
-
-Android 7.0+ on a 64-bit (arm64) device. Builds are signed with the same debug key, so newer
-builds install over older ones.
-
-## Project layout
-
+## Commands
+Run from the repo root after importing once (`godot --headless --path . --import`):
 ```
-scenes/main.tscn          entry scene
-scripts/main.gd           menu <-> run switching, input map, autotest
-scripts/data/defs.gd      classes, weapons, passives, enemies, biomes, curves
-scripts/game/run.gd       a playthrough: phases, spawn director, damage/XP/score, camera, input
-scripts/game/map.gd       walled map: ground, optional roads, obstacles, wall themes, collision
-scripts/game/bot.gd       plays for --autotest (kiting, pickups, boss dodging)
-scripts/game/player.gd    vehicle model + map/arena driving
-scripts/game/enemies.gd   horde as packed arrays + MultiMesh + spatial grid
-scripts/game/projectiles.gd, pickups.gd, weapons.gd, boss.gd, fx.gd
-scripts/ui/               HUD, level-up cards, Redline crate gauge, overlays, menu, theme
-scripts/autoload/sfx.gd   procedurally synthesized placeholder sounds
-scripts/autoload/save.gd  everything kept between runs: leaderboard, parts, garage upgrades
-tests/ui_shots.tscn       dev tool: screenshots every screen
-tests/boss_check.tscn     dev tool: checks dash direction, swipe buffer and burst gaps
-tests/map_check.tscn      dev tool: checks movement, walls, spawns, kickback and spitters on every biome
-tests/game_check.tscn     dev tool: checks targeting, keyboard menus, Redline, nitro and the Garage
-tools/android/            APK build + v2 signing scripts, debug signing key
-tools/web/                web build script and the gzip launcher page
+godot --headless --path . res://tests/dig_check.tscn              # digging rules, ends with DIG CHECK PASSED
+godot --headless --path . -- --autotest --quit-after-sec=60       # smoke test: a bot plays
+godot --path . -- --autotest --quit-after-sec=20 --shots=<dir>    # screenshots of a bot playing (needs a display)
 ```
+Options after `--`: `--autotest`, `--seed=<n>`, `--shots=<dir>`, `--quit-after-sec=<n>`.
 
-Enemies, bullets and pickups are plain data drawn with MultiMesh (no node or physics body per
-enemy), which keeps hundreds of them cheap on phones. The HUD shows FPS and enemy count at the
-bottom-left so performance on a real device is easy to check.
-
-## Building
-
-Open the folder in Godot 4.7 and press Play, or:
-
-```bash
-godot --path .                                         # play on desktop
-godot --headless --path . -- --autotest --quit-after-sec=60    # unattended smoke test (god mode, short stages)
-godot --headless --path . -- --autotest --fair --class=interceptor --quit-after-sec=120   # balance check
-godot --headless --path . res://tests/boss_check.tscn   # boss arena checks
-godot --headless --path . res://tests/map_check.tscn    # open-world checks
-godot --headless --path . res://tests/game_check.tscn   # combat, menus, Redline, Garage
-tools/android/build_apk.sh                             # signed arm64 APK -> build/mms-prototype.apk
-tools/web/build_web.sh                                 # browser build -> build/web, build/mms-web.zip
-```
-
-To export from the Godot editor instead, install the Android export templates, set the Android SDK
-and Java paths in Editor Settings, and use **Project → Export → Android**. The preset exports
-unsigned, so either sign with `tools/android/sign_apk_v2.py` or turn on **package/signed** and use your own keystore.
-The included key in `tools/android/debug-key/` is for test builds only. Don't use it for a store release.
+## Layout
+- `scripts/data/defs.gd`: every number: cubes, bands, tools, boosts, camera.
+- `scripts/game/mine.gd`: the cube world, hits, ripples, chain reactions, collision.
+- `scripts/game/tools.gd`: tools, boosts and level-up choices.
+- `scripts/game/run.gd`: one dig; routes events, camera, input.
+- `scripts/game/debris.gd`, `fx.gd`, `pickups.gd`: chips, rings and shake, gems.
+- `docs/DESIGN.md`: ideas and decisions; sections 8 and 9 track done and to-do.

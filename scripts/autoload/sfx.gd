@@ -4,14 +4,14 @@ extends Node
 ## replacing entries in `_streams`.
 
 const RATE := 22050
-const VOICES := 16
+const VOICES := 32
 
 var _streams := {}
 var _players: Array[AudioStreamPlayer] = []
 var _next := 0
 var _last_played := {}
 ## Minimum milliseconds between two plays of the same sound, to avoid a wall of noise.
-var _throttle := {"hit": 35, "shot": 45, "pickup": 30, "kill": 40, "zap": 60, "boom": 70, "saw": 90}
+var _throttle := {"hit": 35, "shot": 45, "pickup": 30, "kill": 40, "zap": 60, "boom": 70, "saw": 90, "pop": 11, "tick": 28, "clink": 35, "swing": 60}
 var _rev_player: AudioStreamPlayer
 var muted := false
 
@@ -74,6 +74,18 @@ func _build_all() -> void:
 		return randf_range(-1.0, 1.0) * pow(1.0 - t / 0.55, 2.0))
 	_streams["big_boom"] = _make_lowpass(1.2, 0.07, func(t: float, _i: int) -> float:
 		return (randf_range(-1.0, 1.0) + sin(TAU * 45.0 * t) * 0.6) * pow(1.0 - t / 1.2, 1.6))
+	# A bubble popping: a click, then a tone that bends up as it dies. Pitched per pop into a scale.
+	_streams["pop"] = _make(0.07, func(t: float, _i: int) -> float:
+		var click := randf_range(-1.0, 1.0) * 0.5 if t < 0.003 else 0.0
+		return (sin(TAU * lerpf(520.0, 840.0, t / 0.07) * t) * 0.6 + click) * _env(t, 0.07))
+	_streams["tick"] = _make(0.03, func(t: float, _i: int) -> float:
+		return (_sq(t, 1900.0) * 0.2 + randf_range(-1.0, 1.0) * 0.3) * _env(t, 0.03))
+	_streams["clink"] = _make(0.22, func(t: float, _i: int) -> float:
+		return (sin(TAU * 2100.0 * t) * 0.4 + sin(TAU * 3170.0 * t) * 0.25) * _env(t, 0.22))
+	_streams["swing"] = _make_lowpass(0.11, 0.3, func(t: float, _i: int) -> float:
+		return randf_range(-1.0, 1.0) * sin(PI * t / 0.11) * 0.7)
+	_streams["thud"] = _make_lowpass(0.2, 0.2, func(t: float, _i: int) -> float:
+		return (sin(TAU * lerpf(130.0, 50.0, t / 0.2) * t) + randf_range(-0.5, 0.5)) * pow(1.0 - t / 0.2, 2.0))
 	_streams["pickup"] = _make(0.08, func(t: float, _i: int) -> float:
 		return sin(TAU * 1250.0 * t) * 0.35 * _env(t, 0.08))
 	_streams["zap"] = _make(0.16, func(t: float, _i: int) -> float:

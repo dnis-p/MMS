@@ -4,6 +4,10 @@ Living document. The owner's words and decisions come first; Claude's suggestion
 **(suggested)** and are only ideas until the owner says yes. Anything marked **Decided** should not be
 changed without asking. Add new ideas at the bottom of the right section, with the date if useful.
 
+**Branch `prototype/dig` (2026-10-31):** this branch is the digging prototype. The car game lives on, unchanged, on the default
+branch `claude/sleepy-davinci-fxgwnn`, so sections 1-5 and the older entries below describe that game, not this one. The digging
+entries are the first ones in sections 8 and 9.
+
 ## 1. Vision (owner)
 - (owner, 2026-10-30) Update: PC is the priority, and the fixed path is replaced by open maps with free 8-direction
   driving (see 4, 5 and 8). The two points below about phone-first and auto-driving are the original vision.
@@ -128,6 +132,15 @@ changed without asking. Add new ideas at the bottom of the right section, with t
   was chosen for this prototype) vs premium on Steam. Decide after the prototype is playtested.
 - Platform services behind one interface (Google Play Games, Game Center, Steamworks).
 
+**Digging ideas not built yet (suggested 2026-10-31)**
+- Rhythm in three beats once enemies are wanted: calm digging, breaking into a nest and getting surrounded, then the reward. Enemies
+  live in pockets, so the owner's "surrounded and shredding" phase comes from your own digging.
+- A slow threat rising behind you (collapse, lava), so standing still is never safe.
+- Runs of about 20 minutes, one descent, with meta progression between runs. Not an open world: it costs saving and streaming and
+  loses the VS shape. Buried finds that unlock forever also give the Hades-style mystery.
+- Themes: digging down through a landfill into what is buried under it (raccoons love shiny things), or drill rigs for Motorhead.
+- Close games to study: Deep Rock Galactic: Survivor (VS plus mining), Dome Keeper (digging plus waves), Motherload, Noita.
+
 ## 7. Open questions
 - Is portrait or landscape better for phones? Test on a real device.
 - Are the pacing, difficulty and touch controls right? Not yet tested on a phone.
@@ -135,6 +148,28 @@ changed without asking. Add new ideas at the bottom of the right section, with t
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-10-31, digging prototype** (branch `prototype/dig`; rule checks, a bot and screenshots, the owner has not played it and nobody has listened to the sounds)
+- **Raccoon deleted** (owner): the branch `prototype/raccoon-eat` is gone from this PC and GitHub. Lessons kept: hunting alone wasn't
+  satisfying; what the owner liked was density, lots of things dying at once.
+- **Base** (owner): car game code on its own branch, so the car game is untouched. Cars, enemies, bosses, weapons, Garage, crates
+  and saves were removed from this branch only. Effects, sounds, gems, level-up screen, HUD pieces and the bot are reused. Saves
+  would go to a separate folder, `MMS-Dig`, so real car progress can't be touched; nothing is saved yet.
+- **World.** Top-down 3D (owner). One flat layer of 102,400 cubes of 0.5 m, each hit point stored per cube, drawn in chunks. Random
+  every run: rock changes every 13 m out from the start through 7 bands, with caves, 4 ores and 55 crystal blobs. Bedrock edge.
+- **Movement** (owner): instant. Full speed, new direction and stopping all happen on the next frame. Rock blocks you.
+- **Shovel** (owner: hits many cubes). Swings by itself at everything in a 2.4 m fan ahead of you, 28 cubes in the test, only when
+  there is rock there. The hit ripples outward instead of landing all at once.
+- **Feel** (owner). Hit cubes flash white, rattle and swell for 0.13 s, then stay darker as they wear down. Broken cubes burst into
+  chips that bounce on the floor. Ore leaves shiny gems that hop out and fly to you when close. Added, suggested: each pop plays the
+  next note of a rising scale, so digging runs up a keyboard, plus swing arc, camera punch, hitstop on big pops and a bubble-pop sound.
+- **Chain reactions** (suggested twist). Crystal goes off as a whole blob in a ripple. Levelling up blasts 5.5 m of rock around you.
+- **Tools and upgrades.** Level-ups give 1 of 3: Shovel, Drill, Saw Blades, Bombs, Shock Pulse, Mining Beam, all automatic, plus 5 boosts.
+  Evolutions and unlocks found in the map are not built yet.
+- No threats (owner), no goal and no way to lose yet. No theme or models (owner): the digger is plain boxes. Nothing is saved.
+- Limits: a bot reaches about level 5 in 35 s and level 8-16 in 90 s of game time, so pacing is a first guess. About 150 fps at 1080p on this PC with a bot;
+  never run on a phone. Cubes have no gaps: gaps showed dark lines along chunk edges, cause not found.
+- Test: `tests/dig_check.tscn`.
+
 **2026-10-30, third batch** (checked by automated tests and bots; the owner has not played these yet)
 - **MG firing at far enemies** (owner saw this). There was no bug in choosing the target: it was always the closest at
   the moment of firing. The bullets just missed it, for two reasons, and flew on to enemies behind. (1) They aimed where
@@ -271,6 +306,15 @@ changed without asking. Add new ideas at the bottom of the right section, with t
   in that boss fight. The bot never dashes or switches rings, so this is not a measure of real balance.
 
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
+**Owner, 2026-10-31, the refocus (the prototype is built, see section 8; these are still open)**
+- After playing: the late game of the car prototype is pretty satisfying, so the VS formula is probably better. The raccoon's theme
+  wasn't bad, but being the hunter wasn't that satisfying. Games may need phases where you get surrounded and just shred through.
+- A digging game with the feel of popping bubble wrap. Keep top-down 3D for now. No threats for now: first make it very satisfying
+  in sound and visuals. No theme yet, so no specific models.
+- Still open: start slow and find equipment in the map that unlocks forever, like VS. Skills that auto-dig. Start as a person and
+  unlock vehicles, or only tools. Runs or a whole open underground world. Enemies or something else later. Ranged digging tools or
+  weapons (Enter the Gungeon). A twist in gameplay and theme. Likes VS rewards, VFX and sounds, and Megabonk from its trailer.
+
 - Procedural levels: idea only, not to be implemented yet (see section 5).
 
 - Leaderboard: multiplayer entries with build, time, score and kills; whether permanent upgrades count is undecided (see section 6).

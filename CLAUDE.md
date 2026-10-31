@@ -1,61 +1,37 @@
-# MMS (working title: Motorhead Madness Survival)
+# DIG (working title), branch `prototype/dig`
 
-Mobile-first (later PC) roguelike prototype in Godot 4.7, GDScript only, placeholder art/sound.
-You drive freely around walled biome maps; weapons auto-fire at hordes; the
-player steers and picks upgrades. Boss fights happen in a ring arena. See README.md for gameplay,
-content tables and project layout; this file is the design intent and working agreements.
-**The full vision, decisions and idea backlog are in docs/DESIGN.md. Read it, and add any new idea or
-decision the owner gives you there (mark owner's words vs your suggestions).**
+Top-down 3D digging prototype in Godot 4.7, GDScript only, placeholder art and sound. It started from the car game (MMS),
+which stays unchanged on the default branch `claude/sleepy-davinci-fxgwnn`: don't change that game from this branch.
+See README.md for controls and layout. **Ideas and decisions are in docs/DESIGN.md: read the branch note at its top, and add any
+new idea or decision the owner gives you there (mark owner's words vs your suggestions).**
 
 ## Design goals (from the owner, keep these in mind for every change)
-- Satisfying, simple, scalable. Vampire Survivors feel: play "without thinking", no complex builds,
-  juicy feedback (hit flash, shake, damage numbers, combo, rising-pitch pickups).
-- One input during a run: driving with smooth, tight steering (keys, or drag for a virtual stick). No ability buttons.
-- Fast paced and vehicle-first: the Redline meter rewards keeping speed; nitro fires by itself.
-- Permanent upgrades (Garage) must never need a long grind (owner: no 80-hour goals).
-- Maps: walled rectangles, roads optional. Nothing inside may cover the player or enemies; buildings only as walls.
-- The boss arrives at a random moment in `Defs.BOSS_WINDOW`.
-- Boss arena: camera locked to the vehicle, vehicle circles the boss automatically on 3 rings;
-  swipe left/right to dash (invulnerable, also sets circling direction), up/down to switch ring. Attacks are designed around the ring.
-- Upgrades: pick 1 of 3; max-level weapon + matching passive evolves (via salvage crate).
-- Salvage crate is the "Redline" tachometer (1/3/5 rewards) - deliberately not a slot machine.
-- Themes/biomes: Mad Max wasteland first, then cyberpunk, frost, toxic; more classes later
-  (tank, fast raider, hauler exist). Difficulty rises each stage; leaderboards/rankings planned
-  (currently local only; ideas: seeded daily runs, per-class boards, ghost runs).
-- Must stay multiplatform: PC is now the priority (owner, 2026-10-30), then Android and web. Keep input as actions, UI anchored,
-  platform services behind one interface.
+- It should feel like popping bubble wrap, with Vampire Survivors rewards: juicy visuals and sound come first.
+- Hit cubes flash white and vibrate; broken cubes explode into bits; ore leaves something shiny you pick up when close.
+- Top-down 3D for now. World of small cubes, smaller than Minecraft's.
+- Movement is instantly responsive, like 2D games such as VS or Enter the Gungeon.
+- Even the starter shovel hits multiple cubes.
+- No threats for now. No theme yet, so no specific models.
+- Must stay multiplatform: PC first, then Android and web. Keep input as actions, UI anchored.
 
 ## Technical rules
-- Enemies, projectiles and pickups are packed arrays drawn with MultiMesh: no node per enemy.
-  Keep per-frame GDScript cheap; phones are the target. HUD shows FPS/enemy count for device testing.
+- Cubes, gems and chips are packed arrays drawn with MultiMesh: no node per cube. Keep per-frame GDScript cheap.
 - All balance numbers live in scripts/data/defs.gd. Prefer data over code for new content.
-- Renderer is GL Compatibility; Web uses the single-threaded template (no special headers needed).
+- Renderer is GL Compatibility.
 - Match existing code style (tabs, typed GDScript, short doc comments only where non-obvious).
 
 ## Verify changes
 Run from the repo root after the project has been imported once (`godot --headless --path . --import`):
-- Smoke test (god mode, short stages, all weapons): `godot --headless --path . -- --autotest --quit-after-sec=60`
-- Balance check (normal rules): `godot --headless --path . -- --autotest --fair --class=interceptor --quit-after-sec=120`
-  Output ends with `stage= level= kills= score= phase=`; any `SCRIPT ERROR` is a failure. Add `--seed=<n>` to fix the rolls.
-- Boss arena checks: `godot --headless --path . res://tests/boss_check.tscn` must end with `BOSS CHECK PASSED`.
-- Open-world checks: `godot --headless --path . res://tests/map_check.tscn` must end with `MAP CHECK PASSED`.
-- Combat, menus, Redline, Garage: `godot --headless --path . res://tests/game_check.tscn` must end with `GAME CHECK PASSED`.
-- Bots (--autotest) play through scripts/game/bot.gd, ignore the Garage and do not write to the leaderboard or profile. Compare classes on several
-  `--seed` values; a single run varies a lot.
-- Screenshots of every screen (needs a display or xvfb): `godot --path . res://tests/ui_shots.tscn -- --shots=<dir>`
-- Builds: `tools/android/build_apk.sh` (signed APK), `tools/web/build_web.sh` (browser build).
-Parse errors that mention `Sfx`/`Save` only occur when scripts are checked standalone (autoloads missing).
-
-## Release flow
-- CI (.github/workflows/android-apk.yml) smoke-tests, builds APK + web on every push, and deploys
-  the web build to GitHub Pages from the default branch (needs repo public + Pages source "GitHub Actions").
-- The APK is signed with the committed debug key (tools/android/debug-key, test builds only).
-  Android export uses tools/android/sign_apk_v2.py so no Android SDK is required.
+- Rules: `godot --headless --path . res://tests/dig_check.tscn` must end with `DIG CHECK PASSED`.
+- Smoke test: `godot --headless --path . -- --autotest --quit-after-sec=60`. Output ends with `level= cubes= score=`; any
+  `SCRIPT ERROR` is a failure. Add `--seed=<n>` to fix the rolls.
+- Screenshots of a bot playing (needs a display): `godot --path . -- --autotest --quit-after-sec=20 --shots=<dir>`
+Parse errors that mention `Sfx` only occur when scripts are checked standalone (autoloads missing).
 
 ## Known gaps / next ideas
-- Speed, steering, Redline, Garage and balance are bot-tested only: need a human playtest for pacing and feel.
-- Never tested on a real phone yet: touch feel and FPS.
-- More classes, enemy types and biomes; real art/audio; online leaderboard; PC controls polish.
+- Feel and sound are unproven until the owner plays: nobody has listened to the sounds.
+- No goal, no saves, no meta progression, no evolutions, no unlocks yet.
+- Never tested on a real phone: touch feel and FPS with this many cubes.
 
 ## How we work (agreed with the owner)
 docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 = done list** (since v1.0).
@@ -85,5 +61,5 @@ docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 
 - Android Studio is installed; the Android SDK and Java are set in the Godot editor, so APKs can be exported
   from the editor (Project > Export). `tools/android/build_apk.sh` and `tools/web/build_web.sh` call `godot`
   from PATH, so they need a `godot` alias/shim to the console exe in Git Bash (bash itself is available).
-- Saves are in `%APPDATA%/MMS` (scores.cfg, profile.cfg). Real progress: don't delete it without asking.
+- The car game's saves are in `%APPDATA%/MMS` (scores.cfg, profile.cfg). Real progress: don't delete it without asking. This branch uses `MMS-Dig`.
 - `icon.svg.import` shows as modified after imports (line endings); ignore it, don't commit it.
