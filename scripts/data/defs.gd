@@ -25,8 +25,8 @@ const WORLD := {
 }
 
 ## Index = cube kind, 0 is empty. xp is earned on the spot, gem drops a shiny worth that much XP.
-## gem_every: only one cube in this many drops it. ring: pitch of the hit sound. chain: goes off
-## with the same kind touching it.
+## Every shiny mineral always drops its gem. ring: pitch of the hit sound. chain: goes off with the
+## same kind touching it.
 const BEDROCK := 14
 const CRYSTAL := 13
 const CUBES := [
@@ -43,7 +43,7 @@ const CUBES := [
 	{"name": "Silver", "hp": 40.0, "color": Color(0.55, 0.75, 1.0), "xp": 0.0, "score": 20, "ring": 1.7, "gem": 2},
 	{"name": "Gold", "hp": 60.0, "color": Color(1.0, 0.8, 0.15), "xp": 0.0, "score": 40, "ring": 1.9, "gem": 4},
 	{"name": "Ruby", "hp": 90.0, "color": Color(0.95, 0.12, 0.25), "xp": 0.0, "score": 70, "ring": 2.1, "gem": 7},
-	{"name": "Crystal", "hp": 12.0, "color": Color(0.55, 0.35, 1.0), "xp": 0.03, "score": 15, "ring": 2.0, "gem": 1, "gem_every": 8, "chain": true},
+	{"name": "Crystal", "hp": 12.0, "color": Color(0.55, 0.35, 1.0), "xp": 0.0, "score": 15, "ring": 2.0, "gem": 0.15, "chain": true},
 	{"name": "Bedrock", "hp": 1e9, "color": Color(0.08, 0.07, 0.08), "xp": 0.0, "score": 0},
 ]
 ## Rock changes every band_width metres out from the start.

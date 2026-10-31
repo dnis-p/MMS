@@ -144,10 +144,11 @@ func _check_hits(r: Run) -> void:
 	_check("a delayed hit waits", m.hp[c] == 39.0)
 	m.update(0.2)
 	_check("a delayed hit lands", m.hp[c] == 36.0)
-	_fill(r, p, 0, 9)
-	var gems := r.pickups.g_pos.size()
-	m.strike(c, 1e9, 0.0)
-	_check("ore drops a gem", r.pickups.g_pos.size() == gems + 1)
+	for k in [9, 10, 11, 12]:
+		_fill(r, p, 0, k)
+		var gems := r.pickups.g_pos.size()
+		m.strike(c, 1e9, 0.0)
+		_check("%s always drops a gem" % Defs.CUBES[k]["name"], r.pickups.g_pos.size() == gems + 1)
 	_fill(r, p, 0, Defs.BEDROCK)
 	m.strike(c, 1e9, 0.0)
 	_check("bedrock can't break", m.kind[c] == Defs.BEDROCK)
@@ -164,6 +165,7 @@ func _check_chain(r: Run) -> void:
 	for k in 30:
 		m.update(0.03)
 	_check("crystal chains through the whole blob (%d)" % (r.cubes - before), r.cubes - before == 49)
+	_check("every crystal drops a gem (%d)" % r.pickups.g_pos.size(), r.pickups.g_pos.size() >= 49)
 	_clear_gems(r)
 
 

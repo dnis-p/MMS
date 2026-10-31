@@ -195,7 +195,7 @@ func on_cube_popped(p: Vector3, k: int, color: Color) -> void:
 	add_xp(d["xp"])
 	debris.spray(p, color, 5 if _pops_this_frame < 12 else 2, player.global_position)
 	_play_note()
-	if d.has("gem") and cubes % int(d.get("gem_every", 1)) == 0:
+	if d.has("gem"):
 		pickups.drop_gem(p, d["gem"], d["color"])
 		debris.spray(p, Color(1, 1, 0.8), 4, p, 1.3)
 		Sfx.play("clink", -8.0, 1.0 + minf(combo, 60) * 0.008)
