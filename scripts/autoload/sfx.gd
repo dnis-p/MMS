@@ -9,10 +9,10 @@ const VOICES := 32
 var _streams := {}
 var _players: Array[AudioStreamPlayer] = []
 var _next := 0
-var _last_played := {}
-## Minimum milliseconds between two plays of the same sound, to avoid a wall of noise.
-var _throttle := {"hit": 35, "shot": 45, "pickup": 30, "kill": 40, "zap": 60, "boom": 70, "saw": 90, "pop": 11, "tick": 28, "clink": 35, "swing": 60}
-var _rev_player: AudioStreamPlayer
+var _next_play := {}
+## Minimum milliseconds between two plays of the same sound, stretched at random up to 1.8 times.
+## Keep these well above a frame: evenly repeated sounds blur into a low buzz.
+var _throttle := {"hit": 35, "shot": 45, "pickup": 30, "kill": 40, "zap": 60, "boom": 70, "saw": 90, "pop": 40, "tick": 70, "clink": 35, "swing": 60}
 var muted := false
 
 
@@ -23,10 +23,6 @@ func _ready() -> void:
 		add_child(p)
 		_players.append(p)
 	_build_all()
-	_rev_player = AudioStreamPlayer.new()
-	_rev_player.stream = _streams["rev"]
-	_rev_player.volume_db = -8.0
-	add_child(_rev_player)
 
 
 ## Plays a sound. `pitch` multiplies a small random variation unless `exact` is set.
@@ -34,30 +30,16 @@ func play(sound: String, volume_db := 0.0, pitch := 1.0, exact := false) -> void
 	if muted or not _streams.has(sound):
 		return
 	var now := Time.get_ticks_msec()
-	if _throttle.has(sound) and now - int(_last_played.get(sound, -100000)) < int(_throttle[sound]):
-		return
-	_last_played[sound] = now
+	if _throttle.has(sound):
+		if now < int(_next_play.get(sound, 0)):
+			return
+		_next_play[sound] = now + int(_throttle[sound] * randf_range(1.0, 1.8))
 	var p := _players[_next]
 	_next = (_next + 1) % VOICES
 	p.stream = _streams[sound]
 	p.volume_db = volume_db
 	p.pitch_scale = pitch if exact else pitch * randf_range(0.92, 1.08)
 	p.play()
-
-
-func rev_start() -> void:
-	if muted:
-		return
-	_rev_player.pitch_scale = 0.6
-	_rev_player.play()
-
-
-func rev_set(amount: float) -> void:
-	_rev_player.pitch_scale = lerpf(0.6, 2.6, clampf(amount, 0.0, 1.0))
-
-
-func rev_stop() -> void:
-	_rev_player.stop()
 
 
 # --- synthesis -------------------------------------------------------------
@@ -106,11 +88,6 @@ func _build_all() -> void:
 		return _sq(t, f) * 0.25 * clampf((1.6 - t) * 4.0, 0.0, 1.0))
 	_streams["slam"] = _make_lowpass(0.8, 0.06, func(t: float, _i: int) -> float:
 		return (sin(TAU * lerpf(90.0, 30.0, t / 0.8) * t) + randf_range(-0.6, 0.6)) * pow(1.0 - t / 0.8, 2.0))
-	var rev := _make(0.5, func(t: float, _i: int) -> float:
-		return (_saw(t, 80.0) * 0.4 + _sq(t, 160.0) * 0.15) * (0.8 + 0.2 * sin(TAU * 24.0 * t)))
-	rev.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	rev.loop_end = int(0.5 * RATE)
-	_streams["rev"] = rev
 
 
 func _env(t: float, length: float) -> float:

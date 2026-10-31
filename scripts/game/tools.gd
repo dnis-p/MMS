@@ -22,8 +22,6 @@ var _bombs: Array[MeshInstance3D] = []
 var _bomb_from: Array[Vector3] = []
 var _bomb_to: Array[Vector3] = []
 var _bomb_t: Array[float] = []
-var _drill_left := 0.0
-var _drill_sound := false
 
 
 func _ready() -> void:
@@ -220,14 +218,6 @@ func update(delta: float) -> void:
 	_update_saws(delta, mine, at)
 	_update_bombs(delta, mine, at)
 	_update_slash(delta, p)
-	_drill_left -= delta
-	if _drill_sound != (_drill_left > 0.0):
-		_drill_sound = not _drill_sound
-		if _drill_sound:
-			Sfx.rev_start()
-			Sfx.rev_set(0.5)
-		else:
-			Sfx.rev_stop()
 
 
 ## The shovel fans out in front of you and only swings when there is something to hit.
@@ -257,9 +247,7 @@ func _update_slash(delta: float, p: Player) -> void:
 
 
 func _drill(mine: Mine, p: Player, at: Vector3) -> void:
-	var hit := mine.hit_line(at + p.heading * 0.5, p.heading, size("drill"), 0.5, dmg("drill"), 200.0)
-	if hit > 0:
-		_drill_left = 0.12
+	if mine.hit_line(at + p.heading * 0.5, p.heading, size("drill"), 0.5, dmg("drill"), 200.0) > 0:
 		run.fx.shake(0.015)
 
 

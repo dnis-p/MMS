@@ -169,6 +169,9 @@ entries are the first ones in sections 8 and 9.
 - Limits: a bot reaches about level 5 in 35 s and level 8-16 in 90 s of game time, so pacing is a first guess. About 150 fps at 1080p on this PC with a bot;
   never run on a phone. Cubes have no gaps: gaps showed dark lines along chunk edges, cause not found.
 - Test: `tests/dig_check.tscn`.
+- **Buzz removed** (owner: a really annoying deep buzzing while digging). The Drill's looping engine sound, left over from the cars,
+  is deleted, so the Drill has no sound of its own now. Pops and hit ticks could repeat every frame, which blurs into a low hum, so
+  they now wait 40-72 ms and 70-126 ms at random. Found by reading the code; Claude can't hear the result.
 
 **2026-10-30, third batch** (checked by automated tests and bots; the owner has not played these yet)
 - **MG firing at far enemies** (owner saw this). There was no bug in choosing the target: it was always the closest at

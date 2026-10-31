@@ -121,7 +121,6 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
-	Sfx.rev_stop()
 	if get_tree():
 		get_tree().paused = false
 
