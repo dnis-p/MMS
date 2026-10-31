@@ -74,6 +74,23 @@ jobs:
           name: mms-web-itch-io
           path: build/web/
 
+      # The digging prototype lives on its own branch and is published next to this game, at /dig/.
+      # If it fails, this game still goes out. Pushes to that branch re-run this workflow.
+      - uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: prototype/dig
+          path: dig-src
+
+      - name: Build the digging prototype for the web
+        continue-on-error: true
+        run: |
+          timeout 300 godot --headless --path dig-src --import || true
+          mkdir -p dig-src/build/web
+          godot --headless --path dig-src --export-release "Web" build/web/index.html
+          mkdir -p build/web/dig
+          cp -r dig-src/build/web/. build/web/dig/
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web/

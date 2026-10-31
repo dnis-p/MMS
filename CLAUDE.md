@@ -49,6 +49,7 @@ Parse errors that mention `Sfx`/`Save` only occur when scripts are checked stand
 ## Release flow
 - CI (.github/workflows/android-apk.yml) smoke-tests, builds APK + web on every push, and deploys
   the web build to GitHub Pages from the default branch (needs repo public + Pages source "GitHub Actions").
+  That deploy also builds branch `prototype/dig` and publishes it at /dig/, next to this game.
 - The APK is signed with the committed debug key (tools/android/debug-key, test builds only).
   Android export uses tools/android/sign_apk_v2.py so no Android SDK is required.
 
