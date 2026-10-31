@@ -154,8 +154,10 @@ entries are the first ones in sections 8 and 9.
   mountain. The owner asked for blocks in proximity; the sight lines are how "only what you can directly see" was read.
 - **Atmosphere** (owner). The air gets hazier and dustier toward the edge of your light. **Player light** (owner): a warm, slightly
   flickering light around the digger.
-- **Dig only what you see** (owner). Shovel, Drill, Beam, Saws, Pulse and Bombs can't touch unlit cubes, so upgraded tools stop at the
-  edge of what you can see. Exceptions: crystal chain reactions continue into the dark, and a level-up blast reaches it.
+- **Dig only what you see** (owner). Shovel, Drill, Saws and Bombs can't touch unlit cubes, so upgrading them stops at the edge of
+  what you can see. Beam and Pulse go through the fog (owner), and so do crystal chain reactions and the level-up blast.
+- **Breaking reveals** (owner: the beam should unlock that new area visually). Rock broken in the dark and the cubes around it flash
+  bright, then fade over about 1.2 s to the dim remembered look. It works for anything that breaks there, not only Beam and Pulse.
 - **Added, not proposed:** places you have seen stay dimly visible, so your tunnels can be read on the way back. Gem stars show through
   the dark, so a lost gem can still be spotted.
 - **Switch** (owner). "Fog of war: ON/OFF" is on the main menu and the pause menu, and is remembered between sessions. There is no

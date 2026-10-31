@@ -19,7 +19,7 @@ const DIGGER := {"speed": 7.5, "pickup": 3.5, "color": Color(0.2, 0.75, 0.8)}
 ## chain reaction. shake: how far a hit cube rattles. *_wave: metres per second a hit spreads at.
 ## level_blast: radius cleared by a level-up. big_pop: pops in one frame that earn a hitstop, at most
 ## once per big_pop_every seconds. Fog of war: light is how far you see in metres, see_into how many
-## cubes of rock your light gets through, memory how bright places you have seen stay (0-1), haze how
+## cubes of rock your light gets through, memory how bright places you have seen stay (0-1; rock broken in the dark flashes bright first), haze how
 ## thick the air gets at the edge of your light (0-1), scan_every the seconds between sight updates.
 const WORLD := {
 	"start_clear": 3.5, "cave_at": 0.5, "band_width": 13.0, "band_warp": 6.0, "ore_at": 0.52,

@@ -199,6 +199,19 @@ func _check_fog(r: Run) -> void:
 	var c := m.cell_of(far.x) + m.cell_of(far.z) * Mine.SIZE
 	_check("tools can't reach what you can't see", m.hit_circle(far, 2.0, 1e9, far) == 0 and m.kind[c] == 1)
 	_check("a level-up blast still reaches into the dark", m.hit_circle(far, 2.0, 1e9, far, 0.0, true) > 0 and m.kind[c] == 0)
+	_fill(r, far, 1, 1)
+	_check("the beam goes through the fog", m.hit_line(Vector3.ZERO, Vector3.BACK, 16.0, 0.6, 1e9, 1e6, true) > 0)
+	m.update(0.1)
+	_check("it breaks what it hits there", m.kind[c] == 0)
+	var byte := c * 2 + 1
+	_check("rock broken in the dark lights up", m._mask[byte] == 255 and m._mask[byte + 2] == 255)
+	for k in 60:
+		m.scan_light(Vector3.ZERO)
+	_check("then it stays dimly remembered", m._mask[byte] == m._seen_level and m._revealed.is_empty())
+	_fill(r, far, 1, 1)
+	_check("the pulse goes through the fog", m.hit_ring(far, 2.0, 1e9, 0.01) > 0)
+	m.update(0.1)
+	_check("it breaks what it hits there", m.kind[c] == 0)
 	Options.fog = false
 	r.apply_fog()
 	_fill(r, far, 1, 1)

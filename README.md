@@ -15,7 +15,7 @@ PC only for now.
 | Menus and upgrades | Mouse, or arrows and Enter |
 | Pause | Esc or P |
 
-Fog of war is on by default: you see and dig only what your light reaches. Switch it on the main menu or pause menu.
+Fog of war is on by default: you see and dig only what your light reaches, except Mining Beam and Shock Pulse, which go through it. Switch it on the main menu or pause menu.
 
 Movement is instant, like a 2D game, and separate from aiming. Tools dig by themselves where you aim. Cubes give a little XP, ore drops shiny gems worth more,
 and each level-up lets you pick 1 of 3 tools or boosts and blasts the rock around you. Crystal goes off as a chain reaction.
@@ -27,7 +27,7 @@ godot --headless --path . res://tests/dig_check.tscn              # digging rule
 godot --headless --path . -- --autotest --quit-after-sec=60       # smoke test: a bot plays
 godot --path . -- --autotest --quit-after-sec=20 --shots=<dir>    # screenshots of a bot playing (needs a display)
 ```
-Options after `--`: `--autotest`, `--seed=<n>`, `--shots=<dir>`, `--quit-after-sec=<n>`.
+Options after `--`: `--autotest`, `--seed=<n>`, `--give=<tools>`, `--shots=<dir>`, `--quit-after-sec=<n>`.
 
 ## Layout
 - `scripts/data/defs.gd`: every number: cubes, bands, tools, boosts, camera.

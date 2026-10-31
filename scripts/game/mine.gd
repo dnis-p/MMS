@@ -12,6 +12,7 @@ const CHUNK := 32
 const HEIGHT := 0.7
 const FLASH := 0.13  # seconds a hit cube stays white and shaking
 const FADE := 110  # how much of the 0-255 mask a cell changes per sight update, so edges fade in
+const REVEAL_FADE := 5  # the same for rock lit up by breaking in the dark, which fades much slower
 const FOG_SHADER := """
 shader_type spatial;
 render_mode unshaded, depth_draw_never, cull_disabled;
@@ -19,7 +20,6 @@ uniform sampler2D mask : filter_linear, repeat_disable;
 uniform vec3 digger;
 uniform float light = 10.0;
 uniform float world_size = 160.0;
-uniform float memory = 0.13;
 uniform float haze = 0.4;
 uniform vec3 dark_color : source_color;
 uniform vec3 haze_color : source_color;
@@ -31,7 +31,7 @@ void fragment() {
 	vec2 seen = texture(mask, wpos.xz / world_size + 0.5).rg;
 	float d = distance(wpos.xz, digger.xz);
 	float lit = seen.r * (1.0 - smoothstep(light * 0.5, light, d));
-	float see = max(lit, seen.g * memory);
+	float see = max(lit, seen.g * seen.g * seen.g);
 	float air = smoothstep(light * 0.15, light, d) * haze * step(0.001, see);
 	ALBEDO = mix(dark_color, haze_color, see);
 	ALPHA = 1.0 - see * (1.0 - air);
@@ -52,7 +52,9 @@ var _q_cell := PackedInt32Array()
 var _q_dmg := PackedFloat32Array()
 var _lit := PackedInt32Array()  # the scan a cell was last lit in
 var _scan := 0
-var _mask := PackedByteArray()  # two bytes per cell: lit now, ever seen
+var _mask := PackedByteArray()  # two bytes per cell: lit now, how bright it stays once seen
+var _seen_level := 0  # that second byte for a place you remember; drawn cubed, see FOG_SHADER
+var _revealed := PackedInt32Array()  # cells above that level, fading back down to it
 var _mask_image: Image
 var _mask_texture: ImageTexture
 var _fog: MeshInstance3D
@@ -115,7 +117,7 @@ func _build_fog() -> void:
 	_fog_mat.set_shader_parameter("mask", _mask_texture)
 	_fog_mat.set_shader_parameter("light", w["light"])
 	_fog_mat.set_shader_parameter("world_size", SIZE * CELL)
-	_fog_mat.set_shader_parameter("memory", w["memory"])
+	_seen_level = int(pow(w["memory"], 1.0 / 3.0) * 255.0)
 	_fog_mat.set_shader_parameter("haze", w["haze"])
 	_fog_mat.set_shader_parameter("dark_color", Color(0.012, 0.01, 0.014))
 	_fog_mat.set_shader_parameter("haze_color", Color(0.3, 0.24, 0.2))
@@ -219,6 +221,14 @@ func light_at(p: Vector3) -> void:
 	_fog_mat.set_shader_parameter("digger", p)
 
 
+## Lights up one cell from afar: whatever breaks in the dark shows you what it opened.
+func _reveal(c: int) -> void:
+	var i := c * 2 + 1
+	if _mask[i] <= _seen_level:
+		_revealed.append(c)
+	_mask[i] = 255
+
+
 ## Casts rays out from `from`. Light gets a few cubes into rock and then stops, so you can see into
 ## the wall in front of you and down open caves, but not through the mountain.
 func scan_light(from: Vector3) -> void:
@@ -259,8 +269,14 @@ func _paint_mask(cx: int, cz: int, r: int) -> void:
 			var lit := _lit[c] == _scan
 			var v := _mask[i]
 			_mask[i] = mini(v + FADE, 255) if lit else maxi(v - FADE, 0)
-			if lit:
-				_mask[i + 1] = 255
+			if lit and _mask[i + 1] < _seen_level:
+				_mask[i + 1] = _seen_level
+	for k in range(_revealed.size() - 1, -1, -1):
+		var i := _revealed[k] * 2 + 1
+		_mask[i] = maxi(_mask[i] - REVEAL_FADE, _seen_level)
+		if _mask[i] == _seen_level:
+			_revealed[k] = _revealed[_revealed.size() - 1]
+			_revealed.resize(_revealed.size() - 1)
 	_mask_image.set_data(SIZE, SIZE, false, Image.FORMAT_RG8, _mask)
 	_mask_texture.update(_mask_image)
 
@@ -375,6 +391,8 @@ func _apply(c: int, dmg: float) -> void:
 	if k == 0 or k == Defs.BEDROCK:
 		return
 	hp[c] -= dmg
+	if Options.fog and not can_see(c):
+		_reveal(c)
 	if hp[c] <= 0.0:
 		_pop(c)
 		return
@@ -388,6 +406,9 @@ func _pop(c: int) -> void:
 	var k := kind[c]
 	kind[c] = 0
 	_draw_cube(c)
+	if Options.fog and not can_see(c):
+		for n in [c - 1, c + 1, c - SIZE, c + SIZE, c - SIZE - 1, c - SIZE + 1, c + SIZE - 1, c + SIZE + 1]:
+			_reveal(n)
 	run.on_cube_popped(pos_of(c), k, _color[c])
 	if Defs.CUBES[k].get("chain", false):
 		for n in [c - 1, c + 1, c - SIZE, c + SIZE, c - SIZE - 1, c - SIZE + 1, c + SIZE - 1, c + SIZE + 1]:
@@ -414,13 +435,14 @@ func hit_circle(center: Vector3, r: float, dmg: float, from: Vector3, wave := 0.
 
 
 ## Hits every cube inside a Fx ring of this radius and duration, each one as the ring reaches it.
+## Seen or not: this goes through the fog.
 func hit_ring(center: Vector3, r: float, dmg: float, duration: float) -> int:
 	var count := 0
 	for z in range(maxi(cell_of(center.z - r), 0), mini(cell_of(center.z + r), SIZE - 1) + 1):
 		var dz := _world(z) - center.z
 		for x in range(maxi(cell_of(center.x - r), 0), mini(cell_of(center.x + r), SIZE - 1) + 1):
 			var c := x + z * SIZE
-			if kind[c] == 0 or not can_see(c):
+			if kind[c] == 0:
 				continue
 			var dx := _world(x) - center.x
 			var d := sqrt(dx * dx + dz * dz)
@@ -460,8 +482,8 @@ func _arc(from: Vector3, dir: Vector3, r: float, half_angle: float, dmg: float, 
 	return count
 
 
-## Hits a straight strip of cubes and returns how many.
-func hit_line(from: Vector3, dir: Vector3, length: float, half_width: float, dmg: float, wave: float) -> int:
+## Hits a straight strip of cubes and returns how many. `in_dark` also hits cubes you can't see.
+func hit_line(from: Vector3, dir: Vector3, length: float, half_width: float, dmg: float, wave: float, in_dark := false) -> int:
 	var count := 0
 	var side := Vector3(-dir.z, 0, dir.x)
 	var steps := int(length / CELL)
@@ -475,7 +497,7 @@ func hit_line(from: Vector3, dir: Vector3, length: float, half_width: float, dmg
 			if x < 0 or z < 0 or x >= SIZE or z >= SIZE:
 				continue
 			var c := x + z * SIZE
-			if kind[c] != 0 and can_see(c):
+			if kind[c] != 0 and (in_dark or can_see(c)):
 				count += 1
 				strike(c, dmg, along / wave)
 	return count

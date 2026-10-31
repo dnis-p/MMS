@@ -325,7 +325,7 @@ func _pulse(mine: Mine, at: Vector3) -> void:
 
 func _beam(mine: Mine, p: Player, at: Vector3) -> void:
 	var length := size("beam")
-	if mine.hit_line(at, p.heading, length, 0.6, dmg("beam"), 70.0) > 0:
+	if mine.hit_line(at, p.heading, length, 0.6, dmg("beam"), 70.0, true) > 0:
 		run.fx.bolt(at + Vector3(0, 0.9, 0), at + p.heading * length + Vector3(0, 0.9, 0), Color(0.5, 1.0, 0.8))
 		run.fx.shake(0.08)
 		Sfx.play("zap", -8.0, 0.7)

@@ -4,6 +4,7 @@ extends Node
 ## Command-line options (after `--`):
 ##   --autotest           play unattended (auto-picks upgrades, double speed)
 ##   --seed=<n>           use this random seed for the run
+##   --give=<a,b>         with --autotest, start with these tools at max level
 ##   --shots=<dir>        with --autotest, save screenshots into <dir>
 ##   --quit-after-sec=<n> with --autotest, quit after n seconds
 
@@ -47,6 +48,10 @@ func start_run() -> void:
 	run.exit_to_menu.connect(show_menu)
 	run.retry_requested.connect(start_run)
 	_set_current(run)
+	if _args.has("give"):
+		for id in String(_args["give"]).split(","):
+			for k in Defs.MAX_TOOL_LEVEL:
+				run.tools.add_tool(id)
 
 
 func _set_current(n: Node) -> void:
