@@ -78,20 +78,15 @@ jobs:
         with:
           path: build/web/
 
-  # Publishes the web build at https://<user>.github.io/<repo>/ on every push to the default branch.
-  # One-time setup: make the repo public and set Settings > Pages > Source to "GitHub Actions".
-  # Until then this job fails harmlessly (continue-on-error) and the APK/web artifacts above still build.
-  deploy-pages:
+  # The site is published from the default branch, whose workflow also builds this branch into /dig/.
+  # So this only asks that workflow to run again once this branch has built.
+  publish-web:
     needs: build
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    if: github.ref == 'refs/heads/prototype/dig'
     runs-on: ubuntu-latest
-    continue-on-error: true
     permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      actions: write
     steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - run: gh workflow run android-apk.yml --repo "$GITHUB_REPOSITORY" --ref "${{ github.event.repository.default_branch }}"
+        env:
+          GH_TOKEN: ${{ github.token }}

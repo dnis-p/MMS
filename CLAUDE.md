@@ -29,6 +29,10 @@ Run from the repo root after the project has been imported once (`godot --headle
 - Screenshots of a bot playing (needs a display): `godot --path . -- --autotest --quit-after-sec=20 --shots=<dir>`
 Parse errors that mention `Sfx` only occur when scripts are checked standalone (autoloads missing).
 
+## Release flow
+- Every push to this branch is built and tested by CI (.github/workflows/android-apk.yml), then published at
+  https://dnis-p.github.io/MMS/dig/ by the default branch's workflow, which this branch's workflow starts. The car game stays at /MMS/.
+
 ## Known gaps / next ideas
 - Feel and sound are unproven until the owner plays: nobody has listened to the sounds.
 - No goal, no saves, no meta progression, no evolutions, no unlocks yet.

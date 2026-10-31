@@ -5,6 +5,8 @@ one thing: breaking cubes should feel like popping bubble wrap. There are no thr
 
 This is the `prototype/dig` branch. The car game (MMS) is on the default branch, unchanged.
 
+Play it in a browser: https://dnis-p.github.io/MMS/dig/ (mouse and keyboard). Each push to this branch updates it.
+
 ## How it plays
 PC only for now.
 

@@ -148,6 +148,11 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-01, playable in a browser** (owner)
+- Published at https://dnis-p.github.io/MMS/dig/, with the car game staying at /MMS/. A push to this branch builds it and then starts the
+  default branch's workflow, which builds both games and publishes them. The only changes on the default branch are its workflow
+  file and CLAUDE.md, not the car game.
+
 **2026-11-01, fog of war and Pulse** (branch `prototype/dig`; rule checks, a bot and screenshots, the owner has not played it)
 - **Fog of war** (owner), on by default. You see 10 m at most and the rest is black, like an ARPG dungeon. Light follows real sight
   lines: it passes through 4 cubes of rock and then stops, so you see into the wall ahead and down open caves, but not through the
