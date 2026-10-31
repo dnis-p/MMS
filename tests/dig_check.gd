@@ -7,6 +7,7 @@ var _failed := false
 var _step := "rules"
 var _wait := 0.0
 var _at := Vector3.ZERO
+var _peak := 0.0
 
 
 func _ready() -> void:
@@ -51,7 +52,14 @@ func _process(delta: float) -> void:
 				r.player.move(0.016, Vector2.ZERO, r.mine)
 				_check("stopping is instant", r.player.velocity == Vector3.ZERO)
 				_check_walls(r)
-				_wait = 0.1
+				_max_everything(r)
+				_wait = 4.0
+				_step = "late"
+		"late":
+			r.pending_levelups = 0
+			_peak = maxf(_peak, r.fx.trauma)
+			if _wait <= 0.0:
+				_check("every tool at max shakes no harder than a level-up (peak %.2f)" % _peak, _peak <= 0.41)
 				_step = "gem"
 		"gem":
 			if _wait <= 0.0:
@@ -68,6 +76,16 @@ func _process(delta: float) -> void:
 				_check("gems fly to you and give XP", not r.pickups.g_val.has(999) and r.pending_levelups + r.level > int(_at.x))
 				print("DIG CHECK %s" % ("FAILED" if _failed else "PASSED"))
 				get_tree().quit(1 if _failed else 0)
+
+
+func _max_everything(r: Run) -> void:
+	for id in Defs.TOOLS:
+		for k in Defs.MAX_TOOL_LEVEL:
+			r.tools.add_tool(id)
+	for id in Defs.BOOSTS:
+		for k in Defs.MAX_BOOST_LEVEL:
+			r.tools.add_boost(id)
+	r.fx.trauma = 0.0
 
 
 func _clear_around(r: Run) -> void:

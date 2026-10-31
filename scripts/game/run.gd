@@ -47,6 +47,7 @@ var _note_timer := 0.0
 var _gem_chain := 0
 var _gem_chain_timer := 0.0
 var _pops_this_frame := 0
+var _big_pop_cd := 0.0
 var _cam_pos := Vector3.ZERO
 var _cam_look := Vector3.ZERO
 var _kick := Vector3.ZERO
@@ -136,6 +137,7 @@ func _process(delta: float) -> void:
 	_update_time_scale()
 	run_time += delta
 	_pops_this_frame = 0
+	_big_pop_cd -= delta
 	player.move(minf(delta, 0.05), _move_input(delta), mine)
 	tools.update(delta)
 	mine.update(delta)
@@ -197,10 +199,10 @@ func on_cube_popped(p: Vector3, k: int, color: Color) -> void:
 		pickups.drop_gem(p, d["gem"], d["color"])
 		debris.spray(p, Color(1, 1, 0.8), 4, p, 1.3)
 		Sfx.play("clink", -8.0, 1.0 + minf(combo, 60) * 0.008)
-	fx.shake(0.012)
-	if _pops_this_frame == Defs.WORLD["big_pop"]:
+	if _pops_this_frame == Defs.WORLD["big_pop"] and _big_pop_cd <= 0.0:
+		_big_pop_cd = Defs.WORLD["big_pop_every"]
 		_hitstop(0.03)
-		fx.shake(0.15)
+		fx.shake(0.25)
 		Sfx.play("thud", -6.0)
 
 
@@ -323,7 +325,7 @@ func _update_time_scale() -> void:
 
 ## A tiny camera punch in the direction of a hit.
 func kick(dir: Vector3, amount: float) -> void:
-	_kick += dir * amount
+	_kick = (_kick + dir * amount).limit_length(0.2)
 
 
 func _cam_targets() -> Array:

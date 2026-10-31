@@ -16,11 +16,12 @@ const DIGGER := {"speed": 7.5, "pickup": 3.5, "color": Color(0.2, 0.75, 0.8)}
 ## cave or ore (higher = rarer). band_width: metres per rock band; band_warp bends their edges.
 ## geodes: crystal blobs in the world, radius in cubes. chain_delay: seconds between links of a
 ## chain reaction. shake: how far a hit cube rattles. *_wave: metres per second a hit spreads at.
-## level_blast: radius cleared by a level-up. big_pop: pops in one frame that earn a hitstop.
+## level_blast: radius cleared by a level-up. big_pop: pops in one frame that earn a hitstop, at most
+## once per big_pop_every seconds.
 const WORLD := {
 	"start_clear": 3.5, "cave_at": 0.5, "band_width": 13.0, "band_warp": 6.0, "ore_at": 0.52,
 	"geodes": 55, "geode_min": 2, "geode_max": 5, "chain_delay": 0.028, "shake": 0.05,
-	"swing_wave": 22.0, "blast_wave": 20.0, "level_blast": 5.5, "big_pop": 16,
+	"swing_wave": 22.0, "blast_wave": 20.0, "level_blast": 5.5, "big_pop": 16, "big_pop_every": 0.6,
 }
 
 ## Index = cube kind, 0 is empty. xp is earned on the spot, gem drops a shiny worth that much XP.

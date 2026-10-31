@@ -172,6 +172,9 @@ entries are the first ones in sections 8 and 9.
 - **Buzz removed** (owner: a really annoying deep buzzing while digging). The Drill's looping engine sound, left over from the cars,
   is deleted, so the Drill has no sound of its own now. Pops and hit ticks could repeat every frame, which blurs into a low hum, so
   they now wait 40-72 ms and 70-126 ms at random. Found by reading the code; Claude can't hear the result.
+- **Constant shake** (owner: way too much late game, shouldn't grow with upgrades). Shakes no longer add up: the strongest current
+  one wins. Single cube pops no longer shake at all. Biggest shake is the level-up blast, 0.4 at most even with every tool at max,
+  about 11 cm of camera movement. Also capped the camera punch and limited the big-pop freeze and thud to once per 0.6 s, which would have stuttered late game.
 
 **2026-10-30, third batch** (checked by automated tests and bots; the owner has not played these yet)
 - **MG firing at far enemies** (owner saw this). There was no bug in choosing the target: it was always the closest at
