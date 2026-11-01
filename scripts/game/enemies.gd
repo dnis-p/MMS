@@ -189,7 +189,7 @@ func update(delta: float, at: Vector3, player_radius: float) -> void:
 		to.y = 0.0
 		var d := to.length()
 		if awake[i] == 0:
-			if look and (mine.can_see_at(p) if Options.fog else d < t["wake_range"]):
+			if look and (mine.has_seen_at(p) if Options.fog else d < t["wake_range"]):
 				_wake_nest(i)
 			continue
 		if d > FORGET_RANGE:

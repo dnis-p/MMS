@@ -54,15 +54,18 @@ const THREATS := {
 ## geodes: crystal blobs in the world, radius in cubes. chain_delay: seconds between links of a
 ## chain reaction. shake: how far a hit cube rattles. *_wave: metres per second a hit spreads at.
 ## level_blast: radius cleared by a level-up. big_pop: pops in one frame that earn a hitstop, at most
-## once per big_pop_every seconds. Fog of war: light is how far you see in metres, rock_shade how bright
-## each cube is by how deep it sits from open air (first entry touches the air, last is as deep as
-## you can see), memory how bright places you have seen stay (0-1; rock broken in the dark flashes bright first), haze how
-## thick the air gets at the edge of your light (0-1), scan_every the seconds between sight updates.
+## once per big_pop_every seconds. Fog of war: light is how far your sight reaches along open ground in
+## metres and how far your lamp shines. fog_bands is how thick each ring of fog is (0-1), from the clear
+## rim outward, each fog_band cubes wide after a clear fog_rim, measured from everywhere you have opened
+## or seen. fog_reach: how many cubes into the fog tools can dig. fog_tint: how much the fog cools what
+## is under it. fog_dim: how much darker places out of your lamp's reach get (0-1). haze: how thick
+## the air gets toward the edge of your lamp. scan_every: seconds between sight updates.
 const WORLD := {
 	"start_clear": 3.5, "cave_at": 0.5, "band_width": 13.0, "band_warp": 6.0, "ore_at": 0.52,
 	"geodes": 55, "geode_min": 2, "geode_max": 5, "chain_delay": 0.028, "shake": 0.05,
 	"swing_wave": 22.0, "blast_wave": 20.0, "level_blast": 5.5, "big_pop": 16, "big_pop_every": 0.6,
-	"light": 10.0, "rock_shade": [1.0, 0.68, 0.42, 0.25, 0.14, 0.07, 0.025], "memory": 0.13, "haze": 0.4, "scan_every": 0.05,
+	"light": 10.0, "fog_bands": [0.0, 0.25, 0.42, 0.58, 0.72, 0.84, 0.93, 1.0], "fog_band": 1.3, "fog_rim": 0.7, "fog_reach": 7.0,
+	"fog_tint": 0.1, "fog_dim": 0.4, "haze": 0.15, "scan_every": 0.05,
 }
 
 ## Index = cube kind, 0 is empty. xp is earned on the spot, gem drops a shiny worth that much XP.

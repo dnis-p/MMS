@@ -116,7 +116,6 @@ func _fill(r: Run, center: Vector3, half: int, k: int) -> void:
 			m.kind[c] = k
 			m.hp[c] = float(Defs.CUBES[k].get("hp", 0.0))
 			m._draw_cube(c)
-	m.measure_depth()
 
 
 func _check_world(r: Run) -> void:
@@ -336,51 +335,46 @@ func _check_fog(r: Run) -> void:
 	var m := r.mine
 	Options.fog = true
 	r.apply_fog()
-	_fill(r, Vector3(0, 0, 0), 60, 0)
-	var wall := Vector3(0, 0, -6)
-	_fill(r, wall, 8, 1)
+	m.forget()
+	_fill(r, Vector3(0, 0, 0), 60, 1)
+	_fill(r, Vector3.ZERO, 6, 0)
 	r.player.global_position = Vector3.ZERO
 	m.scan_light(Vector3.ZERO)
-	_check("you can see open floor nearby", m.can_see_at(Vector3(3, 0, 2)))
-	_check("you can see a little into rock", m.can_see_at(Vector3(0, 0, -2.6)))
-	_check("you can't see deep into rock", not m.can_see_at(Vector3(0, 0, -7)))
-	var front := m.cell_of(0.0) + m.cell_of(-1.75) * Mine.SIZE
-	var deep := front - Mine.SIZE * 6
-	var shade := []
-	for k in 7:
-		m._color[front - Mine.SIZE * k] = Color.WHITE  # this rock was filled in, it has no tint of its own
-		shade.append(m._worn(front - Mine.SIZE * k).r)
-	_check("rock gets darker going in (%s)" % str(shade), shade[0] > shade[1] and shade[1] > shade[3] and shade[3] > shade[6] and shade[6] > 0.0)
-	_check("the seventh cube is as far as you can see", m._near[deep] >= 0 and m._near[deep - Mine.SIZE] == -1 and m.can_see(deep) and not m.can_see(deep - Mine.SIZE))
-	m.hit_circle(m.pos_of(front), 0.3, 1e9, m.pos_of(front))
-	_check("breaking rock moves the shading in", m._depth[front - Mine.SIZE] == Mine.STEP and m._near[deep - Mine.SIZE] >= 0)
-	Options.fog = false
-	r.apply_fog()
-	_check("with fog off rock isn't shaded", m._worn(deep).is_equal_approx(m._color[deep]))
-	Options.fog = true
-	r.apply_fog()
-	_fill(r, wall, 8, 0)
+	var edge := m.cell_of(0.0) + m.cell_of(-3.25) * Mine.SIZE  # the first cube of the wall
+	_check("you know the open floor you can see", m.has_seen_at(Vector3(1, 0, 1)) and m.can_see_at(Vector3(1, 0, 1)))
+	_check("rock is never known by itself", m._known[edge] > 0 and m.kind[edge] != 0)
+	_check("you can see a little into rock", m.can_see(edge) and m.can_see(edge - Mine.SIZE * 5))
+	_check("the fog thickens going in", m._known[edge] < m._known[edge - Mine.SIZE * 3] and m._known[edge - Mine.SIZE * 3] < m._known[edge - Mine.SIZE * 6])
+	_check("you can't see deep into rock", not m.can_see(edge - Mine.SIZE * 9))
+	_fill(r, Vector3(0, 0, -6), 1, 0)
 	m.scan_light(Vector3.ZERO)
-	_check("digging lets your light through", m.can_see_at(Vector3(0, 0, -7)))
-	_fill(r, Vector3(0, 0, -5), 1, 1)
-	m.scan_light(Vector3.ZERO)
-	_check("a wall hides what is behind it", not m.can_see_at(Vector3(0, 0, -7)))
-	_fill(r, Vector3(0, 0, -5), 1, 0)
-	_check("you can't see past your light", not m.can_see_at(Vector3(0, 0, 11)))
-	var far := Vector3(0, 0, 14)
+	_check("a wall hides the cave behind it", not m.has_seen_at(Vector3(0, 0, -6)))
+	_check("the fog covers a cave just like rock", m.can_see_at(Vector3(0, 0, -6)) == m.can_see(edge - Mine.SIZE * 5))
+	_check("a cave out of sight doesn't wake its nest", not m.has_seen_at(Vector3(0, 0, -6)))
+	var dug := edge
+	m.hit_circle(m.pos_of(dug), 0.3, 1e9, m.pos_of(dug))
+	m.update(0.0)
+	_check("a broken cube clears its fog at once", m._known[dug] == 0 and m._known[dug - Mine.SIZE] == Mine.STEP)
+	for k in 40:
+		m.scan_light(Vector3.ZERO)
+	_check("the drawn fog catches up", m._moving.is_empty() and m._shown == m._known)
+	_check("the fog stays gone behind you", m.has_seen_at(Vector3(1, 0, 1)))
+	r.player.global_position = Vector3(20, 0, 20)
+	m.scan_light(Vector3(20, 0, 20))
+	_check("even from far away", m.has_seen_at(Vector3(1, 0, 1)))
+	r.player.global_position = Vector3.ZERO
+	var far := Vector3(0, 0, 25)
 	_fill(r, far, 1, 1)
 	var c := m.cell_of(far.x) + m.cell_of(far.z) * Mine.SIZE
 	_check("tools can't reach what you can't see", m.hit_circle(far, 2.0, 1e9, far) == 0 and m.kind[c] == 1)
 	_check("a level-up blast still reaches into the dark", m.hit_circle(far, 2.0, 1e9, far, 0.0, true) > 0 and m.kind[c] == 0)
+	m.update(0.0)
+	_check("rock broken in the dark clears its fog", m._known[c] == 0)
 	_fill(r, far, 1, 1)
-	_check("the beam goes through the fog", m.hit_line(Vector3.ZERO, Vector3.BACK, 16.0, 0.6, 1e9, 1e6, true) > 0)
+	m.forget()
+	_check("the beam goes through the fog", m.hit_line(far + Vector3(0, 0, -3), Vector3.BACK, 6.0, 0.6, 1e9, 1e6, true) > 0)
 	m.update(0.1)
 	_check("it breaks what it hits there", m.kind[c] == 0)
-	var byte := c * 2 + 1
-	_check("rock broken in the dark lights up", m._mask[byte] == 255 and m._mask[byte + 2] == 255)
-	for k in 60:
-		m.scan_light(Vector3.ZERO)
-	_check("then it stays dimly remembered", m._mask[byte] == m._seen_level and m._revealed.is_empty())
 	_fill(r, far, 1, 1)
 	_check("the pulse goes through the fog", m.hit_ring(far, 2.0, 1e9, 0.01) > 0)
 	m.update(0.1)
@@ -389,6 +383,7 @@ func _check_fog(r: Run) -> void:
 	r.apply_fog()
 	_fill(r, far, 1, 1)
 	_check("with fog off you can hit anything", m.hit_circle(far, 2.0, 1e9, far) > 0)
+	_fill(r, Vector3.ZERO, 60, 0)
 
 
 func _check_pause(r: Run) -> void:

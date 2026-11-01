@@ -3,44 +3,57 @@ extends Node3D
 ## The world: one flat layer of small cubes. Cubes are plain data in packed arrays and are drawn with
 ## one MultiMesh per chunk, so a hit only touches the cubes it changes. Hits can be queued with a
 ## delay, which is what makes a swing or a chain reaction ripple outward instead of popping at once.
-## Fog of war lives here too: rays from the digger decide which open cells are lit, rock is lit along
-## with the open cell nearest to it and gets darker the deeper it sits, and a mask fed by all that lets a
-## dark sheet just above the rock hide the rest. Tools can only hit lit cubes.
+## Fog of war lives here too. Open cells you have broken or seen stay known for good, and a dark sheet
+## just above the rock covers everything else in rings that thicken with distance from them, whatever
+## is underneath. Tools can only hit cubes near enough to what you know.
 
 const CELL := 0.5
 const SIZE := 320  # cubes per side
 const CHUNK := 32
 const HEIGHT := 0.7
 const FLASH := 0.13  # seconds a hit cube stays white and shaking
-const FADE := 110  # how much of the 0-255 mask a cell changes per sight update, so edges fade in
-const REVEAL_FADE := 5  # the same for rock lit up by breaking in the dark, which fades much slower
+const FADE := 8  # how far a cell of the fog map moves per sight update, so the rings glide instead of jump
 const FOG_SHADER := """
 shader_type spatial;
 render_mode unshaded, depth_draw_never, cull_disabled;
-uniform sampler2D mask : filter_linear, repeat_disable;
-uniform sampler2D depth : filter_linear, repeat_disable;
-uniform float deepest = 80.0;
+uniform sampler2D fog_map : filter_linear, repeat_disable;
+uniform float bands[8];
+uniform float band_width = 1.3;
+uniform float rim = 0.7;
+uniform float cube_steps = 25.5;
 uniform vec3 digger;
 uniform float light = 10.0;
 uniform float world_size = 160.0;
-uniform float haze = 0.4;
+uniform float tint = 0.1;
+uniform float dim = 0.4;
+uniform float haze = 0.15;
 uniform vec3 dark_color : source_color;
+uniform vec3 tint_color : source_color;
 uniform vec3 haze_color : source_color;
 varying vec3 wpos;
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+float noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
 void fragment() {
-	vec2 uv = wpos.xz / world_size + 0.5;
-	vec2 seen = texture(mask, uv).rg;
+	float cubes = texture(fog_map, wpos.xz / world_size + 0.5).r * cube_steps;
+	float ring = max(cubes + (noise(wpos.xz * 0.7) - 0.5) * 0.6 - rim, 0.0) / band_width;
+	int i = min(int(ring), 6);
+	float fog = mix(bands[i], bands[i + 1], smoothstep(1.0 - fwidth(ring) * 1.5, 1.0, ring - float(i)));
 	float d = distance(wpos.xz, digger.xz);
-	float lit = seen.r * (1.0 - smoothstep(light * 0.5, light, d));
-	float see = max(lit, seen.g * seen.g * seen.g);
-	float inside = texture(depth, uv).r * 255.0 / deepest;  // haze is in the air, so rock stays dark
-	float air = smoothstep(light * 0.15, light, d) * haze * step(0.001, see) * (1.0 - min(inside, 1.0));
-	float dust = see * air;
-	ALPHA = 1.0 - see + dust;
-	ALBEDO = (dark_color * (1.0 - see) + haze_color * dust) / max(ALPHA, 0.001);
+	float clear = (1.0 - fog) * (1.0 - dim * smoothstep(light * 0.45, light, d));
+	float cool = tint * min(fog * 4.0, 1.0);
+	float dust = haze * smoothstep(light * 0.15, light, d) * (1.0 - fog);
+	ALPHA = 1.0 - clear * (1.0 - cool - dust);
+	ALBEDO = (dark_color * (1.0 - clear) + clear * (tint_color * cool + haze_color * dust)) / max(ALPHA, 0.001);
 }
 """
 ## World-anchored dirt, so the ground visibly slides past as you move: stains, grain and stones that
@@ -84,7 +97,7 @@ void fragment() {
 }
 """
 const HIDDEN := Transform3D(Basis(Vector3.ZERO, Vector3.ZERO, Vector3.ZERO), Vector3.ZERO)
-const STEP := 10  # one cube of depth, straight; a diagonal step costs 14, about the true distance
+const STEP := 10  # one cube of distance in the fog map, straight; a diagonal costs 14, about the true distance
 const DIAGONAL := 14
 const AROUND: Array[int] = [-1, 1, -SIZE, SIZE, -SIZE - 1, -SIZE + 1, SIZE - 1, SIZE + 1]
 
@@ -92,14 +105,6 @@ var run: Run
 var nests: Array = []  # [center, radius] of each pocket that holds sleeping enemies
 var kind := PackedByteArray()  # index into Defs.CUBES, 0 = empty
 var hp := PackedFloat32Array()
-var _depth := PackedByteArray()  # how far a cube is from open air, in STEPs; 0 for air
-var _near := PackedInt32Array()  # the open cell that distance is to; -1 for rock too deep to see
-var _shade: Array = Defs.WORLD["rock_shade"]
-var _deepest: int = _shade.size() * STEP + STEP
-var _shaded := false
-var _depth_image: Image
-var _depth_texture: ImageTexture
-var _depth_changed := false
 var _color := PackedColorArray()
 var _heat := PackedFloat32Array()
 var _hot := PackedInt32Array()
@@ -108,13 +113,14 @@ var _hp_of: Array[float] = []
 var _q_time := PackedFloat32Array()
 var _q_cell := PackedInt32Array()
 var _q_dmg := PackedFloat32Array()
-var _lit := PackedInt32Array()  # the scan a cell was last lit in
-var _scan := 0
-var _mask := PackedByteArray()  # two bytes per cell: lit now, how bright it stays once seen
-var _seen_level := 0  # that second byte for a place you remember; drawn cubed, see FOG_SHADER
-var _revealed := PackedInt32Array()  # cells above that level, fading back down to it
-var _mask_image: Image
-var _mask_texture: ImageTexture
+var _known := PackedByteArray()  # how far a cell is from anything you know, in STEPs; 0 = known
+var _shown := PackedByteArray()  # the same as drawn, moving toward _known
+var _fresh := PackedInt32Array()  # newly known cells whose surroundings aren't updated yet
+var _moving := PackedInt32Array()  # cells where _shown hasn't caught up
+var _farthest: int = int((Defs.WORLD["fog_rim"] + Defs.WORLD["fog_band"] * 7.0 + 1.0) * STEP)
+var _reach: int = int(Defs.WORLD["fog_reach"] * STEP)
+var _fog_image: Image
+var _fog_texture: ImageTexture
 var _fog: MeshInstance3D
 var _fog_mat: ShaderMaterial
 
@@ -124,9 +130,6 @@ func _ready() -> void:
 	hp.resize(SIZE * SIZE)
 	_color.resize(SIZE * SIZE)
 	_heat.resize(SIZE * SIZE)
-	_depth.resize(SIZE * SIZE)
-	_near.resize(SIZE * SIZE)
-	_shaded = Options.fog
 	for d in Defs.CUBES:
 		_hp_of.append(float(d.get("hp", 0.0)))
 	var cube := BoxMesh.new()
@@ -170,25 +173,28 @@ func _ready() -> void:
 ## A sheet level with the top of the rock: it covers the rock, the floor and whatever lies on it, so
 ## nothing else needs to know about the fog.
 func _build_fog() -> void:
-	_lit.resize(SIZE * SIZE)
-	_mask.resize(SIZE * SIZE * 2)
-	_mask_image = Image.create_from_data(SIZE, SIZE, false, Image.FORMAT_RG8, _mask)
-	_mask_texture = ImageTexture.create_from_image(_mask_image)
-	_depth_image = Image.create_from_data(SIZE, SIZE, false, Image.FORMAT_R8, _depth)
-	_depth_texture = ImageTexture.create_from_image(_depth_image)
+	_known.resize(SIZE * SIZE)
+	_shown.resize(SIZE * SIZE)
+	forget()
+	_fog_image = Image.create_from_data(SIZE, SIZE, false, Image.FORMAT_R8, _shown)
+	_fog_texture = ImageTexture.create_from_image(_fog_image)
 	var w := Defs.WORLD
 	var shader := Shader.new()
 	shader.code = FOG_SHADER
 	_fog_mat = ShaderMaterial.new()
 	_fog_mat.shader = shader
-	_fog_mat.set_shader_parameter("mask", _mask_texture)
-	_fog_mat.set_shader_parameter("depth", _depth_texture)
-	_fog_mat.set_shader_parameter("deepest", float(_deepest))
+	_fog_mat.set_shader_parameter("fog_map", _fog_texture)
+	_fog_mat.set_shader_parameter("bands", PackedFloat32Array(w["fog_bands"]))
+	_fog_mat.set_shader_parameter("band_width", w["fog_band"])
+	_fog_mat.set_shader_parameter("rim", w["fog_rim"])
+	_fog_mat.set_shader_parameter("cube_steps", 255.0 / STEP)
 	_fog_mat.set_shader_parameter("light", w["light"])
 	_fog_mat.set_shader_parameter("world_size", SIZE * CELL)
-	_seen_level = int(pow(w["memory"], 1.0 / 3.0) * 255.0)
+	_fog_mat.set_shader_parameter("tint", w["fog_tint"])
+	_fog_mat.set_shader_parameter("dim", w["fog_dim"])
 	_fog_mat.set_shader_parameter("haze", w["haze"])
-	_fog_mat.set_shader_parameter("dark_color", Color(0.012, 0.01, 0.014))
+	_fog_mat.set_shader_parameter("dark_color", Color8(3, 6, 12))
+	_fog_mat.set_shader_parameter("tint_color", Color8(80, 125, 190))
 	_fog_mat.set_shader_parameter("haze_color", Color(0.3, 0.24, 0.2))
 	var sheet := PlaneMesh.new()
 	sheet.size = Vector2.ONE * (SIZE * CELL + 60.0)
@@ -221,7 +227,7 @@ func generate(rng: RandomNumberGenerator) -> void:
 	_scatter_geodes(rng)
 	_scatter_gas(rng)
 	_dig_nests(rng)
-	measure_depth()
+	forget()
 	for c in SIZE * SIZE:
 		_color[c] = _tint(c)
 		hp[c] *= 0.75 + 0.5 * fmod(c * 0.7548776662, 1.0)  # so one swing doesn't pop a whole flat front
@@ -315,7 +321,6 @@ func carve(p: Vector3, r: float) -> void:
 			if k != 0 and k != Defs.BEDROCK:
 				kind[c] = 0
 				_draw_cube(c)
-				_open(c)
 				run.debris.spray(pos_of(c), _color[c], 1, pos_of(c), 0.6)
 
 
@@ -327,14 +332,19 @@ func band_at(dist: float) -> int:
 
 func set_fog(on: bool) -> void:
 	_fog.visible = on
-	if on != _shaded:
-		_shaded = on
-		for c in SIZE * SIZE:
-			_draw_cube(c)
 
 
+## Back to knowing nothing: fog everywhere.
+func forget() -> void:
+	_known.fill(_farthest)
+	_shown.fill(_farthest)
+	_fresh.clear()
+	_moving.clear()
+
+
+## Near enough to what you know to see and dig.
 func can_see(c: int) -> bool:
-	return not Options.fog or _lit[c] == _scan
+	return not Options.fog or _known[c] < _reach
 
 
 func can_see_at(p: Vector3) -> bool:
@@ -343,66 +353,52 @@ func can_see_at(p: Vector3) -> bool:
 	return x >= 0 and z >= 0 and x < SIZE and z < SIZE and can_see(x + z * SIZE)
 
 
+## Whether this spot itself has been opened or seen, not just lies near something that has.
+func has_seen_at(p: Vector3) -> bool:
+	var x := cell_of(p.x)
+	var z := cell_of(p.z)
+	return x >= 0 and z >= 0 and x < SIZE and z < SIZE and _known[x + z * SIZE] == 0
+
+
 func light_at(p: Vector3) -> void:
 	_fog_mat.set_shader_parameter("digger", p)
 
 
-## Lights up one cell from afar: whatever breaks in the dark shows you what it opened.
-func _reveal(c: int) -> void:
-	var i := c * 2 + 1
-	if _mask[i] <= _seen_level:
-		_revealed.append(c)
-	_mask[i] = 255
+func _learn(c: int) -> void:
+	if _known[c] == 0:
+		return
+	if _shown[c] == _known[c]:
+		_moving.append(c)
+	_known[c] = 0
+	_fresh.append(c)
 
 
-## Works out how deep every cube sits. After this only _open keeps it up to date.
-func measure_depth() -> void:
-	var from := PackedInt32Array()
-	for c in SIZE * SIZE:
-		var open := kind[c] == 0
-		_depth[c] = 0 if open else _deepest
-		_near[c] = c if open else -1
-		if open:
-			from.append(c)
-	_spread_depth(from)
-
-
-## A cube is gone: everything around it just got closer to open air.
-func _open(c: int) -> void:
-	_depth[c] = 0
-	_near[c] = c
-	_spread_depth(PackedInt32Array([c]), true)
-
-
-## Rock only ever goes away, so depth only drops, and this stops where nothing gets closer. That keeps
-## a pop down to a few cubes however much rock is around it.
-func _spread_depth(queue: PackedInt32Array, redraw := false) -> void:
-	_depth_changed = true
+## Spreads what was just learned through the fog map, over rock and unseen caves alike. Cells only ever
+## get closer to what you know, so this stops where nothing changes and a pop costs only a few cells.
+func _spread_known() -> void:
 	var head := 0
-	while head < queue.size():
-		var c := queue[head]
+	while head < _fresh.size():
+		var c := _fresh[head]
 		head += 1
 		var x := c % SIZE
 		var z := c / SIZE
 		if x < 1 or z < 1 or x >= SIZE - 1 or z >= SIZE - 1:
 			continue
-		var d := int(_depth[c])
-		var near := _near[c]
+		var d := int(_known[c])
 		for k in 8:
 			var n: int = c + AROUND[k]
 			var nd := d + (STEP if k < 4 else DIAGONAL)
-			if nd < _depth[n] and nd < _deepest:
-				_depth[n] = nd
-				_near[n] = near
-				queue.append(n)
-				if redraw:
-					_draw_cube(n)
+			if nd < _known[n]:
+				if _shown[n] == _known[n]:
+					_moving.append(n)
+				_known[n] = nd
+				_fresh.append(n)
+	_fresh.clear()
 
 
-## Casts rays out from `from`. Light stops at the first rock it meets, so you see down open caves but
-## never through a wall; rock shows up with the open cell nearest to it, see _paint_mask.
+## Casts rays out from `from`: open ground in sight becomes known. They stop at rock, so what lies
+## behind a wall stays unknown until you dig to it.
 func scan_light(from: Vector3) -> void:
-	_scan += 1
 	var cx := cell_of(from.x)
 	var cz := cell_of(from.z)
 	var r := int(Defs.WORLD["light"] / CELL)
@@ -419,39 +415,27 @@ func scan_light(from: Vector3) -> void:
 			if ix < 0 or iz < 0 or ix >= SIZE or iz >= SIZE:
 				break
 			var c := ix + iz * SIZE
-			_lit[c] = _scan
 			if kind[c] != 0:
 				break
+			_learn(c)
 			x += dx
 			z += dz
-	_paint_mask(cx, cz, r + 4)
+	_spread_known()
+	_draw_fog()
 
 
-func _paint_mask(cx: int, cz: int, r: int) -> void:
-	for z in range(maxi(cz - r, 0), mini(cz + r, SIZE - 1) + 1):
-		for x in range(maxi(cx - r, 0), mini(cx + r, SIZE - 1) + 1):
-			var c := x + z * SIZE
-			var i := c * 2
-			var near := _near[c]
-			var lit := _lit[c] == _scan or (near >= 0 and _lit[near] == _scan)
-			if lit:
-				_lit[c] = _scan
-			var v := _mask[i]
-			_mask[i] = mini(v + FADE, 255) if lit else maxi(v - FADE, 0)
-			if lit and _mask[i + 1] < _seen_level:
-				_mask[i + 1] = _seen_level
-	for k in range(_revealed.size() - 1, -1, -1):
-		var i := _revealed[k] * 2 + 1
-		_mask[i] = maxi(_mask[i] - REVEAL_FADE, _seen_level)
-		if _mask[i] == _seen_level:
-			_revealed[k] = _revealed[_revealed.size() - 1]
-			_revealed.resize(_revealed.size() - 1)
-	_mask_image.set_data(SIZE, SIZE, false, Image.FORMAT_RG8, _mask)
-	_mask_texture.update(_mask_image)
-	if _depth_changed:
-		_depth_changed = false
-		_depth_image.set_data(SIZE, SIZE, false, Image.FORMAT_R8, _depth)
-		_depth_texture.update(_depth_image)
+## Lets the drawn fog catch up, which is what makes the rings glide outward as you dig.
+func _draw_fog() -> void:
+	if _moving.is_empty():
+		return
+	for k in range(_moving.size() - 1, -1, -1):
+		var c := _moving[k]
+		_shown[c] = maxi(_shown[c] - FADE, _known[c])
+		if _shown[c] == _known[c]:
+			_moving[k] = _moving[_moving.size() - 1]
+			_moving.resize(_moving.size() - 1)
+	_fog_image.set_data(SIZE, SIZE, false, Image.FORMAT_R8, _shown)
+	_fog_texture.update(_fog_image)
 
 
 # --- coordinates -----------------------------------------------------------------
@@ -503,15 +487,14 @@ func _rest(x: int, z: int) -> Transform3D:
 	return Transform3D(Basis.IDENTITY, Vector3((x % CHUNK + 0.5) * CELL, HEIGHT * 0.5, (z % CHUNK + 0.5) * CELL))
 
 
-## Damaged cubes stay darker, so you can see what is about to go. With the fog on, so do deep ones.
+## Damaged cubes stay darker, so you can see what is about to go.
 func _worn(c: int) -> Color:
-	var color := _color[c].darkened(clampf(1.0 - hp[c] / _hp_of[kind[c]], 0.0, 1.0) * 0.45)
-	if _shaded:
-		color = color.darkened(1.0 - _shade[mini(_depth[c] / STEP, _shade.size()) - 1])
-	return color
+	return _color[c].darkened(clampf(1.0 - hp[c] / _hp_of[kind[c]], 0.0, 1.0) * 0.45)
 
 
 func update(delta: float) -> void:
+	if not _fresh.is_empty():
+		_spread_known()
 	for i in range(_q_time.size() - 1, -1, -1):
 		_q_time[i] -= delta
 		if _q_time[i] > 0.0:
@@ -572,8 +555,6 @@ func _apply(c: int, dmg: float) -> void:
 	if k == 0 or k == Defs.BEDROCK:
 		return
 	hp[c] -= dmg
-	if Options.fog and not can_see(c):
-		_reveal(c)
 	if hp[c] <= 0.0:
 		_pop(c)
 		return
@@ -587,10 +568,7 @@ func _pop(c: int) -> void:
 	var k := kind[c]
 	kind[c] = 0
 	_draw_cube(c)
-	_open(c)
-	if Options.fog and not can_see(c):
-		for n in [c - 1, c + 1, c - SIZE, c + SIZE, c - SIZE - 1, c - SIZE + 1, c + SIZE - 1, c + SIZE + 1]:
-			_reveal(n)
+	_learn(c)
 	run.on_cube_popped(pos_of(c), k, _color[c])
 	if Defs.CUBES[k].get("chain", false):
 		for n in [c - 1, c + 1, c - SIZE, c + SIZE, c - SIZE - 1, c - SIZE + 1, c + SIZE - 1, c + SIZE + 1]:

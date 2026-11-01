@@ -148,7 +148,16 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
-**2026-11-01, Terraria-style rock shading and a textured floor** (owner: blocks get darker the further they are from the open edge, 5-6 fading blocks and a 7th that is black or nearly; texture on the ground so moving reads visually; rule checks, bots and screenshots, the owner has not played it)
+**2026-11-01, the fog follows what you have mined** (owner's Photoshop mockups and a video of their layers: a fog through all the terrain you haven't mined through, your path clear, the player's light kept so the path is darker away from you; rule checks, bots and screenshots, the owner has not played it)
+- Replaces the rock shading of the entry below: cubes keep their own colours, and the fog is one dark sheet over everything, built like the owner's layer stack. Seven soft rings thicken with
+  distance from what you know (25%, 42%, 58%, 72%, 84%, 93%, then black), a 2-cube clear rim and about 1.3 cubes per ring, so black starts about 10 cubes out. Ring edges are smooth curves, not block steps. The fog has the mockups' navy black and cools what is under it a little, like their blue layer.
+- **What counts as known:** anything you break, and open ground your light reaches in a straight line (10 m). It stays known for good, so your path stays clear behind you. Places out of your lamp's reach are up to 40% darker (owner) instead of the old dim memory.
+- **Air pockets** (owner unsure; decided to match the mockups, tell me if it should change): a cave you haven't reached is covered exactly like rock, so one near your tunnel shows faintly through the rings. Its nest wakes only when you actually see into it or hit it.
+- Tools dig up to 7 cubes into the fog, so the outer rings are visible but out of reach. Beam, Pulse and anything else that breaks rock in the dark clears the fog there at once. The rings glide outward as you dig instead of jumping.
+- Removed: light through rock, the bright flash on rock broken in the dark (the fog just clears now), the dim-memory look. The haze stays, thinner and only outside the fog.
+- Bots: everything maxed (10 seeds, 120 s of game time, 0 script errors): 8 survived with 2-10 hits taken, 2 died at 42 and 44 s, deep down early. Normal runs (4 seeds, 200 s): 3 survived, 1 died at 93 s. 148-165 fps at 1080p. The browser version has not been tried with this.
+
+**2026-11-01, Terraria-style rock shading and a textured floor** (the rock shading was replaced the same day, see the entry above; the floor stays) (owner: blocks get darker the further they are from the open edge, 5-6 fading blocks and a 7th that is black or nearly; texture on the ground so moving reads visually; rule checks, bots and screenshots, the owner has not played it)
 - **Rock shading** (owner). With fog on, each cube's colour depends on how many cubes it sits from open air: full brightness at the edge, six steps
   darker, and the 7th almost black (`rock_shade` in Defs). It updates as you dig, so the bright edge follows you in. It is off with fog off, or everything inside the rock would be black.
 - **Changed from before, not in the request:** light no longer passes through rock. Rays stop at the first cube, and rock shows up along with the open cell nearest to it, up to
