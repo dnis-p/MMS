@@ -141,6 +141,19 @@ entries are the first ones in sections 8 and 9.
 - Themes: digging down through a landfill into what is buried under it (raccoons love shiny things), or drill rigs for Motorhead.
 - Close games to study: Deep Rock Galactic: Survivor (VS plus mining), Dome Keeper (digging plus waves), Motherload, Noita.
 
+**Digging brainstorm (suggested 2026-11-01, asked for by the owner, nothing approved yet; none of it needs a new button)**
+- Core idea: the fog is a scratch card. Digging scratches it off, so what is hidden under it should be worth scratching for.
+- Run goal: reach the Heart at the outer edge of the map, about 15-20 minutes, with a boss at some band gates. Leaving through a lift keeps all your gems, dying keeps about half.
+- Hidden in the rock: geodes (hard shell, a burst of gems, like VS chests), a huge motherlode, vaults, shrines with a trade-off, relics that unlock forever the first time you dig them up. Shapes or sparkles show faintly through the outer rings.
+- Frenzy: a long cube combo turns the screen gold and every cube pops in one hit for a few seconds.
+- Your tunnels are the level: cave-ins crush enemies behind you, fuel seams burn along their length, and a hunter worm that hears digging arrives late in a run, like the VS Reaper.
+- Unlocks: characters are a starting tool plus one rule that changes digging. Tools and boosts join the shared pool when unlocked. Every unlock has a visible goal, as in VS.
+- Character ideas: Digger (shovel), Mole (tiny light, feels ore through fog), Rig (no aim, breaks rock by driving into it), Demolisher (bombs, immune to own blasts, gas rock heals), Prospector (double gems, half health), Foreman (a helper bot digs on its own).
+- Tool ideas: Acid (spreads through rock), Tesla Pick (jumps along ore), Dynamite Trail (dropped as you walk), Tunnel Worm (a pet that eats a winding tunnel), Echo (pings reveal the fog), Jackhammer (shockwave along walls).
+- Evolutions: a maxed tool plus a maxed boost, for example Drill plus Quick Hands becomes a Tunnel Borer that leaves a wide corridor.
+- Meta: a short gem shop with no long grind (owner, section 6), a Collection of everything found, a camp that visibly grows, lifts that start you deeper, new mines with their own rules, and a Curse setting that trades danger for gems.
+- Themes, in order of Claude's preference: raccoon in a landfill digging down through layers of history (bubble wrap really is trash, tools are junk taped together); gravedigger from cemetery to Hell (fits the lamp and fog, closest to VS); prison escape starting with a spoon (being caught explains every restart); inside a sleeping giant (skin to Heart, gross popping); ant colony (workers fill the tunnels you dig); mole (blindness explains the fog, cute); corporate asteroid mine (disposable staff); dwarves (safe, least original).
+
 ## 7. Open questions
 - Is portrait or landscape better for phones? Test on a real device.
 - Are the pacing, difficulty and touch controls right? Not yet tested on a phone.
@@ -151,7 +164,7 @@ entries are the first ones in sections 8 and 9.
 **2026-11-01, the fog follows the cube grid** (owner: like the soft fog below, but squared and following the cubes, which is what the Terraria picture meant; rule check, a bot and screenshots, the owner has not played it)
 - Each cell of the fog now has one flat darkness, and its squares line up with the rock, so the rings have stair-stepped edges instead of brush-like curves. The lamp's dimming is per cell too.
 - Same rings, opacities, colours and rules as the entry below. Only the look changed, so difficulty was not re-measured.
-- The approved soft version is kept as local git tag `fog-soft-rings` (commit e94d055).
+- The owner has since seen it and likes it better than the soft version: tagged `fog-grid-squares` (commit 6c11ab4). The soft version is kept as tag `fog-soft-rings` (commit e94d055). Both tags are on GitHub.
 
 **2026-11-01, the fog follows what you have mined** (owner's Photoshop mockups and a video of their layers: a fog through all the terrain you haven't mined through, your path clear, the player's light kept so the path is darker away from you; rule checks, bots and screenshots, the owner has not played it)
 - Replaces the rock shading of the entry below: cubes keep their own colours, and the fog is one dark sheet over everything, built like the owner's layer stack. Seven soft rings thicken with
@@ -403,6 +416,11 @@ entries are the first ones in sections 8 and 9.
   in that boss fight. The bot never dashes or switches rings, so this is not a measure of real balance.
 
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
+**Owner, 2026-11-01, plans for the digging game (not built, details open; see the brainstorm in section 6)**
+- Unlockables, as in VS, where you unlock characters that give items or abilities you didn't have before. Not decided yet whether there will be several characters or just tools.
+- Meta progression.
+- Theme still undecided. Some mechanics could come from choosing it.
+
 **Owner, 2026-10-31, the refocus (the prototype is built, see section 8; these are still open)**
 - After playing: the late game of the car prototype is pretty satisfying, so the VS formula is probably better. The raccoon's theme
   wasn't bad, but being the hunter wasn't that satisfying. Games may need phases where you get surrounded and just shred through.
