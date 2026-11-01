@@ -21,6 +21,8 @@ func _ready() -> void:
 	r.run_seed = 7
 	_main._set_current(r)
 	r.levelup_ui.auto_pick = true
+	r.god_mode = true  # the threats have their own checks
+	r.enemies.clear()
 
 
 func _process(delta: float) -> void:
@@ -34,6 +36,7 @@ func _process(delta: float) -> void:
 			_check_shovel(r)
 			_check_hits(r)
 			_check_chain(r)
+			_check_threats(r)
 			_check_fog(r)
 			_check_pause(r)
 			_check_tools(r)
@@ -78,6 +81,11 @@ func _process(delta: float) -> void:
 		"gem_end":
 			if _wait <= 0.0:
 				_check("gems fly to you and give XP", not r.pickups.g_val.has(999) and r.pending_levelups + r.level > int(_at.x))
+				r.god_mode = false
+				r.player.invuln = 0.0
+				r.player.hp = 1.0
+				r.player_hit(50.0)
+				_check("running out of health ends the run", r.dead)
 				print("DIG CHECK %s" % ("FAILED" if _failed else "PASSED"))
 				get_tree().quit(1 if _failed else 0)
 
@@ -119,7 +127,7 @@ func _check_world(r: Run) -> void:
 	for i in range(0, m.kind.size(), 3):
 		kinds[m.kind[i]] = true
 	_check("ore and crystal exist", kinds.has(9) and kinds.has(Defs.CRYSTAL))
-	_check("no enemies or health yet", not ("hp" in r.player))
+	_check("there are nests of sleepers", m.nests.size() > 10 and m.kind.count(Defs.GAS) > 50)
 
 
 func _check_shovel(r: Run) -> void:
@@ -176,6 +184,98 @@ func _check_chain(r: Run) -> void:
 func _clear_gems(r: Run) -> void:
 	for arr in [r.pickups.g_pos, r.pickups.g_val, r.pickups.g_col, r.pickups.g_pull, r.pickups.g_hop]:
 		arr.clear()
+
+
+func _check_threats(r: Run) -> void:
+	var e := r.enemies
+	var m := r.mine
+	var p := r.player
+	r.god_mode = false
+	p.global_position = Vector3.ZERO
+	var near := Vector3(0.7, 0, 0)
+	var i := e.spawn(Enemies.CRAWLER, near, -1, true)
+	e.update(0.016, Vector3.ZERO, p.radius)
+	_check("an enemy touching you hurts", p.hp < p.max_hp)
+	var hp := p.hp
+	e.update(0.016, Vector3.ZERO, p.radius)
+	_check("you can't be hit twice in a row", p.hp == hp)
+	p.invuln = 0.0
+	p.hp = p.max_hp
+	_check("the shovel sees enemies", e.arc_has_enemies(Vector3.ZERO, Vector3.RIGHT, 2.4, 1.15))
+	e.hit_arc(Vector3.ZERO, Vector3.RIGHT, 2.4, 1.15, 1e6)
+	_check("tools kill enemies", not e.is_alive(i) and r.kills == 1)
+	_check("kills drop a gem", not r.pickups.g_pos.is_empty())
+	_clear_gems(r)
+	var a := e.spawn(Enemies.CRAWLER, Vector3(0, 0, -30), 5)
+	var b := e.spawn(Enemies.CRAWLER, Vector3(1, 0, -30), 5)
+	var c := e.spawn(Enemies.BRUTE, Vector3(-1, 0, -30), 5)
+	e.update(0.016, Vector3.ZERO, p.radius)
+	var at: Vector3 = e.pos[a]
+	e.update(0.3, Vector3.ZERO, p.radius)
+	_check("a nest sleeps while you are away", e.awake[a] == 0 and e.pos[a] == at)
+	e.hit(a, 1.0, Vector3.ZERO)
+	_check("hitting one wakes its whole nest", e.awake[b] == 1 and e.awake[c] == 1)
+	e.clear()
+	_fill(r, Vector3(4, 0, 0), 2, 7)
+	var mole := e.spawn(Enemies.BURROWER, Vector3(5, 0, 0), -1, true)
+	var before := m.kind[m.cell_of(5.0) + m.cell_of(0.0) * Mine.SIZE]
+	for k in 5:
+		e.update(0.05, Vector3.ZERO, p.radius)
+	_check("burrowers tunnel through rock", before == 7 and m.kind_at(e.pos[mole]) == 0)
+	e.clear()
+	_fill(r, Vector3(4, 0, 0), 2, 0)
+	var crawl := e.spawn(Enemies.CRAWLER, Vector3(5, 0, 0), -1, true)
+	_fill(r, Vector3(3, 0, 0), 2, 7)
+	for k in 90:
+		e.update(0.016, Vector3.ZERO, p.radius)
+	_check("other enemies are stopped by rock", e.pos[crawl].x > 3.5)
+	e.clear()
+	_fill(r, Vector3(3, 0, 0), 2, 0)
+	_check_traps(r)
+	p.invuln = 0.0
+	p.hp = p.max_hp
+	r.god_mode = true
+
+
+func _check_traps(r: Run) -> void:
+	var p := r.player
+	var t := r.traps
+	var m := r.mine
+	p.invuln = 0.0
+	p.hp = p.max_hp
+	t._at.clear()
+	t._pos.clear()
+	t._beat.clear()
+	var cycle: float = Defs.THREATS["spike_cycle"]
+	t.add_plate(Vector3(0.5, 0, 0.5), cycle - t._time - fmod(0.0, 1.0) - 0.1)
+	_check("a spike plate goes up on its beat", t.height(0) >= 1.0)
+	t.update(0.0, Vector3(0.5, 0, 0.5))
+	_check("raised spikes hurt", p.hp < p.max_hp)
+	p.invuln = 0.0
+	p.hp = p.max_hp
+	t._beat[0] = cycle * 0.5 - t._time
+	t._beat[0] = 0.0 - t._time
+	_check("lowered spikes are safe", t.height(0) == 0.0)
+	t.update(0.0, Vector3(0.5, 0, 0.5))
+	_check("walking on them does nothing", p.hp == p.max_hp)
+	t._at.clear()
+	t._pos.clear()
+	t._beat.clear()
+	_fill(r, Vector3(2, 0, 0), 1, Defs.GAS)
+	var c := m.cell_of(2.0) + m.cell_of(0.0) * Mine.SIZE
+	var mob := r.enemies.spawn(Enemies.BRUTE, Vector3(2.5, 0, 0), -1, true)
+	m.strike(c, 1e9, 0.0)
+	_check("gas rock doesn't blow at once", p.hp == p.max_hp)
+	for k in 8:
+		m.update(0.03)
+	t.update(float(Defs.THREATS["gas_fuse"]) + 0.01, Vector3.ZERO)
+	_check("gas rock blows after its fuse and hurts you", p.hp < p.max_hp)
+	_check("the blast also hits enemies", not r.enemies.is_alive(mob))
+	_check("and clears the rock", m.kind_at(Vector3(3.5, 0, 0)) == 0 or m.kind_at(Vector3(2, 0, 0)) == 0)
+	_clear_gems(r)
+	p.invuln = 0.0
+	p.hp = p.max_hp
+	r.mine.update(1.0)
 
 
 func _check_fog(r: Run) -> void:

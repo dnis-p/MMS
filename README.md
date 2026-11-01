@@ -1,7 +1,7 @@
 # DIG (working title)
 
 Top-down 3D digging prototype in Godot 4.7, GDScript only, placeholder art and sound. The goal right now is
-one thing: breaking cubes should feel like popping bubble wrap. There are no threats and no way to lose yet.
+one thing: breaking cubes should feel like popping bubble wrap. Enemies and traps can now kill you.
 
 This is the `prototype/dig` branch. The car game (MMS) is on the default branch, unchanged.
 
@@ -35,6 +35,7 @@ Options after `--`: `--autotest`, `--seed=<n>`, `--give=<tools>`, `--shots=<dir>
 - `scripts/data/defs.gd`: every number: cubes, bands, tools, boosts, camera.
 - `scripts/game/mine.gd`: the cube world, hits, ripples, chain reactions, collision.
 - `scripts/game/tools.gd`: tools, boosts and level-up choices.
+- `scripts/game/enemies.gd`, `traps.gd`: enemies and nests, spike plates and gas rock.
 - `scripts/game/run.gd`: one dig; routes events, camera, input.
 - `scripts/game/debris.gd`, `fx.gd`, `pickups.gd`: chips, rings and shake, gems.
 - `docs/DESIGN.md`: ideas and decisions; sections 8 and 9 track done and to-do.

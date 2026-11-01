@@ -82,7 +82,7 @@ func _process(delta: float) -> void:
 		print("AUTOTEST DONE elapsed=%.1f" % _elapsed)
 		if _current is Run:
 			var r: Run = _current
-			print("level=%d cubes=%d score=%d best_combo=%d depth=%.0f tools=%d" % [r.level, r.cubes, r.score, r.best_combo, r.depth, r.tools.order.size()])
+			print("level=%d cubes=%d kills=%d score=%d best_combo=%d depth=%.0f tools=%d hp=%d dead=%s" % [r.level, r.cubes, r.kills, r.score, r.best_combo, r.depth, r.tools.order.size(), r.player.hp, r.dead])
 		get_tree().quit()
 
 

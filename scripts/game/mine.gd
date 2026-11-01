@@ -40,6 +40,7 @@ void fragment() {
 const HIDDEN := Transform3D(Basis(Vector3.ZERO, Vector3.ZERO, Vector3.ZERO), Vector3.ZERO)
 
 var run: Run
+var nests: Array = []  # [center, radius] of each pocket that holds sleeping enemies
 var kind := PackedByteArray()  # index into Defs.CUBES, 0 = empty
 var hp := PackedFloat32Array()
 var _color := PackedColorArray()
@@ -150,6 +151,8 @@ func generate(rng: RandomNumberGenerator) -> void:
 	_q_cell.clear()
 	_q_dmg.clear()
 	_scatter_geodes(rng)
+	_scatter_gas(rng)
+	_dig_nests(rng)
 	for c in SIZE * SIZE:
 		_color[c] = _tint(c)
 		hp[c] *= 0.75 + 0.5 * fmod(c * 0.7548776662, 1.0)  # so one swing doesn't pop a whole flat front
@@ -195,6 +198,55 @@ func _scatter_geodes(rng: RandomNumberGenerator) -> void:
 				if x >= 2 and z >= 2 and x < SIZE - 2 and z < SIZE - 2 and Vector2i(x - cx, z - cz).length_squared() <= r * r + rng.randi_range(-3, 3):
 					kind[c] = Defs.CRYSTAL
 					hp[c] = _hp_of[Defs.CRYSTAL]
+
+
+## Small blobs that pass for plain rock until you know the colour.
+func _scatter_gas(rng: RandomNumberGenerator) -> void:
+	var t := Defs.THREATS
+	for k in t["gas_blobs"]:
+		var a := rng.randf() * TAU
+		var dist := rng.randf_range(t["safe_start"], SIZE * CELL * 0.48)
+		var cx := cell_of(cos(a) * dist)
+		var cz := cell_of(sin(a) * dist)
+		var r := rng.randi_range(1, 2)
+		for z in range(cz - r, cz + r + 1):
+			for x in range(cx - r, cx + r + 1):
+				var c := x + z * SIZE
+				if kind[c] != 0 and kind[c] != Defs.BEDROCK:
+					kind[c] = Defs.GAS
+					hp[c] = _hp_of[Defs.GAS]
+
+
+func _dig_nests(rng: RandomNumberGenerator) -> void:
+	var t := Defs.THREATS
+	nests.clear()
+	for k in t["nests"]:
+		var a := rng.randf() * TAU
+		var dist := rng.randf_range(t["safe_start"], SIZE * CELL * 0.46)
+		var center := Vector3(cos(a) * dist, 0, sin(a) * dist)
+		var r := rng.randf_range(t["nest_min"], t["nest_max"])
+		nests.append([center, r])
+		var cells := ceili(r / CELL)
+		var cx := cell_of(center.x)
+		var cz := cell_of(center.z)
+		for z in range(cz - cells, cz + cells + 1):
+			for x in range(cx - cells, cx + cells + 1):
+				if Vector2i(x - cx, z - cz).length_squared() <= cells * cells:
+					kind[x + z * SIZE] = 0
+
+
+## Removes rock without it counting as your digging, for things that tunnel.
+func carve(p: Vector3, r: float) -> void:
+	for z in range(cell_of(p.z - r), cell_of(p.z + r) + 1):
+		for x in range(cell_of(p.x - r), cell_of(p.x + r) + 1):
+			if x < 2 or z < 2 or x >= SIZE - 2 or z >= SIZE - 2:
+				continue
+			var c := x + z * SIZE
+			var k := kind[c]
+			if k != 0 and k != Defs.BEDROCK:
+				kind[c] = 0
+				_draw_cube(c)
+				run.debris.spray(pos_of(c), _color[c], 1, pos_of(c), 0.6)
 
 
 func band_at(dist: float) -> int:
@@ -293,6 +345,11 @@ func cell_of(v: float) -> int:
 
 func pos_of(c: int) -> Vector3:
 	return Vector3(_world(c % SIZE), HEIGHT * 0.5, _world(c / SIZE))
+
+
+func clamp_inside(p: Vector3) -> Vector3:
+	var edge := SIZE * CELL * 0.5 - 2.0
+	return Vector3(clampf(p.x, -edge, edge), 0.0, clampf(p.z, -edge, edge))
 
 
 func kind_at(p: Vector3) -> int:
@@ -517,7 +574,11 @@ func resolve(p: Vector3, r: float) -> Vector3:
 				var near := Vector2(clampf(p.x, wx - CELL * 0.5, wx + CELL * 0.5), clampf(p.z, wz - CELL * 0.5, wz + CELL * 0.5))
 				var away := Vector2(p.x, p.z) - near
 				var d2 := away.length_squared()
-				if d2 < r * r and d2 > 0.000001:
+				if d2 <= 0.000001:  # pushed right inside a cube: out by the side it is nearest
+					away = Vector2(p.x - wx, p.z - wz)
+					p.x = wx + signf(away.x) * (CELL * 0.5 + r) if absf(away.x) >= absf(away.y) else p.x
+					p.z = wz + signf(away.y) * (CELL * 0.5 + r) if absf(away.x) < absf(away.y) else p.z
+				elif d2 < r * r:
 					var d := sqrt(d2)
 					p.x += away.x / d * (r - d)
 					p.z += away.y / d * (r - d)

@@ -68,6 +68,8 @@ func _build_all() -> void:
 		return randf_range(-1.0, 1.0) * sin(PI * t / 0.11) * 0.7)
 	_streams["thud"] = _make_lowpass(0.2, 0.2, func(t: float, _i: int) -> float:
 		return (sin(TAU * lerpf(130.0, 50.0, t / 0.2) * t) + randf_range(-0.5, 0.5)) * pow(1.0 - t / 0.2, 2.0))
+	_streams["fuse"] = _make(0.5, func(t: float, _i: int) -> float:
+		return randf_range(-1.0, 1.0) * 0.25 * minf(t * 12.0, 1.0) * (1.0 - t / 0.5) * (0.6 + 0.4 * _sq(t, 24.0)))
 	_streams["pickup"] = _make(0.08, func(t: float, _i: int) -> float:
 		return sin(TAU * 1250.0 * t) * 0.35 * _env(t, 0.08))
 	_streams["zap"] = _make(0.16, func(t: float, _i: int) -> float:

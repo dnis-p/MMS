@@ -148,6 +148,21 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-01, enemies and traps** (owner: "traps and enemies you can run into"; rule checks, bots and screenshots, the owner has not played it)
+- **Health and death, added because threats need them.** 100 health, a short blink after each hit, a red screen flash. At 0 the run
+  ends with "YOU DIED", your stats, and Dig again. Level-ups heal 30. New boost: Thick Skin, +20 max health. No other healing yet.
+- **Nests** (suggested). 55 open pockets, none within 20 m of the start, hold sleeping enemies. They wake together once you can see
+  one or hit one, then chase you and are stopped by rock like you are. Deeper nests hold more, and enemies get tougher per rock band.
+- **Enemies.** Crawler: small, in numbers. Brute: slow, big, 130 health, pays well. Burrower: tunnels through rock to you, first after
+  40 s and then every 22 s or less, so no spot stays safe. All tools hurt them, kills drop gems. Beam and Pulse reach them through the
+  fog; the other tools have no sight limit on enemies. Awake enemies in the dark show only red eyes.
+- **Traps.** Spike plates: 90 patches on the floor, many hidden under rock, that rise on a beat with a small warning first. Gas Rock:
+  yellow-green cubes that blow 0.9 s after breaking, with a growing blinking ball. The blast hurts you for 18, clears rock, and hits
+  enemies hard, so it can be used against them. Blobs chain, and one fuse covers a whole pocket.
+- Tools: the shovel also swings when only enemies are in its fan. Pulse hits enemies as its ring reaches them.
+- Bots (6 seeds, 150 s of game time, 0 script errors): 3 survived, 3 died at 27, 89 and 115 s. The bot backs away but doesn't avoid traps
+  or nests. Difficulty is a first guess. Screenshots show nests and fights; spike plates and the gas fuse were tested by checks but not looked at.
+
 **2026-11-01, playable in a browser** (owner)
 - Published at https://dnis-p.github.io/MMS/dig/, with the car game staying at /MMS/. A push to this branch builds it and then starts the
   default branch's workflow, which builds both games and publishes them. The only changes on the default branch are its workflow

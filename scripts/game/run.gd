@@ -17,6 +17,8 @@ var mine: Mine
 var debris: Debris
 var pickups: Pickups
 var tools: Tools
+var enemies: Enemies
+var traps: Traps
 var fx: Fx
 var bot := Bot.new()
 var camera: Camera3D
@@ -29,6 +31,7 @@ var xp := 0.0
 var xp_next := Defs.xp_to_next(1)
 var pending_levelups := 0
 var cubes := 0
+var kills := 0
 var score := 0
 var combo := 0
 var combo_timer := 0.0
@@ -37,6 +40,8 @@ var run_time := 0.0
 var depth := 0.0
 var band := 0
 var autotest := false
+var god_mode := false
+var dead := false
 var base_time_scale := 1.0
 
 var _modal_open := false
@@ -48,6 +53,7 @@ var _gem_chain_timer := 0.0
 var _pops_this_frame := 0
 var _big_pop_cd := 0.0
 var _scan_timer := 0.0
+var _burrow_timer: float = Defs.THREATS["burrow_from"]
 var _lamp: OmniLight3D
 var _cam_pos := Vector3.ZERO
 var _cam_look := Vector3.ZERO
@@ -83,6 +89,14 @@ func _ready() -> void:
 	mine.run = self
 	add_child(mine)
 	mine.generate(rng)
+	enemies = Enemies.new()
+	enemies.run = self
+	add_child(enemies)
+	enemies.fill_nests()
+	traps = Traps.new()
+	traps.run = self
+	add_child(traps)
+	traps.generate(rng)
 	debris = Debris.new()
 	add_child(debris)
 	pickups = Pickups.new()
@@ -154,6 +168,9 @@ func _update_light(delta: float) -> void:
 
 
 func apply_boosts() -> void:
+	var extra: float = float(Defs.BOOSTS["tough"]["value"]) * tools.boost("tough")
+	player.hp += Defs.DIGGER["hp"] + extra - player.max_hp
+	player.max_hp = Defs.DIGGER["hp"] + extra
 	player.speed = player.base_speed * (1.0 + float(Defs.BOOSTS["legs"]["value"]) * tools.boost("legs"))
 	player.pickup_radius = player.base_pickup * (1.0 + float(Defs.BOOSTS["magnet"]["value"]) * tools.boost("magnet"))
 
@@ -162,6 +179,11 @@ func apply_boosts() -> void:
 
 func _process(delta: float) -> void:
 	_update_time_scale()
+	if dead:
+		debris.update(delta)
+		fx.update(delta)
+		_update_camera(delta)
+		return
 	run_time += delta
 	_pops_this_frame = 0
 	_big_pop_cd -= delta
@@ -170,6 +192,10 @@ func _process(delta: float) -> void:
 	_update_light(delta)
 	tools.update(delta)
 	mine.update(delta)
+	var at := player.global_position
+	enemies.update(delta, at, player.radius)
+	traps.update(delta, at)
+	_update_burrowers(delta)
 	debris.update(delta)
 	pickups.update(delta)
 	fx.update(delta)
@@ -183,6 +209,8 @@ func _process(delta: float) -> void:
 ## Points the tools at the mouse. Aiming stays flat, at the height of the rock's top.
 func _update_aim() -> void:
 	var at := player.global_position
+	if autotest:
+		bot.aim(self)
 	if not _mouse_seen or autotest:
 		aim_point = at + player.heading * 5.0
 		return
@@ -195,6 +223,19 @@ func _update_aim() -> void:
 	if to.length_squared() > 0.01:
 		player.aiming = true
 		player.heading = to.normalized()
+
+
+## Burrowers keep coming, so no spot stays safe, and they come more often the deeper you are.
+func _update_burrowers(delta: float) -> void:
+	var t := Defs.THREATS
+	_burrow_timer -= delta
+	if _burrow_timer > 0.0:
+		return
+	_burrow_timer = maxf(t["burrow_min"], t["burrow_every"] - band * 2.0)
+	for k in 1 + band / 2:
+		var a := rng.randf() * TAU
+		var p := mine.clamp_inside(player.global_position + Vector3(cos(a), 0, sin(a)) * t["burrow_range"])
+		enemies.spawn(Enemies.BURROWER, p, -1, true)
 
 
 func _update_depth() -> void:
@@ -241,6 +282,8 @@ func on_cube_popped(p: Vector3, k: int, color: Color) -> void:
 	add_xp(d["xp"])
 	debris.spray(p, color, 5 if _pops_this_frame < 12 else 2, player.global_position)
 	_play_note()
+	if d.has("gas"):
+		traps.light_gas(p)
 	if d.has("gem"):
 		pickups.drop_gem(p, d["gem"], d["color"])
 		debris.spray(p, Color(1, 1, 0.8), 4, p, 1.3)
@@ -250,6 +293,59 @@ func on_cube_popped(p: Vector3, k: int, color: Color) -> void:
 		_hitstop(0.03)
 		fx.shake(0.25)
 		Sfx.play("thud", -6.0)
+
+
+func on_enemy_killed(p: Vector3, t: int) -> void:
+	var d := Defs.enemy_def(t)
+	kills += 1
+	add_score(int(d["score"] * combo_mult()))
+	pickups.drop_gem(p, d["gem"], d["color"])
+	Sfx.play("kill", -8.0, 1.0 + minf(kills % 30, 30) * 0.015)
+	if t == Enemies.BRUTE:
+		_hitstop(0.05)
+		fx.shake(0.3)
+		Sfx.play("boom", -6.0)
+
+
+func on_nest_woken(p: Vector3) -> void:
+	fx.ring(p, 3.0, Color(1.0, 0.2, 0.15, 0.8), 0.4)
+	Sfx.play("warn", -14.0, 1.6, true)
+
+
+func gas_blast(p: Vector3) -> void:
+	var t := Defs.THREATS
+	var r: float = t["gas_radius"]
+	mine.hit_circle(p, r, 1e9, p, Defs.WORLD["blast_wave"], true)
+	enemies.hit_circle(p, r, t["gas_hurts_enemies"])
+	fx.ring(p, r, Color(0.9, 0.9, 0.3, 0.9), 0.3)
+	fx.shake(0.35)
+	Sfx.play("boom", -4.0, 1.2)
+	var at := player.global_position
+	if Vector2(at.x - p.x, at.z - p.z).length() < r:
+		player_hit(t["gas_dmg"])
+
+
+func player_hit(amount: float) -> void:
+	if god_mode or dead or not player.hurt(amount):
+		return
+	fx.shake(0.3)
+	hud.damage_flash()
+	Sfx.play("hurt", -4.0)
+	if player.hp <= 0.0:
+		_game_over()
+
+
+func _game_over() -> void:
+	dead = true
+	player.visible = false
+	Sfx.play("big_boom", 0.0, 1.0, true)
+	debris.spray(player.global_position + Vector3(0, 0.8, 0), Defs.DIGGER["color"], 30, player.global_position, 1.3)
+	fx.shake(0.8)
+	if autotest:
+		print("died: t=%.0f level=%d depth=%.0f" % [run_time, level, depth])
+	get_tree().create_timer(1.2, false, false, true).timeout.connect(func():
+		get_tree().paused = true
+		overlay.show_panel("YOU DIED", ["%d cubes  ·  %d kills  ·  %d m deep" % [cubes, kills, int(depth)], "Level %d  ·  best combo x%d  ·  score %d" % [level, best_combo, score]], [["Dig again", _new_mine], ["Quit to menu", _quit_to_menu]], Color(1, 0.35, 0.3)))
 
 
 ## Each pop plays the next note of a rising scale, so digging sounds like a run up a keyboard.
@@ -292,6 +388,8 @@ func level_blast() -> void:
 	at.y = 0.0
 	var r: float = Defs.WORLD["level_blast"]
 	mine.hit_circle(at, r, 1e9, at, Defs.WORLD["blast_wave"], true)
+	enemies.hit_circle(at, r, 60.0)
+	player.hp = minf(player.max_hp, player.hp + Defs.DIGGER["level_heal"])
 	fx.ring(at, r, Color(1.0, 0.9, 0.4, 0.9), 0.4)
 	fx.shake(0.4)
 	Sfx.play("boom", -5.0, 0.8)
@@ -309,7 +407,7 @@ func shuffle(a: Array) -> void:
 # --- modals ----------------------------------------------------------------------------
 
 func _try_open_modal() -> void:
-	if _modal_open or _paused_by_menu or pending_levelups <= 0:
+	if _modal_open or _paused_by_menu or dead or pending_levelups <= 0:
 		return
 	_modal_open = true
 	get_tree().paused = true
@@ -327,7 +425,7 @@ func _close_modal() -> void:
 
 
 func _open_pause() -> void:
-	if _modal_open or _paused_by_menu:
+	if _modal_open or _paused_by_menu or dead:
 		return
 	_paused_by_menu = true
 	get_tree().paused = true

@@ -11,7 +11,7 @@ new idea or decision the owner gives you there (mark owner's words vs your sugge
 - Top-down 3D for now. World of small cubes, smaller than Minecraft's.
 - Movement is instantly responsive, like 2D games such as VS or Enter the Gungeon, and separate from aiming: the mouse aims.
 - Even the starter shovel hits multiple cubes.
-- No threats for now. No theme yet, so no specific models.
+- Enemies and traps exist now (owner, 2026-11-01), but digging feel still comes first. No theme yet, so no specific models.
 - Fog of war, like an ARPG dungeon: the digger's light shows what is near, and you can only dig what you can see. It has a switch in the menus.
 - PC only for now (owner, 2026-10-31). Keep input as actions and UI anchored.
 
@@ -24,6 +24,7 @@ new idea or decision the owner gives you there (mark owner's words vs your sugge
 ## Verify changes
 Run from the repo root after the project has been imported once (`godot --headless --path . --import`):
 - Rules: `godot --headless --path . res://tests/dig_check.tscn` must end with `DIG CHECK PASSED`.
+- Bots can die: check `died:` lines over several `--seed` values when changing threats.
 - Smoke test: `godot --headless --path . -- --autotest --quit-after-sec=60`. Output ends with `level= cubes= score=`; any
   `SCRIPT ERROR` is a failure. Add `--seed=<n>` to fix the rolls.
 - Screenshots of a bot playing (needs a display): `godot --path . -- --autotest --quit-after-sec=20 --shots=<dir>`
@@ -35,7 +36,7 @@ Parse errors that mention `Sfx` only occur when scripts are checked standalone (
 
 ## Known gaps / next ideas
 - Feel and sound are unproven until the owner plays: nobody has listened to the sounds.
-- No goal, no saves, no meta progression, no evolutions, no unlocks yet.
+- No goal beyond surviving, no saves, no meta progression, no evolutions, no unlocks yet. Difficulty is a first guess.
 - Mouse aiming is untested with a real mouse.
 
 ## How we work (agreed with the owner)

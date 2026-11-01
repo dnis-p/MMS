@@ -11,7 +11,27 @@ const FILLER_SCORE := 500
 ## aim_lead_max metres.
 const CAMERA := {"back": 7.0, "up": 19.0, "lead": 0.12, "aim_lead": 0.18, "aim_lead_max": 3.0, "fov": 60.0}
 
-const DIGGER := {"speed": 7.5, "pickup": 3.5, "color": Color(0.2, 0.75, 0.8)}
+const DIGGER := {"speed": 7.5, "pickup": 3.5, "hp": 100.0, "invuln": 0.8, "level_heal": 30.0, "color": Color(0.2, 0.75, 0.8)}
+
+## Enemies, in the order of Enemies.CRAWLER and friends. knock: how far hits push it.
+const ENEMY_ORDER := ["crawler", "brute", "burrower"]
+const ENEMIES := {
+	"crawler": {"hp": 14.0, "speed": 4.6, "radius": 0.34, "dmg": 4.0, "gem": 1.0, "score": 30, "knock": 1.0, "color": Color(0.85, 0.15, 0.3)},
+	"brute": {"hp": 130.0, "speed": 3.0, "radius": 0.8, "dmg": 15.0, "gem": 8.0, "score": 300, "knock": 0.2, "color": Color(0.5, 0.2, 0.75)},
+	"burrower": {"hp": 45.0, "speed": 3.8, "radius": 0.5, "dmg": 8.0, "gem": 3.0, "score": 120, "knock": 0.6, "color": Color(0.1, 0.65, 0.45)},
+}
+## nests: pockets of sleepers, radius in metres, never within safe_start of the start. Enemies get
+## tougher per rock band (hp_band, dmg_band). burrow_*: burrowers tunnel in from burrow_range metres
+## away, first after burrow_from seconds, then every burrow_every seconds, less with depth.
+## spike_cycle: seconds per up-and-down, spike_up of them dangerous, spike_warn of warning before.
+## gas_fuse: seconds from breaking gas rock to the blast. gas_merge: metres one fuse covers.
+const THREATS := {
+	"safe_start": 20.0, "nests": 55, "nest_min": 2.5, "nest_max": 5.0, "nest_size": 5, "nest_band": 2, "brutes_from": 1,
+	"hp_band": 0.5, "dmg_band": 0.2, "wake_every": 0.2, "wake_range": 12.0, "knock": 8.0, "knock_max": 12.0, "knock_decay": 26.0,
+	"burrow_from": 40.0, "burrow_every": 22.0, "burrow_min": 7.0, "burrow_range": 18.0, "carve_every": 0.12,
+	"spike_patches": 90, "spike_cycle": 2.6, "spike_up": 0.9, "spike_warn": 0.5, "spike_dmg": 8.0,
+	"gas_blobs": 90, "gas_fuse": 0.9, "gas_radius": 3.0, "gas_merge": 3.0, "gas_dmg": 18.0, "gas_hurts_enemies": 150.0,
+}
 
 ## start_clear: open radius around the start. cave_at, ore_at: noise levels above which there is a
 ## cave or ore (higher = rarer). band_width: metres per rock band; band_warp bends their edges.
@@ -33,6 +53,7 @@ const WORLD := {
 ## same kind touching it.
 const BEDROCK := 14
 const CRYSTAL := 13
+const GAS := 15
 const CUBES := [
 	{},
 	{"name": "Dirt", "hp": 10.0, "color": Color(0.56, 0.38, 0.23), "xp": 0.01, "score": 1, "ring": 0.8},
@@ -49,6 +70,7 @@ const CUBES := [
 	{"name": "Ruby", "hp": 90.0, "color": Color(0.95, 0.12, 0.25), "xp": 0.0, "score": 70, "ring": 2.1, "gem": 7},
 	{"name": "Crystal", "hp": 12.0, "color": Color(0.55, 0.35, 1.0), "xp": 0.0, "score": 15, "ring": 2.0, "gem": 0.15, "chain": true},
 	{"name": "Bedrock", "hp": 1e9, "color": Color(0.08, 0.07, 0.08), "xp": 0.0, "score": 0},
+	{"name": "Gas Rock", "hp": 8.0, "color": Color(0.62, 0.68, 0.32), "xp": 0.01, "score": 5, "ring": 0.7, "chain": true, "gas": true},
 ]
 ## Rock changes every band_width metres out from the start.
 const BANDS := [
@@ -85,7 +107,12 @@ const BOOSTS := {
 	"haste": {"name": "Quick Hands", "desc": "-7% tool cooldowns", "value": 0.93, "color": Color(0.3, 0.9, 0.5)},
 	"legs": {"name": "Light Boots", "desc": "+8% move speed", "value": 0.08, "color": Color(0.2, 0.95, 0.9)},
 	"magnet": {"name": "Magnet", "desc": "+40% pickup range", "value": 0.4, "color": Color(0.3, 0.6, 1.0)},
+	"tough": {"name": "Thick Skin", "desc": "+20 max health", "value": 20.0, "color": Color(0.95, 0.3, 0.35)},
 }
+
+
+static func enemy_def(type_id: int) -> Dictionary:
+	return ENEMIES[ENEMY_ORDER[type_id]]
 
 
 static func xp_to_next(level: int) -> int:

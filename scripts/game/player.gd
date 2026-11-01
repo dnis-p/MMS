@@ -15,12 +15,18 @@ var base_pickup: float = Defs.DIGGER["pickup"]
 var velocity := Vector3.ZERO
 var heading := Vector3.FORWARD  # stays when you stop, so tools keep working where you face
 var aiming := false  # the mouse sets `heading`, moving doesn't
+var max_hp: float = Defs.DIGGER["hp"]
+var hp: float = Defs.DIGGER["hp"]
+var invuln := 0.0
 
 var _body: Node3D
 var _tool: Node3D
 var _swing_left := 0.0
 var _swing_side := 1.0
 var _time := 0.0
+var _hurt_left := 0.0
+var _mats: Array[StandardMaterial3D] = []
+var _colors: Array[Color] = []
 
 
 func _ready() -> void:
@@ -45,6 +51,8 @@ func _box(size: Vector3, at: Vector3, color: Color, parent: Node3D) -> void:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mi.material_override = mat
+	_mats.append(mat)
+	_colors.append(color)
 	mi.position = at
 	parent.add_child(mi)
 
@@ -52,6 +60,11 @@ func _box(size: Vector3, at: Vector3, color: Color, parent: Node3D) -> void:
 ## `input` is screen-relative (x right, y down). Any strength means full speed.
 func move(delta: float, input: Vector2, mine: Mine) -> void:
 	_time += delta
+	invuln = maxf(0.0, invuln - delta)
+	_hurt_left = maxf(0.0, _hurt_left - delta)
+	for i in _mats.size():
+		_mats[i].albedo_color = Color(1.0, 0.2, 0.15) if _hurt_left > 0.0 else _colors[i]
+	_body.visible = invuln <= 0.0 or fmod(_time * 20.0, 1.0) < 0.6  # blink while safe
 	velocity = Vector3.ZERO
 	if input != Vector2.ZERO:
 		var dir := Vector3(input.x, 0.0, input.y).normalized()
@@ -66,6 +79,16 @@ func move(delta: float, input: Vector2, mine: Mine) -> void:
 	var t := _swing_left / 0.14
 	_tool.rotation.y = _swing_side * lerpf(-1.1, 1.1, t) if _swing_left > 0.0 else 0.0
 	_body.scale = Vector3(1.0 + 0.15 * t, 1.0 - 0.12 * t, 1.0 + 0.15 * t)
+
+
+## Takes a hit unless still blinking from the last one. Returns true if it landed.
+func hurt(amount: float) -> bool:
+	if invuln > 0.0:
+		return false
+	hp = maxf(0.0, hp - amount)
+	invuln = Defs.DIGGER["invuln"]
+	_hurt_left = 0.15
+	return true
 
 
 func swing() -> void:

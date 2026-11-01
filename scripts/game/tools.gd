@@ -224,9 +224,11 @@ func update(delta: float) -> void:
 func _swing(mine: Mine, p: Player, at: Vector3) -> bool:
 	var half: float = Defs.TOOLS["shovel"]["arc"]
 	var r := size("shovel")
-	if not mine.arc_has_cubes(at, p.heading, r, half):
+	var enemies: Enemies = run.enemies
+	if not mine.arc_has_cubes(at, p.heading, r, half) and not enemies.arc_has_enemies(at, p.heading, r, half):
 		return false
 	mine.hit_arc(at, p.heading, r, half, dmg("shovel"), Defs.WORLD["swing_wave"])
+	enemies.hit_arc(at, p.heading, r, half, dmg("shovel"))
 	p.swing()
 	_slash_left = 0.12
 	_slash.visible = true
@@ -247,7 +249,8 @@ func _update_slash(delta: float, p: Player) -> void:
 
 
 func _drill(mine: Mine, p: Player, at: Vector3) -> void:
-	if mine.hit_line(at + p.heading * 0.5, p.heading, size("drill"), 0.5, dmg("drill"), 200.0) > 0:
+	var from := at + p.heading * 0.5
+	if mine.hit_line(from, p.heading, size("drill"), 0.5, dmg("drill"), 200.0) + run.enemies.hit_line(from, p.heading, size("drill"), 0.5, dmg("drill")) > 0:
 		run.fx.shake(0.015)
 
 
@@ -273,6 +276,7 @@ func _update_saws(delta: float, mine: Mine, at: Vector3) -> void:
 		m.rotation.y += delta * 25.0
 		if tick:
 			mine.hit_circle(c, t["cut"], dmg("saws"), c)
+			run.enemies.hit_circle(c, t["cut"], dmg("saws"))
 
 
 ## Thrown at the rock you aim at, or at rock nearby. Returns false if there is none.
@@ -307,6 +311,7 @@ func _update_bombs(delta: float, mine: Mine, at: Vector3) -> void:
 			var c := _bomb_to[b]
 			var r := size("bombs")
 			mine.hit_circle(c, r, dmg("bombs"), c, Defs.WORLD["blast_wave"])
+			run.enemies.hit_circle(c, r, dmg("bombs"))
 			run.fx.ring(c, r, Color(1.0, 0.65, 0.25, 0.9), 0.3)
 			run.fx.shake(0.22 if c.distance_to(at) < 20.0 else 0.05)
 			Sfx.play("boom", -7.0)
@@ -317,7 +322,7 @@ func _update_bombs(delta: float, mine: Mine, at: Vector3) -> void:
 func _pulse(mine: Mine, at: Vector3) -> void:
 	var r := size("pulse")
 	var time: float = Defs.TOOLS["pulse"]["ring_time"]
-	if mine.hit_ring(at, r, dmg("pulse"), time) > 0:
+	if mine.hit_ring(at, r, dmg("pulse"), time) + run.enemies.hit_ring(at, r, dmg("pulse"), time) > 0:
 		run.fx.ring(at, r, Color(0.6, 0.8, 1.0, 0.9), time)
 		run.fx.shake(0.12)
 		Sfx.play("thud", -5.0, 1.4)
@@ -325,7 +330,7 @@ func _pulse(mine: Mine, at: Vector3) -> void:
 
 func _beam(mine: Mine, p: Player, at: Vector3) -> void:
 	var length := size("beam")
-	if mine.hit_line(at, p.heading, length, 0.6, dmg("beam"), 70.0, true) > 0:
+	if mine.hit_line(at, p.heading, length, 0.6, dmg("beam"), 70.0, true) + run.enemies.hit_line(at, p.heading, length, 0.6, dmg("beam")) > 0:
 		run.fx.bolt(at + Vector3(0, 0.9, 0), at + p.heading * length + Vector3(0, 0.9, 0), Color(0.5, 1.0, 0.8))
 		run.fx.shake(0.08)
 		Sfx.play("zap", -8.0, 0.7)

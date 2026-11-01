@@ -6,6 +6,9 @@ signal pause_pressed
 
 var _xp_bar: ProgressBar
 var _level_label: Label
+var _hp_bar: ProgressBar
+var _hp_label: Label
+var _vignette: ColorRect
 var _depth_label: Label
 var _score_label: Label
 var _cubes_label: Label
@@ -24,6 +27,12 @@ func _ready() -> void:
 	Ui.full_rect(self)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	_vignette = ColorRect.new()
+	Ui.full_rect(_vignette)
+	_vignette.color = Color(1, 0, 0, 0)
+	_vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_vignette)
+
 	_xp_bar = Ui.bar(Color(0.3, 0.65, 1.0), 16)
 	_xp_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	_xp_bar.offset_bottom = 16
@@ -34,8 +43,24 @@ func _ready() -> void:
 	left.position = Vector2(20, 26)
 	left.add_theme_constant_override("separation", 6)
 	add_child(left)
+	var hp_row := HBoxContainer.new()
+	hp_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_level_label = Ui.label("LV 1", 28, Color(0.6, 0.85, 1.0))
-	left.add_child(_level_label)
+	_level_label.custom_minimum_size.x = 86
+	hp_row.add_child(_level_label)
+	var hp_stack := Control.new()
+	hp_stack.custom_minimum_size = Vector2(260, 28)
+	hp_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hp_bar = Ui.bar(Color(0.9, 0.2, 0.2), 28)
+	Ui.full_rect(_hp_bar)
+	hp_stack.add_child(_hp_bar)
+	_hp_label = Ui.label("", 20)
+	Ui.full_rect(_hp_label)
+	_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hp_stack.add_child(_hp_label)
+	hp_row.add_child(hp_stack)
+	left.add_child(hp_row)
 	_icons = HBoxContainer.new()
 	_icons.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	left.add_child(_icons)
@@ -120,11 +145,20 @@ func show_hint(text: String, duration := 4.0) -> void:
 	tw.tween_property(_hint, "modulate:a", 0.0, 0.8)
 
 
+func damage_flash() -> void:
+	_vignette.color = Color(1, 0, 0, 0.28)
+	var tw := create_tween()
+	tw.tween_property(_vignette, "color:a", 0.0, 0.35)
+
+
 func refresh(run: Node) -> void:
+	var p: Player = run.player
+	_hp_bar.value = p.hp / p.max_hp
+	_hp_label.text = "%d / %d" % [ceili(p.hp), ceili(p.max_hp)]
 	_xp_bar.value = run.xp / run.xp_next
 	_level_label.text = "LV %d" % run.level
 	_score_label.text = _format(run.score)
-	_cubes_label.text = "%s cubes" % _format(run.cubes)
+	_cubes_label.text = "%s cubes  ·  %d kills" % [_format(run.cubes), run.kills]
 	var t := int(run.run_time)
 	_depth_label.text = "%s  ·  %d m   %d:%02d" % [Defs.BANDS[run.band]["name"], int(run.depth), t / 60, t % 60]
 	_fps_label.text = "%d fps" % Engine.get_frames_per_second()
