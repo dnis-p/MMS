@@ -45,6 +45,8 @@ func _process(delta: float) -> void:
 			_check_goal(r)
 			_check_rewards(r)
 			_check_meta(r)
+			_check_rooms(r)
+			_check_evolutions(r)
 			_clear_around(r)
 			Input.action_press("move_right")
 			_wait = 0.1
@@ -469,6 +471,73 @@ func _check_meta(r: Run) -> void:
 	_check("every locked thing has a way to get it", _all_reachable())
 	_check("the nearest goals come first", Profile.closest_goals(1)[0]["id"] != "heart")
 	Profile.reset()
+
+
+func _check_rooms(r: Run) -> void:
+	var m := r.mine
+	_check("the mine has vaults and rooms", m.kind.count(Defs.VAULT) > 100 and m.rooms.size() == int(Defs.RUN["shrines"]) + int(Defs.RUN["relic_rooms"]))
+	var hp := r.player.max_hp
+	r.gem_rate = 1.0
+	r.take_shrine("greed")
+	r.take_shrine("wind")
+	_check("shrines give and take", r.gem_rate == 1.5 and r.greed_harm == 1.3 and r.player.max_hp < hp and r.player.base_speed > float(Defs.DIGGER["speed"]))
+	r._update_power()
+	_check("greed makes enemies hit harder", r.harm >= 1.3)
+	r.gem_rate = 1.0
+	r.greed_harm = 1.0
+	r.base_hp = Defs.DIGGER["hp"]
+	r.player.base_speed = Defs.DIGGER["speed"]
+	r.apply_boosts()
+	r.player.hp = r.player.max_hp
+	var levels := r.pending_levelups
+	r.take_shrine("blood")
+	_check("the Blood Shrine trades health for upgrades", r.player.hp == r.player.max_hp * 0.5 and r.pending_levelups == levels + 2)
+	r.pending_levelups = 0
+	r.player.hp = r.player.max_hp
+	r.find_relic("lens", Vector3.ZERO)
+	_check("a relic unlocks for good", Profile.relics.has("lens") and Profile.has_tool("beam") and r.relics == 1)
+	r.find_relic("charm", Vector3.ZERO)
+	_check("a relic can add a bonus", Profile.bonus("health") == 25.0)
+	r.relics = 0
+	Profile.reset()
+	var glints := m.glint_pos.size()
+	var spot: Vector3 = m.rooms[0][0]
+	m.drop_glint(spot)
+	_check("a used room stops sparkling", m.glint_pos.size() == glints - 1)
+	var count := r.sites._spots.size()
+	_check("every room has its site", count == m.rooms.size())
+
+
+func _check_evolutions(r: Run) -> void:
+	var t := r.tools
+	var dmg := t.dmg("drill") if t.owned.has("drill") else 0.0
+	for k in Defs.MAX_TOOL_LEVEL:
+		t.add_tool("drill")
+	t.boosts.erase("haste")
+	t.boost_order.erase("haste")
+	_check("no evolution without its boost", t._evolution_options().is_empty() or not _offers(t, "drill"))
+	for k in Defs.EVOLVE_BOOST:
+		t.add_boost("haste")
+	_check("a maxed tool plus its boost can evolve", _offers(t, "drill"))
+	dmg = t.dmg("drill")
+	var power := t.power_of("drill")
+	var first: Dictionary = t.level_up_options(3)[0]
+	_check("the evolution is always offered", first["kind"] == "evolve")
+	t.evolved.clear()
+	t.apply({"kind": "evolve", "id": "drill"})
+	_check("evolving makes it stronger", t.dmg("drill") > dmg * 1.4 and t.power_of("drill") == power and r.evolutions == 1)
+	_check("and it can't evolve twice", not _offers(t, "drill"))
+	t.apply({"kind": "evolve", "id": "shovel"})
+	_check("the Great Scoop swings all around", t._shovel_arc() == PI)
+	t.update(0.016)
+	t.evolved.clear()
+	t._build_slash()
+	r.evolutions = 0
+	r.mine.update(1.0)
+
+
+func _offers(t: Tools, id: String) -> bool:
+	return t._evolution_options().any(func(o): return o["id"] == id)
 
 
 func _all_reachable() -> bool:

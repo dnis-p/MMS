@@ -34,10 +34,10 @@ func _ready() -> void:
 	v.add_child(_cards)
 
 
-func open(options: Array, level: int, callback: Callable) -> void:
+func open(options: Array, level: int, callback: Callable, title := "") -> void:
 	_callback = callback
 	_opened_at = Time.get_ticks_msec()
-	_title.text = "LEVEL %d!" % level
+	_title.text = title if title != "" else "LEVEL %d!" % level
 	for c in _cards.get_children():
 		c.queue_free()
 	visible = true

@@ -73,11 +73,27 @@ const WORLD := {
 ## for breaking it. heart_horde: seconds between hordes once it wakes. lifts: how many, lift_min to lift_max metres out; lift_pad is their radius and
 ## lift_hold how long you stand there. death_keep: share of your gems you keep without a lift.
 ## geodes: how many hard shells full of gems, radius in cubes; geode_band adds to their worth per rock
-## band. glint_range: metres at which treasure sparkles through the fog and rock.
+## band. glint_range: metres at which treasure sparkles through the fog and rock. vaults, shrines,
+## relic_rooms: how many of each per run, room_gap metres apart. site_use: metres from a shrine or
+## relic at which you use it.
 const RUN := {
 	"heart_dist": 66.0, "heart_r": 5, "heart_hit": 25.0, "heart_bonus": 500, "heart_horde": 12.0, "lifts": 8, "lift_min": 22.0, "lift_max": 70.0,
 	"lift_pad": 1.7, "lift_hold": 1.5, "death_keep": 0.5,
 	"geodes": 40, "geode_min": 2, "geode_max": 3, "geode_band": 0.5, "glint_range": 20.0,
+	"vaults": 12, "shrines": 6, "relic_rooms": 2, "room_gap": 12.0, "site_use": 1.4,
+}
+## Shrines give something and take something, for this run.
+const SHRINES := {
+	"blood": {"name": "Blood Shrine", "desc": "Lose half your health now. Two free upgrades.", "color": Color(0.9, 0.15, 0.25)},
+	"greed": {"name": "Greed Shrine", "desc": "+50% gems this run. Enemies hit 30% harder.", "color": Color(1.0, 0.8, 0.2)},
+	"wind": {"name": "Wind Shrine", "desc": "+20% move speed this run. -25% max health.", "color": Color(0.4, 0.9, 1.0)},
+}
+## A maxed tool plus EVOLVE_BOOST levels of its boost turns into something new at the next level-up.
+const EVOLVE_BOOST := 3
+const EVOLUTIONS := {
+	"shovel": {"boost": "reach", "name": "Great Scoop", "desc": "Swings all the way around you. +50% damage.", "dmg": 1.5, "arc": PI},
+	"drill": {"boost": "haste", "name": "Tunnel Borer", "desc": "Bores a corridor three times wider. +50% damage.", "dmg": 1.5, "width": 1.5},
+	"bombs": {"boost": "power", "name": "Cluster Bombs", "desc": "Every blast throws four smaller ones.", "dmg": 1.0, "cluster": 4},
 }
 ## A long combo starts a Frenzy: every cube pops in one hit for `time` seconds, score times `score`.
 ## at: how much combo it takes, counted from the end of the last Frenzy. Then at least `rest` seconds
@@ -116,6 +132,8 @@ const GOALS := [
 	{"id": "banked", "text": "Bank 2,000 gems in total", "stat": "banked", "need": 2000, "unlock": "char:rig"},
 	{"id": "basalt", "text": "Reach the Basalt layer", "stat": "band", "need": 5, "gems": 300},
 	{"id": "combo", "text": "Reach a x3,000 combo", "stat": "combo", "need": 3000, "gems": 300},
+	{"id": "relics", "text": "Find 3 relics", "stat": "relics", "need": 3, "gems": 400},
+	{"id": "evolve", "text": "Evolve a tool", "stat": "evolutions", "need": 1, "gems": 300},
 	{"id": "heart", "text": "Break the Heart", "stat": "hearts", "need": 1, "gems": 1000},
 ]
 
@@ -139,6 +157,7 @@ const CRYSTAL := 13
 const GAS := 15
 const HEART := 16
 const GEODE := 17
+const VAULT := 18
 const CUBES := [
 	{},
 	{"name": "Dirt", "hp": 10.0, "color": Color(0.56, 0.38, 0.23), "xp": 0.01, "score": 1, "ring": 0.8},
@@ -158,6 +177,7 @@ const CUBES := [
 	{"name": "Gas Rock", "hp": 8.0, "color": Color(0.62, 0.68, 0.32), "xp": 0.01, "score": 5, "ring": 0.7, "chain": true, "gas": true},
 	{"name": "Heart", "hp": 6000.0, "color": Color(1.0, 0.15, 0.45), "xp": 0.0, "score": 2000, "ring": 0.6, "heart": true},
 	{"name": "Geode", "hp": 150.0, "color": Color(0.25, 0.95, 0.8), "xp": 0.0, "score": 60, "ring": 2.3, "gem": 6.0, "chain": true, "geode": true},
+	{"name": "Vault Wall", "hp": 130.0, "color": Color(0.62, 0.55, 0.35), "xp": 0.02, "score": 5, "ring": 1.8},
 ]
 ## Rock changes every band_width metres out from the start.
 const BANDS := [

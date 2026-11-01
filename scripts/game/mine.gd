@@ -97,6 +97,7 @@ var nests: Array = []  # [center, radius] of each pocket that holds sleeping ene
 var heart_pos := Vector3.ZERO
 var heart_left := 1.0  # share of health left in the Heart's weakest cube
 var lifts: Array[Vector3] = []
+var rooms: Array = []  # [center, "shrine" or "relic"]: Sites puts what stands in them
 ## Treasure that sparkles through the fog, until glint_cell (when >= 0) is broken.
 var glint_pos := PackedVector3Array()
 var glint_col := PackedColorArray()
@@ -229,6 +230,7 @@ func generate(rng: RandomNumberGenerator) -> void:
 	_scatter_geodes(rng)
 	_open_lifts(rng)
 	_place_heart(rng)
+	_dig_rooms(rng)
 	forget()
 	for c in SIZE * SIZE:
 		_color[c] = _tint(c)
@@ -293,6 +295,15 @@ func add_glint(p: Vector3, color: Color, cell := -1) -> void:
 	glint_cell.append(cell)
 
 
+func drop_glint(p: Vector3) -> void:
+	var i := glint_pos.find(Vector3(p.x, 1.0, p.z))
+	if i < 0:
+		return
+	glint_pos.remove_at(i)
+	glint_col.remove_at(i)
+	glint_cell.remove_at(i)
+
+
 ## Small blobs that pass for plain rock until you know the colour.
 func _scatter_gas(rng: RandomNumberGenerator) -> void:
 	var t := Defs.THREATS
@@ -345,6 +356,51 @@ func _place_heart(rng: RandomNumberGenerator) -> void:
 	var a := rng.randf() * TAU
 	heart_pos = Vector3(cos(a), 0, sin(a)) * Defs.RUN["heart_dist"]
 	_stamp(heart_pos, Defs.RUN["heart_r"], Defs.HEART)
+
+
+## Vaults are walled boxes full of the best ore. Shrines stand in open pockets, relics in walled ones.
+func _dig_rooms(rng: RandomNumberGenerator) -> void:
+	var r := Defs.RUN
+	rooms.clear()
+	var taken: Array[Vector3] = lifts.duplicate()
+	taken.append(heart_pos)
+	for k in r["vaults"]:
+		var p := _free_spot(rng, taken)
+		_square(p, 4, Defs.VAULT)
+		_square(p, 3, 12 if band_at(p.length()) >= 4 else 11)
+		add_glint(p, Defs.CUBES[11]["color"], cell_of(p.x) + cell_of(p.z) * SIZE)
+	for k in r["shrines"]:
+		var p := _free_spot(rng, taken)
+		_stamp(p, 5, 0)
+		rooms.append([p, "shrine"])
+		add_glint(p, Color(0.8, 0.4, 1.0))
+	for k in mini(r["relic_rooms"], Defs.RELICS.size() - Profile.relics.size()):
+		var p := _free_spot(rng, taken)
+		_square(p, 5, Defs.VAULT)
+		_square(p, 4, 0)
+		rooms.append([p, "relic"])
+		add_glint(p, Color(1.0, 0.95, 0.6))
+
+
+func _free_spot(rng: RandomNumberGenerator, taken: Array[Vector3]) -> Vector3:
+	var gap: float = Defs.RUN["room_gap"]
+	var p := Vector3.ZERO
+	for k in 30:
+		var a := rng.randf() * TAU
+		p = Vector3(cos(a), 0, sin(a)) * rng.randf_range(Defs.THREATS["safe_start"], SIZE * CELL * 0.45)
+		if taken.all(func(q: Vector3) -> bool: return q.distance_to(p) >= gap):
+			break
+	taken.append(p)
+	return p
+
+
+func _square(center: Vector3, half: int, k: int) -> void:
+	var cx := cell_of(center.x)
+	var cz := cell_of(center.z)
+	for z in range(cz - half, cz + half + 1):
+		for x in range(cx - half, cx + half + 1):
+			kind[x + z * SIZE] = k
+			hp[x + z * SIZE] = _hp_of[k]
 
 
 ## Fills a round patch with one kind of cube.

@@ -52,6 +52,9 @@ var best_combo := 0
 var frenzy_left := 0.0
 var frenzies := 0
 var geodes := 0
+var relics := 0
+var evolutions := 0
+var greed_harm := 1.0  # a Greed Shrine's price
 var run_time := 0.0
 var depth := 0.0
 var band := 0
@@ -298,7 +301,7 @@ func _update_power() -> void:
 	crowd = 1.0 + t["crowd_per"] * upgrades
 	runners = minf(t["runner_per"] * upgrades, t["runner_max"])
 	pace = minf(1.0 + t["pace_per"] * upgrades, t["pace_max"])
-	harm = 1.0 + t["harm_per"] * upgrades
+	harm = (1.0 + t["harm_per"] * upgrades) * greed_harm
 	nudge = 1.0 / (1.0 + t["nudge_per"] * upgrades)
 
 
@@ -497,6 +500,51 @@ func leave_by_lift() -> void:
 	tw.tween_callback(_finish.bind("lift"))
 
 
+func find_relic(id: String, p: Vector3) -> void:
+	var d: Dictionary = Defs.RELICS[id]
+	Profile.relics[id] = true
+	if d.has("unlock"):
+		Profile.unlocked[d["unlock"]] = true
+	relics += 1
+	Profile.save()  # yours for good, however this run ends
+	overlay.banner(d["name"].to_upper(), d["desc"], Color(1.0, 0.9, 0.5), 2.0)
+	overlay.flash(Color(1.0, 0.9, 0.5, 0.35), 0.5)
+	fx.ring(p, 6.0, Color(1.0, 0.9, 0.5, 0.9), 0.5)
+	fx.shake(0.4)
+	Sfx.play("levelup", -3.0, 0.8, true)
+
+
+func on_evolved(title: String) -> void:
+	evolutions += 1
+	overlay.banner(title.to_upper(), "EVOLVED", Color(1.0, 0.4, 1.0), 1.4)
+
+
+func use_shrine(id: String) -> void:
+	var d: Dictionary = Defs.SHRINES[id]
+	_modal_open = true
+	get_tree().paused = true
+	levelup_ui.open([{"kind": "shrine", "id": id, "title": d["name"], "desc": d["desc"], "hint": "", "level_text": "", "color": d["color"]},
+		{"kind": "leave", "id": "", "title": "Walk away", "desc": "Leave it be.", "hint": "", "level_text": "", "color": Color(0.6, 0.6, 0.6)}], 0, func(o: Dictionary):
+		if o["kind"] == "shrine":
+			take_shrine(id)
+		_close_modal(), "A SHRINE")
+
+
+func take_shrine(id: String) -> void:
+	match id:
+		"blood":
+			player.hp = maxf(1.0, player.hp * 0.5)
+			pending_levelups += 2
+		"greed":
+			gem_rate *= 1.5
+			greed_harm = 1.3
+		"wind":
+			player.base_speed *= 1.2
+			base_hp *= 0.75
+			apply_boosts()
+			player.hp = minf(player.hp, player.max_hp)
+
+
 func gas_blast(p: Vector3) -> void:
 	var t := Defs.THREATS
 	var r: float = t["gas_radius"]
@@ -543,7 +591,7 @@ func gems_kept(how: String) -> int:
 
 func _run_stats(kept: int, how: String) -> Dictionary:
 	return {"runs": 1, "cubes": cubes, "kills": kills, "banked": kept, "band": band, "combo": best_combo, "geodes": geodes,
-		"frenzies": frenzies, "lifts": 1 if how == "lift" else 0, "hearts": 1 if how == "heart" else 0}
+		"frenzies": frenzies, "relics": relics, "evolutions": evolutions, "lifts": 1 if how == "lift" else 0, "hearts": 1 if how == "heart" else 0}
 
 
 ## Goals are only paid out at the end, but you hear about them the moment you earn them.

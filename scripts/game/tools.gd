@@ -12,6 +12,7 @@ var order: Array[String] = []
 ## boost id -> level
 var boosts := {}
 var boost_order: Array[String] = []
+var evolved := {}  # tool id -> true
 
 var _slash: MeshInstance3D
 var _slash_mat: StandardMaterial3D
@@ -63,9 +64,13 @@ func _ready() -> void:
 		_bomb_t.append(-1.0)
 
 
+func _shovel_arc() -> float:
+	return Defs.EVOLUTIONS["shovel"]["arc"] if evolved.has("shovel") else Defs.TOOLS["shovel"]["arc"]
+
+
 ## A flat fan of unit radius, pointing along -Z, spanning the shovel's angle.
 func _build_slash() -> void:
-	var half: float = Defs.TOOLS["shovel"]["arc"]
+	var half := _shovel_arc()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var steps := 14
@@ -75,6 +80,9 @@ func _build_slash() -> void:
 		st.add_vertex(Vector3.ZERO)
 		st.add_vertex(Vector3(sin(a), 0, -cos(a)))
 		st.add_vertex(Vector3(sin(b), 0, -cos(b)))
+	if _slash:
+		_slash.mesh = st.commit()
+		return
 	_slash = MeshInstance3D.new()
 	_slash.mesh = st.commit()
 	_slash_mat = StandardMaterial3D.new()
@@ -109,7 +117,8 @@ func power_of(id: String) -> float:
 
 ## A stat of a tool at its level with boosts applied. Keys: dmg, size, cd.
 func dmg(id: String) -> float:
-	return Defs.TOOLS[id]["dmg"] * power_of(id) * (1.0 + Profile.bonus("power"))
+	var evolution: float = Defs.EVOLUTIONS[id]["dmg"] if evolved.has(id) else 1.0
+	return Defs.TOOLS[id]["dmg"] * power_of(id) * evolution * (1.0 + Profile.bonus("power"))
 
 
 func size(id: String) -> float:
@@ -147,6 +156,10 @@ func apply(option: Dictionary) -> void:
 			add_tool(option["id"])
 		"boost":
 			add_boost(option["id"])
+		"evolve":
+			evolved[option["id"]] = true
+			_build_slash()
+			run.on_evolved(Defs.EVOLUTIONS[option["id"]]["name"])
 		"score":
 			run.add_score(Defs.FILLER_SCORE)
 
@@ -162,7 +175,7 @@ func level_up_options(n: int) -> Array:
 		if boost(id) < Defs.MAX_BOOST_LEVEL:
 			pool.append(_boost_option(id))
 	run.shuffle(pool)
-	var picked: Array = []
+	var picked: Array = _evolution_options()
 	var seen := {}
 	for o in pool:
 		var key: String = o["kind"] + o["id"]
@@ -176,6 +189,16 @@ func level_up_options(n: int) -> Array:
 		picked.append({"kind": "score", "id": "", "title": "Lucky Find", "desc": "+%d score" % Defs.FILLER_SCORE, "hint": "",
 			"level_text": "", "color": Color(1.0, 0.85, 0.3)})
 	return picked
+
+
+func _evolution_options() -> Array:
+	var out: Array = []
+	for id in Defs.EVOLUTIONS:
+		var e: Dictionary = Defs.EVOLUTIONS[id]
+		if not evolved.has(id) and level(id) >= Defs.MAX_TOOL_LEVEL and boost(e["boost"]) >= Defs.EVOLVE_BOOST:
+			out.append({"kind": "evolve", "id": id, "title": e["name"], "desc": e["desc"], "hint": "%s + %s" % [Defs.TOOLS[id]["name"], Defs.BOOSTS[e["boost"]]["name"]],
+				"level_text": "EVOLUTION", "color": Color(1.0, 0.4, 1.0)})
+	return out
 
 
 func _tool_option(id: String) -> Dictionary:
@@ -227,7 +250,7 @@ func update(delta: float) -> void:
 
 ## The shovel fans out in front of you and only swings when there is something to hit.
 func _swing(mine: Mine, p: Player, at: Vector3) -> bool:
-	var half: float = Defs.TOOLS["shovel"]["arc"]
+	var half := _shovel_arc()
 	var r := size("shovel")
 	var enemies: Enemies = run.enemies
 	if not mine.arc_has_cubes(at, p.heading, r, half) and not enemies.arc_has_enemies(at, p.heading, r, half):
@@ -255,7 +278,8 @@ func _update_slash(delta: float, p: Player) -> void:
 
 func _drill(mine: Mine, p: Player, at: Vector3) -> void:
 	var from := at + p.heading * 0.5
-	if mine.hit_line(from, p.heading, size("drill"), 0.5, dmg("drill"), 200.0) + run.enemies.hit_line(from, p.heading, size("drill"), 0.5, dmg("drill")) > 0:
+	var width: float = Defs.EVOLUTIONS["drill"]["width"] if evolved.has("drill") else 0.5
+	if mine.hit_line(from, p.heading, size("drill"), width, dmg("drill"), 200.0) + run.enemies.hit_line(from, p.heading, size("drill"), width, dmg("drill")) > 0:
 		run.fx.shake(0.015)
 
 
@@ -320,8 +344,20 @@ func _update_bombs(delta: float, mine: Mine, at: Vector3) -> void:
 			run.fx.ring(c, r, Color(1.0, 0.65, 0.25, 0.9), 0.3)
 			run.fx.shake(0.22 if c.distance_to(at) < 20.0 else 0.05)
 			Sfx.play("boom", -7.0)
+			if evolved.has("bombs"):
+				_cluster(mine, c, r)
 			continue
 		_bombs[b].global_position = _bomb_from[b].lerp(_bomb_to[b], t) + Vector3(0, sin(t * PI) * 3.5, 0)
+
+
+func _cluster(mine: Mine, c: Vector3, r: float) -> void:
+	var n: int = Defs.EVOLUTIONS["bombs"]["cluster"]
+	for k in n:
+		var a := TAU * k / n
+		var q := c + Vector3(cos(a), 0, sin(a)) * r
+		mine.hit_circle(q, r * 0.6, dmg("bombs"), c, Defs.WORLD["blast_wave"])
+		run.enemies.hit_circle(q, r * 0.6, dmg("bombs"))
+		run.fx.ring(q, r * 0.6, Color(1.0, 0.65, 0.25, 0.9), 0.3)
 
 
 func _pulse(mine: Mine, at: Vector3) -> void:
