@@ -32,6 +32,13 @@ var xp_next := Defs.xp_to_next(1)
 var pending_levelups := 0
 var cubes := 0
 var kills := 0
+var hits_taken := 0
+var hardness := 1.0  # how much tougher enemies are, from your damage
+var crowd := 1.0  # how many more come, from your upgrades
+var pace := 1.0
+var harm := 1.0
+var nudge := 1.0  # how far a hit pushes them
+var runners := 0.0  # share of the swarm that are runners
 var score := 0
 var combo := 0
 var combo_timer := 0.0
@@ -241,26 +248,46 @@ func _update_burrowers(delta: float) -> void:
 		enemies.spawn(Enemies.BURROWER, p, -1, true)
 
 
+## Enemies scale from what you actually have, not from time, so a strong build meets a strong mine.
+func _update_power() -> void:
+	var t := Defs.THREATS
+	var best := 1.0
+	var upgrades := -1  # the starting shovel isn't an upgrade
+	for id in tools.order:
+		best = maxf(best, tools.dmg(id) / Defs.TOOLS[id]["dmg"])
+		upgrades += tools.level(id)
+	for id in tools.boost_order:
+		upgrades += tools.boost(id)
+	upgrades = maxi(0, upgrades - t["free_upgrades"])
+	hardness = pow(best, t["hard_power"]) * (1.0 + t["tough_per"] * upgrades)
+	crowd = 1.0 + t["crowd_per"] * upgrades
+	runners = minf(t["runner_per"] * upgrades, t["runner_max"])
+	pace = minf(1.0 + t["pace_per"] * upgrades, t["pace_max"])
+	harm = 1.0 + t["harm_per"] * upgrades
+	nudge = 1.0 / (1.0 + t["nudge_per"] * upgrades)
+
+
 ## The steady flow of crawlers, and now and then a whole ring of them, as in VS.
 func _update_swarm(delta: float) -> void:
 	var t := Defs.THREATS
+	_update_power()
 	_swarm_timer -= delta
 	if _swarm_timer <= 0.0:
 		_swarm_timer = t["swarm_every"]
-		var limit: float = minf(t["swarm_alive"] + t["swarm_alive_ramp"] * run_time, t["swarm_max"])
+		var limit: float = minf((t["swarm_alive"] + t["swarm_alive_ramp"] * run_time) * crowd, t["swarm_max"])
 		if enemies.awake_count < limit:
 			var a := rng.randf() * TAU
-			for k in int(t["swarm_size"] + t["swarm_size_ramp"] * run_time):
+			for k in int((t["swarm_size"] + t["swarm_size_ramp"] * run_time) * crowd):
 				_swarm_in(a + rng.randf_range(-0.5, 0.5), t["swarm_range"])
 	_horde_timer -= delta
 	if _horde_timer <= 0.0:
-		_horde_timer = t["horde_every"]
+		_horde_timer = t["horde_every"] / sqrt(crowd)
 		spawn_horde()
 
 
 func spawn_horde() -> void:
 	var t := Defs.THREATS
-	var n := int(minf(t["horde_size"] + t["horde_ramp"] * run_time, t["horde_max"]))
+	var n := int(minf((t["horde_size"] + t["horde_ramp"] * run_time) * crowd, t["horde_max"]))
 	for k in n:
 		_swarm_in(TAU * k / n, t["horde_range"] + rng.randf_range(0.0, 3.0))
 	overlay.banner("SWARM!", "", Color(1, 0.25, 0.2), 1.2)
@@ -270,7 +297,7 @@ func spawn_horde() -> void:
 
 func _swarm_in(angle: float, dist: float) -> void:
 	var p := mine.clamp_inside(player.global_position + Vector3(cos(angle), 0, sin(angle)) * dist)
-	enemies.spawn(Enemies.CRAWLER, p, -1, true, true)
+	enemies.spawn(Enemies.RUNNER if rng.randf() < runners else Enemies.CRAWLER, p, -1, true, true)
 
 
 func _update_depth() -> void:
@@ -367,6 +394,7 @@ func gas_blast(p: Vector3) -> void:
 func player_hit(amount: float) -> void:
 	if god_mode or dead or not player.hurt(amount):
 		return
+	hits_taken += 1
 	fx.shake(0.3)
 	hud.damage_flash()
 	Sfx.play("hurt", -4.0)

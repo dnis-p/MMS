@@ -4,7 +4,7 @@ extends Node
 ## Command-line options (after `--`):
 ##   --autotest           play unattended (auto-picks upgrades, double speed)
 ##   --seed=<n>           use this random seed for the run
-##   --give=<a,b>         with --autotest, start with these tools at max level
+##   --give=<a,b>         with --autotest, start with these tools at max level; "all" also maxes boosts
 ##   --shots=<dir>        with --autotest, save screenshots into <dir>
 ##   --quit-after-sec=<n> with --autotest, quit after n seconds
 
@@ -49,9 +49,14 @@ func start_run() -> void:
 	run.retry_requested.connect(start_run)
 	_set_current(run)
 	if _args.has("give"):
-		for id in String(_args["give"]).split(","):
+		var ids: Array = Defs.TOOLS.keys() if _args["give"] == "all" else Array(String(_args["give"]).split(","))
+		for id in ids:
 			for k in Defs.MAX_TOOL_LEVEL:
 				run.tools.add_tool(id)
+		if _args["give"] == "all":
+			for id in Defs.BOOSTS:
+				for k in Defs.MAX_BOOST_LEVEL:
+					run.tools.add_boost(id)
 
 
 func _set_current(n: Node) -> void:
@@ -82,7 +87,7 @@ func _process(delta: float) -> void:
 		print("AUTOTEST DONE elapsed=%.1f" % _elapsed)
 		if _current is Run:
 			var r: Run = _current
-			print("level=%d cubes=%d kills=%d score=%d best_combo=%d depth=%.0f tools=%d hp=%d dead=%s" % [r.level, r.cubes, r.kills, r.score, r.best_combo, r.depth, r.tools.order.size(), r.player.hp, r.dead])
+			print("level=%d cubes=%d kills=%d score=%d best_combo=%d depth=%.0f tools=%d hp=%d hits=%d dead=%s" % [r.level, r.cubes, r.kills, r.score, r.best_combo, r.depth, r.tools.order.size(), r.player.hp, r.hits_taken, r.dead])
 		get_tree().quit()
 
 

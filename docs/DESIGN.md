@@ -148,6 +148,17 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-01, enemies scale with you** (owner: late game enemies can't get close; more and tougher as you get stronger, but still satisfying to kill, keep the player on edge; rule checks, bots and screenshots, the owner has not played it)
+- Scaling comes from what you own, not from time. Enemy health follows your strongest tool's damage. Past your first 8 upgrades, each
+  tool or boost level adds 4% health, 5% more enemies, 1.2% speed (up to +45%), 2% damage, and less pushback; hordes come sooner too.
+  Sleeping nests take your current strength when they wake. Caps: 430 awake in the swarm, 320 in a horde. Rock bands add less health than before (30% per band, was 50%).
+- **Runner** (suggested), a new yellow enemy: frail and faster than you once you have many upgrades, up to 45% of the swarm late, so
+  something always gets through the gaps between Pulses. Maxed Pulse (157 damage) was why more enemies alone changed nothing.
+- Killing stays quick: a crawler takes 1 starter-shovel hit and about 3 from a maxed shovel on the first band, more deeper down.
+- Bots with everything maxed (120 s of game time): 4-7 hits taken on most runs, one 19, none died, against 0-5 hits before; about 2,000 kills,
+  not 700. With enemy damage 3% per upgrade instead of 2%, 2 of 4 died, so that is the number to raise for more danger. Normal runs at the final numbers: 3 of 6 survived 200 s, the others died at 74, 93 and 146 s.
+  About 165 fps at 1080p in a late fight.
+
 **2026-11-01, the swarm** (owner: much less traps, more enemies, sometimes feel surrounded as in VS; rule checks, bots and screenshots, the owner has not played it)
 - Traps cut to about a sixth: 15 spike patches and 22 gas blobs. Nests: 80 instead of 55, about twice as full.
 - **Swarm** (suggested): from 12 s, crawlers arrive steadily from past your light, digging their own tunnels. **Hordes** (suggested): from

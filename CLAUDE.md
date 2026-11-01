@@ -24,7 +24,7 @@ new idea or decision the owner gives you there (mark owner's words vs your sugge
 ## Verify changes
 Run from the repo root after the project has been imported once (`godot --headless --path . --import`):
 - Rules: `godot --headless --path . res://tests/dig_check.tscn` must end with `DIG CHECK PASSED`.
-- Bots can die: check `died:` lines over several `--seed` values when changing threats.
+- Bots can die: check `died:` and `hits=` over several `--seed` values when changing threats. `--give=all` tests late game.
 - Smoke test: `godot --headless --path . -- --autotest --quit-after-sec=60`. Output ends with `level= cubes= score=`; any
   `SCRIPT ERROR` is a failure. Add `--seed=<n>` to fix the rolls.
 - Screenshots of a bot playing (needs a display): `godot --path . -- --autotest --quit-after-sec=20 --shots=<dir>`

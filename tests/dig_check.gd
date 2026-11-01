@@ -253,9 +253,41 @@ func _check_threats(r: Run) -> void:
 	e.clear()
 	_fill(r, Vector3(3, 0, 0), 2, 0)
 	_check_traps(r)
+	_check_scaling(r)
 	p.invuln = 0.0
 	p.hp = p.max_hp
 	r.god_mode = true
+
+
+func _check_scaling(r: Run) -> void:
+	var e := r.enemies
+	var t := r.tools
+	r._update_power()
+	var weak := e.spawn(Enemies.CRAWLER, Vector3(5, 0, 0))
+	var hp: float = e.hp[weak]
+	_check("a starter shovel pops a crawler", t.dmg("shovel") >= hp)
+	var crowd := r.crowd
+	for id in Defs.TOOLS:
+		for k in Defs.MAX_TOOL_LEVEL:
+			t.add_tool(id)
+	for id in Defs.BOOSTS:
+		for k in Defs.MAX_BOOST_LEVEL:
+			t.add_boost(id)
+	r._update_power()
+	var strong := e.spawn(Enemies.CRAWLER, Vector3(5, 0, 0))
+	_check("enemies get tougher as you do (%.0f -> %.0f)" % [hp, e.hp[strong]], e.hp[strong] > hp * 5.0)
+	_check("more of them come", r.crowd > crowd * 2.0 and r.runners > 0.2)
+	var hits: float = e.hp[strong] / t.dmg("shovel")
+	_check("a maxed shovel still kills one fast (%.1f hits)" % hits, hits <= 5.0)
+	e.pos[weak] = Vector3.ZERO
+	e.clear()
+	t.owned.clear()
+	t.order.clear()
+	t.boosts.clear()
+	t.boost_order.clear()
+	t.add_tool("shovel")
+	r.apply_boosts()
+	r._update_power()
 
 
 func _check_traps(r: Run) -> void:

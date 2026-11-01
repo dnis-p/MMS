@@ -10,6 +10,7 @@ const CELL := 1.5
 const CRAWLER := 0
 const BRUTE := 1
 const BURROWER := 2
+const RUNNER := 3
 const DRAW_RANGE := 32.0
 const FORGET_RANGE := 70.0
 
@@ -58,7 +59,12 @@ func _ready() -> void:
 	var brute := BoxMesh.new()
 	var burrower := PrismMesh.new()
 	burrower.size = Vector3(0.9, 0.7, 1.0)
-	for mesh in [crawler, brute, burrower]:
+	var runner := SphereMesh.new()
+	runner.radius = 0.5
+	runner.height = 0.55
+	runner.radial_segments = 6
+	runner.rings = 3
+	for mesh in [crawler, brute, burrower, runner]:
 		_mm.append(_make_mm(mesh, false))
 	var eye := SphereMesh.new()
 	eye.radius = 0.09
@@ -111,18 +117,14 @@ func spawn(type_id: int, p: Vector3, nest_id := -1, is_awake := false, digger :=
 		used += 1
 	else:
 		return -1
-	var d: Dictionary = Defs.enemy_def(type_id)
-	var band := run.mine.band_at(Vector2(p.x, p.z).length())
 	alive[i] = 1
 	awake[i] = 1 if is_awake else 0
 	digs[i] = 1 if digger or type_id == BURROWER else 0
 	etype[i] = type_id
 	nest[i] = nest_id
 	pos[i] = Vector3(p.x, 0.0, p.z)
-	hp[i] = d["hp"] * (1.0 + Defs.THREATS["hp_band"] * band)
-	speed[i] = d["speed"] * run.rng.randf_range(0.9, 1.1)
-	radius[i] = d["radius"]
-	dmg[i] = d["dmg"] * (1.0 + Defs.THREATS["dmg_band"] * band)
+	radius[i] = Defs.enemy_def(type_id)["radius"]
+	_scale_up(i)
 	flash[i] = 0.0
 	knock[i] = Vector3.ZERO
 	yaw[i] = run.rng.randf() * TAU
@@ -142,6 +144,16 @@ func fill_nests() -> void:
 			var a := run.rng.randf() * TAU
 			var at := c + Vector3(cos(a), 0, sin(a)) * r * 0.7 * sqrt(run.rng.randf())
 			spawn(BRUTE if k == 0 and band >= t["brutes_from"] else CRAWLER, at, n)
+
+
+## Sets its stats from how deep it is and how strong you are right now.
+func _scale_up(i: int) -> void:
+	var d: Dictionary = Defs.enemy_def(etype[i])
+	var t := Defs.THREATS
+	var band := run.mine.band_at(Vector2(pos[i].x, pos[i].z).length())
+	hp[i] = d["hp"] * (1.0 + t["hp_band"] * band) * run.hardness
+	speed[i] = d["speed"] * run.pace * run.rng.randf_range(0.9, 1.1)
+	dmg[i] = d["dmg"] * (1.0 + t["dmg_band"] * band) * run.harm
 
 
 func is_alive(i: int) -> bool:
@@ -211,9 +223,18 @@ func _wake_nest(i: int) -> void:
 		awake[i] = 1
 		return
 	for j in used:
-		if alive[j] == 1 and nest[j] == n:
+		if alive[j] == 1 and nest[j] == n and awake[j] == 0:
 			awake[j] = 1
+			var left := hp[j] / _full_hp(j)  # a sleeper you already hit stays hurt
+			_scale_up(j)
+			hp[j] *= left
 	run.on_nest_woken(pos[i])
+
+
+## What a sleeper's health was when it was put in the nest, at the start of the run.
+func _full_hp(i: int) -> float:
+	var band := run.mine.band_at(Vector2(pos[i].x, pos[i].z).length())
+	return Defs.enemy_def(etype[i])["hp"] * (1.0 + Defs.THREATS["hp_band"] * band)
 
 
 func _separation(i: int, p: Vector3) -> Vector3:
@@ -259,7 +280,7 @@ func hit(i: int, amount: float, from: Vector3) -> void:
 	flash[i] = 0.09
 	var away := pos[i] - from
 	away.y = 0.0
-	knock[i] = (knock[i] + away.normalized() * Defs.THREATS["knock"] * float(Defs.enemy_def(etype[i])["knock"])).limit_length(Defs.THREATS["knock_max"])
+	knock[i] = (knock[i] + away.normalized() * Defs.THREATS["knock"] * float(Defs.enemy_def(etype[i])["knock"]) * run.nudge).limit_length(Defs.THREATS["knock_max"])
 	run.debris.spray(pos[i] + Vector3(0, 0.3, 0), _colors[etype[i]], 2, from, 0.6)
 	Sfx.play("hit", -12.0)
 	if hp[i] <= 0.0:
@@ -397,7 +418,7 @@ func nearest_awake(center: Vector3, r: float) -> int:
 # --- drawing ---------------------------------------------------------------------------
 
 func _render(at: Vector3) -> void:
-	var counts := [0, 0, 0]
+	var counts := [0, 0, 0, 0]
 	var eyes := 0
 	var far := DRAW_RANGE * DRAW_RANGE
 	var white := Color(1, 1, 1)

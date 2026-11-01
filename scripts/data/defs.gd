@@ -14,10 +14,11 @@ const CAMERA := {"back": 7.0, "up": 19.0, "lead": 0.12, "aim_lead": 0.18, "aim_l
 const DIGGER := {"speed": 7.5, "pickup": 3.5, "hp": 100.0, "invuln": 0.8, "level_heal": 30.0, "color": Color(0.2, 0.75, 0.8)}
 
 ## Enemies, in the order of Enemies.CRAWLER and friends. knock: how far hits push it.
-const ENEMY_ORDER := ["crawler", "brute", "burrower"]
+const ENEMY_ORDER := ["crawler", "brute", "burrower", "runner"]
 const ENEMIES := {
 	"crawler": {"hp": 8.0, "speed": 4.6, "radius": 0.34, "dmg": 4.0, "gem": 0.3, "score": 30, "knock": 1.0, "color": Color(0.85, 0.15, 0.3)},
 	"brute": {"hp": 130.0, "speed": 3.0, "radius": 0.8, "dmg": 15.0, "gem": 8.0, "score": 300, "knock": 0.2, "color": Color(0.5, 0.2, 0.75)},
+	"runner": {"hp": 5.0, "speed": 7.0, "radius": 0.3, "dmg": 3.0, "gem": 0.3, "score": 40, "knock": 1.2, "color": Color(1.0, 0.8, 0.15)},
 	"burrower": {"hp": 45.0, "speed": 3.8, "radius": 0.5, "dmg": 8.0, "gem": 3.0, "score": 120, "knock": 0.6, "color": Color(0.1, 0.65, 0.45)},
 }
 ## nests: pockets of sleepers, radius in metres, never within safe_start of the start. Enemies get
@@ -30,15 +31,22 @@ const ENEMIES := {
 ## away, while fewer than swarm_alive (plus swarm_alive_ramp per second, up to swarm_max) are awake.
 ## horde_*: from horde_from seconds, every horde_every, a full ring of horde_size (plus horde_ramp per
 ## second, up to horde_max) closes in from horde_range metres.
+## Enemies keep up with you. hard_power: their health follows your strongest tool's damage multiplier
+## to this power, so 1.0 keeps hits-to-kill steady at any strength. Per upgrade you own past the first
+## free_upgrades (tool and boost levels): tough_per adds to their health, crowd_per to how many come,
+## pace_per to their speed up to pace_max, harm_per to their damage, nudge_per makes them harder to
+## push back, and runner_per to the share of the swarm that are runners, up to runner_max.
 const THREATS := {
 	"safe_start": 20.0, "nests": 80, "nest_min": 2.5, "nest_max": 5.0, "nest_size": 10, "nest_band": 3, "brutes_from": 2,
-	"hp_band": 0.5, "dmg_band": 0.2, "wake_every": 0.2, "wake_range": 12.0, "knock": 8.0, "knock_max": 12.0, "knock_decay": 26.0,
+	"hp_band": 0.3, "dmg_band": 0.15, "wake_every": 0.2, "wake_range": 12.0, "knock": 8.0, "knock_max": 12.0, "knock_decay": 26.0,
 	"burrow_from": 40.0, "burrow_every": 22.0, "burrow_min": 7.0, "burrow_range": 18.0, "carve_every": 0.12,
 	"spike_patches": 15, "spike_cycle": 2.6, "spike_up": 0.9, "spike_warn": 0.5, "spike_dmg": 8.0,
 	"gas_blobs": 22, "gas_fuse": 0.9, "gas_radius": 3.0, "gas_merge": 3.0, "gas_dmg": 18.0, "gas_hurts_enemies": 150.0,
 	"swarm_from": 12.0, "swarm_every": 1.2, "swarm_size": 2.0, "swarm_size_ramp": 0.04, "swarm_range": 15.0,
-	"swarm_alive": 25.0, "swarm_alive_ramp": 0.6, "swarm_max": 220.0,
-	"horde_from": 35.0, "horde_every": 40.0, "horde_size": 45.0, "horde_ramp": 0.35, "horde_max": 170.0, "horde_range": 13.0,
+	"swarm_alive": 25.0, "swarm_alive_ramp": 0.6, "swarm_max": 430.0,
+	"horde_from": 35.0, "horde_every": 40.0, "horde_size": 45.0, "horde_ramp": 0.35, "horde_max": 320.0, "horde_range": 13.0,
+	"hard_power": 1.0, "free_upgrades": 8, "tough_per": 0.04, "crowd_per": 0.05, "pace_per": 0.012, "pace_max": 1.45,
+	"harm_per": 0.02, "nudge_per": 0.05, "runner_per": 0.012, "runner_max": 0.45,
 }
 
 ## start_clear: open radius around the start. cave_at, ore_at: noise levels above which there is a

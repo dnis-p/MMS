@@ -29,7 +29,7 @@ godot --headless --path . res://tests/dig_check.tscn              # digging rule
 godot --headless --path . -- --autotest --quit-after-sec=60       # smoke test: a bot plays
 godot --path . -- --autotest --quit-after-sec=20 --shots=<dir>    # screenshots of a bot playing (needs a display)
 ```
-Options after `--`: `--autotest`, `--seed=<n>`, `--give=<tools>`, `--shots=<dir>`, `--quit-after-sec=<n>`.
+Options after `--`: `--autotest`, `--seed=<n>`, `--give=<tools>` (or `all`), `--shots=<dir>`, `--quit-after-sec=<n>`.
 
 ## Layout
 - `scripts/data/defs.gd`: every number: cubes, bands, tools, boosts, camera.
