@@ -129,6 +129,7 @@ func update(delta: float) -> void:
 			reached = reached or step >= d - 0.7
 		if reached:
 			run.add_xp(g_val[i])
+			run.add_loot(g_val[i])
 			run.debris.spray(p, g_col[i], 3, p, 0.7)
 			chime = true
 			for arr in [g_pos, g_val, g_col, g_pull, g_hop]:

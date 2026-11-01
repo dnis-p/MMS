@@ -6,6 +6,7 @@ extends Node
 ##   --seed=<n>           use this random seed for the run
 ##   --give=<a,b>         with --autotest, start with these tools at max level; "all" also maxes boosts
 ##   --shots=<dir>        with --autotest, save screenshots into <dir>
+##   --goal=<heart|lift>  with --autotest, go for the Heart, or leave by lift after a while
 ##   --quit-after-sec=<n> with --autotest, quit after n seconds
 
 var _current: Node
@@ -23,8 +24,10 @@ func _ready() -> void:
 		var kv := String(a).trim_prefix("--").split("=", true, 1)
 		_args[kv[0]] = kv[1] if kv.size() > 1 else "true"
 	if _args.has("autotest"):
+		Profile.saving = false
 		start_run()
 	else:
+		Profile.load_file()
 		show_menu()
 
 
@@ -45,6 +48,7 @@ func start_run() -> void:
 	if _args.has("autotest"):
 		run.autotest = true
 		run.base_time_scale = 2.0
+		run.bot.goal = _args.get("goal", "")
 	run.exit_to_menu.connect(show_menu)
 	run.retry_requested.connect(start_run)
 	_set_current(run)
@@ -87,7 +91,7 @@ func _process(delta: float) -> void:
 		print("AUTOTEST DONE elapsed=%.1f" % _elapsed)
 		if _current is Run:
 			var r: Run = _current
-			print("level=%d cubes=%d kills=%d score=%d best_combo=%d depth=%.0f tools=%d hp=%d hits=%d dead=%s" % [r.level, r.cubes, r.kills, r.score, r.best_combo, r.depth, r.tools.order.size(), r.player.hp, r.hits_taken, r.dead])
+			print("level=%d cubes=%d kills=%d score=%d best_combo=%d depth=%.0f tools=%d hp=%d hits=%d dead=%s gems=%d" % [r.level, r.cubes, r.kills, r.score, r.best_combo, r.depth, r.tools.order.size(), r.player.hp, r.hits_taken, r.dead, int(r.loot)])
 		get_tree().quit()
 
 

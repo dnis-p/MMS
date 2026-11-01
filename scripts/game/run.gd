@@ -1,7 +1,7 @@
 class_name Run
 extends Node3D
 ## One dig: owns every subsystem and routes events between them (cube hits, pops, XP, level-ups,
-## camera, input). There is no way to lose yet: this prototype is only about digging feeling good.
+## camera, input). A run ends by breaking the Heart, leaving by lift, dying or giving up.
 
 signal exit_to_menu
 signal retry_requested
@@ -19,6 +19,7 @@ var pickups: Pickups
 var tools: Tools
 var enemies: Enemies
 var traps: Traps
+var sites: Sites
 var fx: Fx
 var bot := Bot.new()
 var camera: Camera3D
@@ -32,6 +33,7 @@ var xp_next := Defs.xp_to_next(1)
 var pending_levelups := 0
 var cubes := 0
 var kills := 0
+var loot := 0.0  # gems carried: only what you bring out counts
 var hits_taken := 0
 var hardness := 1.0  # how much tougher enemies are, from your damage
 var crowd := 1.0  # how many more come, from your upgrades
@@ -49,6 +51,8 @@ var band := 0
 var autotest := false
 var god_mode := false
 var dead := false
+var left := false  # got out alive
+var banked := false
 var base_time_scale := 1.0
 
 var _modal_open := false
@@ -57,6 +61,7 @@ var _note := 0
 var _note_timer := 0.0
 var _gem_chain := 0
 var _gem_chain_timer := 0.0
+var _heart_woken := false
 var _pops_this_frame := 0
 var _big_pop_cd := 0.0
 var _scan_timer := 0.0
@@ -113,6 +118,9 @@ func _ready() -> void:
 	add_child(pickups)
 	fx = Fx.new()
 	add_child(fx)
+	sites = Sites.new()
+	sites.run = self
+	add_child(sites)
 	player = Player.new()
 	add_child(player)
 	tools = Tools.new()
@@ -188,7 +196,7 @@ func apply_boosts() -> void:
 
 func _process(delta: float) -> void:
 	_update_time_scale()
-	if dead:
+	if dead or left:
 		debris.update(delta)
 		fx.update(delta)
 		_update_camera(delta)
@@ -204,6 +212,7 @@ func _process(delta: float) -> void:
 	var at := player.global_position
 	enemies.update(delta, at, player.radius)
 	traps.update(delta, at)
+	sites.update(delta, at)
 	_update_burrowers(delta)
 	_update_swarm(delta)
 	debris.update(delta)
@@ -213,7 +222,8 @@ func _process(delta: float) -> void:
 	_update_chains(delta)
 	_update_camera(delta)
 	hud.refresh(self)
-	_try_open_modal()
+	if not dead and not left:
+		_try_open_modal()
 
 
 ## Points the tools at the mouse. Aiming stays flat, at the height of the rock's top.
@@ -344,6 +354,8 @@ func on_cube_popped(p: Vector3, k: int, color: Color) -> void:
 	add_xp(d["xp"])
 	debris.spray(p, color, 5 if _pops_this_frame < 12 else 2, player.global_position)
 	_play_note()
+	if d.has("heart"):
+		_break_heart(p)
 	if d.has("gas"):
 		traps.light_gas(p)
 	if d.has("gem"):
@@ -378,6 +390,42 @@ func on_nest_woken(p: Vector3) -> void:
 	Sfx.play("warn", -14.0, 1.6, true)
 
 
+## The first hit wakes everything nearby.
+func on_heart_hit() -> void:
+	if _heart_woken:
+		return
+	_heart_woken = true
+	overlay.banner("THE HEART WAKES", "", Color(1, 0.2, 0.45), 1.5)
+	spawn_horde()
+
+
+func _break_heart(p: Vector3) -> void:
+	if left or dead:
+		return
+	left = true
+	_hitstop(0.12)
+	fx.ring(p, 14.0, Color(1, 0.3, 0.55, 0.9), 0.6)
+	fx.shake(0.8)
+	Sfx.play("big_boom", 0.0, 0.8, true)
+	overlay.banner("HEART BROKEN!", "", Color(1, 0.3, 0.55), 2.0)
+	if autotest:
+		print("heart broken: t=%.0f level=%d" % [run_time, level])
+	get_tree().create_timer(1.8, false, false, true).timeout.connect(_finish.bind("heart"))
+
+
+func leave_by_lift() -> void:
+	if left or dead:
+		return
+	left = true
+	Sfx.play("levelup", -6.0, 1.3, true)
+	overlay.banner("OUT!", "", Color(0.3, 1.0, 0.85), 1.0)
+	if autotest:
+		print("left by lift: t=%.0f level=%d depth=%.0f" % [run_time, level, depth])
+	var tw := create_tween()
+	tw.tween_property(player, "position:y", 12.0, 0.8).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_callback(_finish.bind("lift"))
+
+
 func gas_blast(p: Vector3) -> void:
 	var t := Defs.THREATS
 	var r: float = t["gas_radius"]
@@ -392,7 +440,7 @@ func gas_blast(p: Vector3) -> void:
 
 
 func player_hit(amount: float) -> void:
-	if god_mode or dead or not player.hurt(amount):
+	if god_mode or dead or left or not player.hurt(amount):
 		return
 	hits_taken += 1
 	fx.shake(0.3)
@@ -410,9 +458,33 @@ func _game_over() -> void:
 	fx.shake(0.8)
 	if autotest:
 		print("died: t=%.0f level=%d depth=%.0f" % [run_time, level, depth])
-	get_tree().create_timer(1.2, false, false, true).timeout.connect(func():
-		get_tree().paused = true
-		overlay.show_panel("YOU DIED", ["%d cubes  ·  %d kills  ·  %d m deep" % [cubes, kills, int(depth)], "Level %d  ·  best combo x%d  ·  score %d" % [level, best_combo, score]], [["Dig again", _new_mine], ["Quit to menu", _quit_to_menu]], Color(1, 0.35, 0.3)))
+	get_tree().create_timer(1.2, false, false, true).timeout.connect(_finish.bind("dead"))
+
+
+## What share of the gems you carry stays yours.
+func keep_share(how: String) -> float:
+	return 1.0 if how == "heart" or how == "lift" else float(Defs.RUN["death_keep"])
+
+
+func gems_kept(how: String) -> int:
+	return int(loot * keep_share(how)) + (int(Defs.RUN["heart_bonus"]) if how == "heart" else 0)
+
+
+## Banks the run once, however it ended, and shows what it was worth.
+func _finish(how: String) -> void:
+	if banked:
+		return
+	banked = true
+	get_tree().paused = true
+	var kept := gems_kept(how)
+	Profile.gems += kept
+	Profile.record({"runs": 1, "cubes": cubes, "kills": kills, "banked": kept, "band": band, "combo": best_combo,
+		"lifts": 1 if how == "lift" else 0, "hearts": 1 if how == "heart" else 0})
+	Profile.save()
+	if autotest:
+		print("finished: %s kept=%d carried=%d t=%.0f" % [how, kept, int(loot), run_time])
+	var title := {"heart": "HEART BROKEN", "lift": "YOU GOT OUT", "dead": "YOU DIED", "quit": "GAVE UP"}
+	overlay.show_panel(title[how], ["%d cubes  ·  %d kills  ·  %d m deep" % [cubes, kills, int(depth)], "Level %d  ·  best combo x%d  ·  score %d" % [level, best_combo, score], "%d gems kept of %d  ·  bank %d" % [kept, int(loot), Profile.gems]], [["Dig again", _new_mine], ["Quit to menu", _quit_to_menu]], Color(1, 0.35, 0.3) if how == "dead" else Color(1, 0.85, 0.3))
 
 
 ## Each pop plays the next note of a rising scale, so digging sounds like a run up a keyboard.
@@ -431,6 +503,10 @@ func add_xp(amount: float) -> void:
 		level += 1
 		xp_next = Defs.xp_to_next(level)
 		pending_levelups += 1
+
+
+func add_loot(amount: float) -> void:
+	loot += amount
 
 
 func add_score(amount: int) -> void:
@@ -500,7 +576,7 @@ func _open_pause() -> void:
 
 
 func _show_pause() -> void:
-	overlay.show_panel("PAUSED", ["%d cubes  ·  best combo x%d" % [cubes, best_combo]], [["Resume", _resume], [Options.fog_text(), _toggle_fog], ["New mine", _new_mine], ["Quit to menu", _quit_to_menu]])
+	overlay.show_panel("PAUSED", ["%d cubes  ·  best combo x%d" % [cubes, best_combo]], [["Resume", _resume], [Options.fog_text(), _toggle_fog], ["Give up (keep %d%% of your gems)" % roundi(keep_share("quit") * 100.0), _give_up]])
 
 
 func _toggle_fog() -> void:
@@ -514,6 +590,11 @@ func _resume() -> void:
 	_paused_by_menu = false
 	if not _modal_open:
 		get_tree().paused = false
+
+
+func _give_up() -> void:
+	_paused_by_menu = false
+	_finish("quit")
 
 
 func _new_mine() -> void:

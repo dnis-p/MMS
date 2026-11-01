@@ -94,6 +94,9 @@ const AROUND: Array[int] = [-1, 1, -SIZE, SIZE, -SIZE - 1, -SIZE + 1, SIZE - 1, 
 
 var run: Run
 var nests: Array = []  # [center, radius] of each pocket that holds sleeping enemies
+var heart_pos := Vector3.ZERO
+var heart_left := 1.0  # share of health left in the Heart's weakest cube
+var lifts: Array[Vector3] = []
 var kind := PackedByteArray()  # index into Defs.CUBES, 0 = empty
 var hp := PackedFloat32Array()
 var _color := PackedColorArray()
@@ -219,6 +222,8 @@ func generate(rng: RandomNumberGenerator) -> void:
 	_scatter_geodes(rng)
 	_scatter_gas(rng)
 	_dig_nests(rng)
+	_open_lifts(rng)
+	_place_heart(rng)
 	forget()
 	for c in SIZE * SIZE:
 		_color[c] = _tint(c)
@@ -302,6 +307,37 @@ func _dig_nests(rng: RandomNumberGenerator) -> void:
 					kind[x + z * SIZE] = 0
 
 
+## One lift in the middle, the rest in small pockets spread around the mine.
+func _open_lifts(rng: RandomNumberGenerator) -> void:
+	var r := Defs.RUN
+	lifts.clear()
+	lifts.append(Vector3(0, 0, 2.6))
+	var n: int = r["lifts"]
+	for k in n:
+		var a := TAU * k / n + rng.randf_range(-0.3, 0.3)
+		var p := Vector3(cos(a), 0, sin(a)) * lerpf(r["lift_min"], r["lift_max"], (k % 3) / 2.0)
+		_stamp(p, 4, 0)
+		lifts.append(p)
+
+
+func _place_heart(rng: RandomNumberGenerator) -> void:
+	var a := rng.randf() * TAU
+	heart_pos = Vector3(cos(a), 0, sin(a)) * Defs.RUN["heart_dist"]
+	_stamp(heart_pos, Defs.RUN["heart_r"], Defs.HEART)
+
+
+## Fills a round patch with one kind of cube.
+func _stamp(center: Vector3, cells: int, k: int) -> void:
+	var cx := cell_of(center.x)
+	var cz := cell_of(center.z)
+	for z in range(cz - cells, cz + cells + 1):
+		for x in range(cx - cells, cx + cells + 1):
+			if Vector2i(x - cx, z - cz).length_squared() <= cells * cells:
+				var c := x + z * SIZE
+				kind[c] = k
+				hp[c] = _hp_of[k]
+
+
 ## Removes rock without it counting as your digging, for things that tunnel.
 func carve(p: Vector3, r: float) -> void:
 	for z in range(cell_of(p.z - r), cell_of(p.z + r) + 1):
@@ -310,7 +346,7 @@ func carve(p: Vector3, r: float) -> void:
 				continue
 			var c := x + z * SIZE
 			var k := kind[c]
-			if k != 0 and k != Defs.BEDROCK:
+			if k != 0 and k != Defs.BEDROCK and k != Defs.HEART:
 				kind[c] = 0
 				_draw_cube(c)
 				run.debris.spray(pos_of(c), _color[c], 1, pos_of(c), 0.6)
@@ -546,6 +582,10 @@ func _apply(c: int, dmg: float) -> void:
 	var k := kind[c]
 	if k == 0 or k == Defs.BEDROCK:
 		return
+	if k == Defs.HEART:
+		dmg = minf(dmg, Defs.RUN["heart_hit"])
+		heart_left = minf(heart_left, clampf((hp[c] - dmg) / _hp_of[k], 0.0, 1.0))
+		run.on_heart_hit()
 	hp[c] -= dmg
 	if hp[c] <= 0.0:
 		_pop(c)

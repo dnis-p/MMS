@@ -18,6 +18,9 @@ var _icons: HBoxContainer
 var _boost_icons: HBoxContainer
 var _hint: Label
 var _fps_label: Label
+var _compass: Control
+var _lift_bar: ProgressBar
+var _run: Node
 var _last_combo := 0
 var _icon_key := ""
 
@@ -79,7 +82,7 @@ func _ready() -> void:
 	var right := VBoxContainer.new()
 	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	right.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	right.offset_left = -330
+	right.offset_left = -500
 	right.offset_right = -100
 	right.offset_top = 24
 	add_child(right)
@@ -127,6 +130,21 @@ func _ready() -> void:
 	_fps_label.offset_bottom = -6
 	add_child(_fps_label)
 
+	_compass = Control.new()
+	Ui.full_rect(_compass)
+	_compass.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_compass.draw.connect(_draw_compass)
+	add_child(_compass)
+
+	_lift_bar = Ui.bar(Color(0.3, 1.0, 0.85), 18)
+	_lift_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_lift_bar.offset_left = -120
+	_lift_bar.offset_right = 120
+	_lift_bar.offset_top = 70
+	_lift_bar.offset_bottom = 88
+	_lift_bar.visible = false
+	add_child(_lift_bar)
+
 	_hint = Ui.label("", 28)
 	_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 	_hint.offset_left = -500
@@ -151,14 +169,42 @@ func damage_flash() -> void:
 	tw.tween_property(_vignette, "color:a", 0.0, 0.35)
 
 
+## Two arrows around the digger: where the Heart is, and the nearest way out.
+func _draw_compass() -> void:
+	if not _run:
+		return
+	var at: Vector3 = _run.player.global_position
+	var heart: float = _run.mine.heart_left
+	_arrow(_run.mine.heart_pos - at, Color(1, 0.25, 0.5), "HEART" if heart >= 1.0 else "HEART %d%%" % ceili(heart * 100.0), 170.0)
+	_arrow(_run.sites.nearest_lift - at, Color(0.3, 1.0, 0.85), "LIFT", 130.0)
+
+
+func _arrow(to: Vector3, color: Color, text: String, r: float) -> void:
+	var dir := Vector2(to.x, to.z)
+	if dir.length() < 2.0:
+		return
+	var d := dir.normalized()
+	var mid := _compass.size * 0.5 + d * r
+	var side := Vector2(-d.y, d.x)
+	_compass.draw_colored_polygon(PackedVector2Array([mid + d * 16.0, mid + side * 10.0, mid - side * 10.0]), color)
+	var font := ThemeDB.fallback_font
+	var line := "%s %d m" % [text, int(dir.length())]
+	_compass.draw_string_outline(font, mid - d * 8.0 + Vector2(-50, -14), line, HORIZONTAL_ALIGNMENT_CENTER, 100.0, 15, 5, Color(0, 0, 0, 0.8))
+	_compass.draw_string(font, mid - d * 8.0 + Vector2(-50, -14), line, HORIZONTAL_ALIGNMENT_CENTER, 100.0, 15, color)
+
+
 func refresh(run: Node) -> void:
+	_run = run
+	_compass.queue_redraw()
+	_lift_bar.visible = run.sites.lift_t > 0.0
+	_lift_bar.value = run.sites.lift_t / float(Defs.RUN["lift_hold"])
 	var p: Player = run.player
 	_hp_bar.value = p.hp / p.max_hp
 	_hp_label.text = "%d / %d" % [ceili(p.hp), ceili(p.max_hp)]
 	_xp_bar.value = run.xp / run.xp_next
 	_level_label.text = "LV %d" % run.level
 	_score_label.text = _format(run.score)
-	_cubes_label.text = "%s cubes  ·  %d kills" % [_format(run.cubes), run.kills]
+	_cubes_label.text = "%s gems  ·  %s cubes  ·  %d kills" % [_format(int(run.loot)), _format(run.cubes), run.kills]
 	var t := int(run.run_time)
 	_depth_label.text = "%s  ·  %d m   %d:%02d" % [Defs.BANDS[run.band]["name"], int(run.depth), t / 60, t % 60]
 	_fps_label.text = "%d fps" % Engine.get_frames_per_second()

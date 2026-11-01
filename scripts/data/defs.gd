@@ -68,12 +68,24 @@ const WORLD := {
 	"fog_tint": 0.1, "fog_dim": 0.4, "haze": 0.15, "scan_every": 0.05,
 }
 
+## The goal of a run and how it ends. heart_dist: metres from the start, heart_r: its size in cubes.
+## heart_hit: the most one hit can take off a Heart cube, so nothing skips the fight. heart_bonus: gems
+## for breaking it. lifts: how many, lift_min to lift_max metres out; lift_pad is their radius and
+## lift_hold how long you stand there. death_keep: share of your gems you keep without a lift.
+const RUN := {
+	"heart_dist": 66.0, "heart_r": 5, "heart_hit": 40.0, "heart_bonus": 500, "lifts": 8, "lift_min": 22.0, "lift_max": 70.0,
+	"lift_pad": 1.7, "lift_hold": 1.5, "death_keep": 0.5,
+}
+## Lifetime stats that keep the best run instead of adding up.
+const BEST_STATS := ["band", "combo"]
+
 ## Index = cube kind, 0 is empty. xp is earned on the spot, gem drops a shiny worth that much XP.
 ## Every shiny mineral always drops its gem. ring: pitch of the hit sound. chain: goes off with the
 ## same kind touching it.
 const BEDROCK := 14
 const CRYSTAL := 13
 const GAS := 15
+const HEART := 16
 const CUBES := [
 	{},
 	{"name": "Dirt", "hp": 10.0, "color": Color(0.56, 0.38, 0.23), "xp": 0.01, "score": 1, "ring": 0.8},
@@ -91,6 +103,7 @@ const CUBES := [
 	{"name": "Crystal", "hp": 12.0, "color": Color(0.55, 0.35, 1.0), "xp": 0.0, "score": 15, "ring": 2.0, "gem": 0.15, "chain": true},
 	{"name": "Bedrock", "hp": 1e9, "color": Color(0.08, 0.07, 0.08), "xp": 0.0, "score": 0},
 	{"name": "Gas Rock", "hp": 8.0, "color": Color(0.62, 0.68, 0.32), "xp": 0.01, "score": 5, "ring": 0.7, "chain": true, "gas": true},
+	{"name": "Heart", "hp": 900.0, "color": Color(1.0, 0.15, 0.45), "xp": 0.0, "score": 2000, "ring": 0.6, "heart": true},
 ]
 ## Rock changes every band_width metres out from the start.
 const BANDS := [

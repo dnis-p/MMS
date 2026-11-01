@@ -13,6 +13,8 @@ var _peak := 0.0
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	Options.fog = false  # set directly, so the player's saved choice stays as it is
+	Profile.saving = false
+	Profile.reset()
 	_main = load("res://scenes/main.tscn").instantiate()
 	add_child(_main)
 	_main._clear()
@@ -40,6 +42,7 @@ func _process(delta: float) -> void:
 			_check_fog(r)
 			_check_pause(r)
 			_check_tools(r)
+			_check_goal(r)
 			_clear_around(r)
 			Input.action_press("move_right")
 			_wait = 0.1
@@ -86,6 +89,10 @@ func _process(delta: float) -> void:
 				r.player.hp = 1.0
 				r.player_hit(50.0)
 				_check("running out of health ends the run", r.dead)
+				r.loot = 21.0
+				r._finish("dead")
+				r._finish("dead")
+				_check("a run banks its gems once", Profile.gems == 10 and Profile.stat("runs") == 1)
 				print("DIG CHECK %s" % ("FAILED" if _failed else "PASSED"))
 				get_tree().quit(1 if _failed else 0)
 
@@ -384,6 +391,42 @@ func _check_fog(r: Run) -> void:
 	_fill(r, far, 1, 1)
 	_check("with fog off you can hit anything", m.hit_circle(far, 2.0, 1e9, far) > 0)
 	_fill(r, Vector3.ZERO, 60, 0)
+
+
+## The world's goal and the two ways out, without ending this run.
+func _check_goal(r: Run) -> void:
+	var m := r.mine
+	_check("the Heart is out near the edge", m.heart_pos.length() > 60.0)
+	_check("every run has lifts, one by the start", m.lifts.size() > 5 and m.lifts[0].length() < 3.5)
+	_check("a lift keeps all you carry, dying keeps half", r.keep_share("lift") == 1.0 and r.keep_share("dead") == 0.5)
+	r.loot = 100.5
+	_check("gems kept round down, the Heart pays a bonus", r.gems_kept("dead") == 50 and r.gems_kept("heart") == 100 + int(Defs.RUN["heart_bonus"]))
+	r.loot = 0.0
+	var at := Vector3(2, 0, 0)
+	_fill(r, at, 0, Defs.HEART)
+	var c := m.cell_of(at.x) + m.cell_of(at.z) * Mine.SIZE
+	r.overlay.hide_panel()
+	m.strike(c, 1e9, 0.0)
+	_check("nothing breaks a Heart cube in one hit", m.kind[c] == Defs.HEART and m.heart_left < 1.0 and m.hp[c] == Defs.CUBES[Defs.HEART]["hp"] - Defs.RUN["heart_hit"])
+	m.carve(at, 0.3)
+	_check("tunnelling enemies can't eat the Heart", m.kind[c] == Defs.HEART)
+	r.enemies.clear()
+	_fill(r, at, 0, 0)
+	m.heart_left = 1.0
+	Profile.record({"cubes": 10, "band": 3})
+	Profile.record({"cubes": 5, "band": 1})
+	_check("totals add up, bests stay best", Profile.stat("cubes") == 15 and Profile.stat("band") == 3)
+	Profile.gems = 42
+	Profile.saving = true
+	Profile.file = "user://test_profile.cfg"
+	Profile.save()
+	Profile.reset()
+	Profile.load_file()
+	_check("the profile survives a save and load", Profile.gems == 42 and Profile.stat("cubes") == 15)
+	DirAccess.remove_absolute(Profile.file)
+	Profile.saving = false
+	Profile.file = Profile.PATH
+	Profile.reset()
 
 
 func _check_pause(r: Run) -> void:
