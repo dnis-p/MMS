@@ -5,7 +5,8 @@ extends Node3D
 ## rock like you are. Burrowers and the swarm dig their way through it. Awake enemies in the dark show
 ## only their eyes.
 
-const MAX := 640
+const MAX := 1500
+const SLEEPERS := 640  # nests stop filling here, so the swarm and hordes always have room
 const CELL := 1.5
 const CRAWLER := 0
 const BRUTE := 1
@@ -141,6 +142,8 @@ func fill_nests() -> void:
 		var band := run.mine.band_at(Vector2(c.x, c.z).length())
 		var count: int = t["nest_size"] + t["nest_band"] * band
 		for k in count:
+			if used >= SLEEPERS:
+				return
 			var a := run.rng.randf() * TAU
 			var at := c + Vector3(cos(a), 0, sin(a)) * r * 0.7 * sqrt(run.rng.randf())
 			spawn(BRUTE if k == 0 and band >= t["brutes_from"] else CRAWLER, at, n)

@@ -194,7 +194,7 @@ func _check_chain(r: Run) -> void:
 
 
 func _clear_gems(r: Run) -> void:
-	for arr in [r.pickups.g_pos, r.pickups.g_val, r.pickups.g_col, r.pickups.g_pull, r.pickups.g_hop]:
+	for arr in [r.pickups.g_pos, r.pickups.g_val, r.pickups.g_xp, r.pickups.g_col, r.pickups.g_pull, r.pickups.g_hop]:
 		arr.clear()
 
 
@@ -263,6 +263,10 @@ func _check_threats(r: Run) -> void:
 	_check("other enemies are stopped by rock", e.pos[crawl].x > 3.5)
 	e.clear()
 	_fill(r, Vector3(3, 0, 0), 2, 0)
+	e.fill_nests()
+	r.spawn_horde()
+	_check("sleeping nests leave room for hordes (%d)" % e.alive_count, e.alive_count >= Enemies.SLEEPERS + 40)
+	e.clear()
 	_check_traps(r)
 	_check_scaling(r)
 	p.invuln = 0.0

@@ -25,7 +25,7 @@ new idea or decision the owner gives you there (mark owner's words vs your sugge
 ## Verify changes
 Run from the repo root after the project has been imported once (`godot --headless --path . --import`):
 - Rules: `godot --headless --path . res://tests/dig_check.tscn` must end with `DIG CHECK PASSED`.
-- Bots can die: check `died:` and `hits=` over several `--seed` values when changing threats. `--give=all` tests late game.
+- Bots can die: check `died:` and `hits=` over several `--seed` values when changing threats. `--give=all` tests late game, `--goal=heart` and `--goal=lift` test how a run ends, `--unlocked --shop=<n> --char=<id>` test a later profile.
 - Smoke test: `godot --headless --path . -- --autotest --quit-after-sec=60`. Output ends with `level= cubes= score=`; any
   `SCRIPT ERROR` is a failure. Add `--seed=<n>` to fix the rolls.
 - Screenshots of a bot playing (needs a display): `godot --path . -- --autotest --quit-after-sec=20 --shots=<dir>`
@@ -37,7 +37,8 @@ Parse errors that mention `Sfx` only occur when scripts are checked standalone (
 
 ## Known gaps / next ideas
 - Feel and sound are unproven until the owner plays: nobody has listened to the sounds.
-- No goal beyond surviving, no saves, no meta progression, no evolutions, no unlocks yet. Difficulty is a first guess.
+- Progression (Heart, lifts, gem bank, shop, goals, characters, rooms, evolutions) is a first version for testing. Prices, goals and difficulty are first guesses, and there are no bosses and no new tools yet.
+- The map is small for its digging speed: a run lasts as long as the Heart fight, not as long as the walk.
 - Mouse aiming is untested with a real mouse.
 
 ## How we work (agreed with the owner)
@@ -68,5 +69,5 @@ docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 
 - Android Studio is installed; the Android SDK and Java are set in the Godot editor, so APKs can be exported
   from the editor (Project > Export). `tools/android/build_apk.sh` and `tools/web/build_web.sh` call `godot`
   from PATH, so they need a `godot` alias/shim to the console exe in Git Bash (bash itself is available).
-- The car game's saves are in `%APPDATA%/MMS` (scores.cfg, profile.cfg). Real progress: don't delete it without asking. This branch uses `MMS-Dig`.
+- The car game's saves are in `%APPDATA%/MMS` (scores.cfg, profile.cfg). Real progress: don't delete it without asking. This branch uses `MMS-Dig`, where `profile.cfg` holds the owner's dig progress.
 - `icon.svg.import` shows as modified after imports (line endings); ignore it, don't commit it.

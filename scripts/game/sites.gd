@@ -76,7 +76,7 @@ func update(delta: float, at: Vector3) -> void:
 			best = d
 			nearest_lift = p
 	var pad: float = Defs.RUN["lift_pad"]
-	if best > pad * pad or run.loot < 1.0:
+	if best > pad * pad or run.loot < 1.0 or run.run_time < float(Defs.RUN["lift_from"]):
 		lift_t = 0.0
 		return
 	lift_t += delta

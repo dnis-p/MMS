@@ -366,8 +366,8 @@ func _dig_rooms(rng: RandomNumberGenerator) -> void:
 	taken.append(heart_pos)
 	for k in r["vaults"]:
 		var p := _free_spot(rng, taken)
-		_square(p, 4, Defs.VAULT)
-		_square(p, 3, 12 if band_at(p.length()) >= 4 else 11)
+		_square(p, 3, Defs.VAULT)
+		_square(p, 2, 12 if band_at(p.length()) >= 4 else 11)
 		add_glint(p, Defs.CUBES[11]["color"], cell_of(p.x) + cell_of(p.z) * SIZE)
 	for k in r["shrines"]:
 		var p := _free_spot(rng, taken)

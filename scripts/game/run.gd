@@ -412,7 +412,7 @@ func on_cube_popped(p: Vector3, k: int, color: Color) -> void:
 ## Every cube of a geode throws a gem; the first one is the big moment.
 func _burst_geode(p: Vector3) -> void:
 	var worth: float = Defs.CUBES[Defs.GEODE]["gem"] * (1.0 + Defs.RUN["geode_band"] * mine.band_at(Vector2(p.x, p.z).length()))
-	pickups.drop_gem(p, worth, Color.from_hsv(rng.randf(), 0.55, 1.0))
+	pickups.drop_gem(p, worth, Color.from_hsv(rng.randf(), 0.55, 1.0), Defs.RUN["geode_xp"])
 	debris.spray(p, Color(1, 1, 0.8), 6, p, 1.6)
 	Sfx.play("clink", -6.0, 1.2 + rng.randf() * 0.6)
 	if _geode_cd > 0.0:
@@ -468,6 +468,8 @@ func on_heart_hit() -> void:
 	if _heart_woken:
 		return
 	_heart_woken = true
+	if autotest:
+		print("heart woke: t=%.0f level=%d awake=%d" % [run_time, level, enemies.awake_count])
 	overlay.banner("THE HEART WAKES", "", Color(1, 0.2, 0.45), 1.5)
 	spawn_horde()
 	_horde_timer = Defs.RUN["heart_horde"]
@@ -483,7 +485,7 @@ func _break_heart(p: Vector3) -> void:
 	Sfx.play("big_boom", 0.0, 0.8, true)
 	overlay.banner("HEART BROKEN!", "", Color(1, 0.3, 0.55), 2.0)
 	if autotest:
-		print("heart broken: t=%.0f level=%d" % [run_time, level])
+		print("heart broken: t=%.0f level=%d awake=%d" % [run_time, level, enemies.awake_count])
 	get_tree().create_timer(1.8, false, false, true).timeout.connect(_finish.bind("heart"))
 
 
@@ -531,6 +533,8 @@ func use_shrine(id: String) -> void:
 
 
 func take_shrine(id: String) -> void:
+	if autotest:
+		print("shrine: %s t=%.0f" % [id, run_time])
 	match id:
 		"blood":
 			player.hp = maxf(1.0, player.hp * 0.5)

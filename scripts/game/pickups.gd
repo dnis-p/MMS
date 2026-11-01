@@ -11,6 +11,7 @@ var run: Run
 
 var g_pos := PackedVector3Array()
 var g_val := PackedFloat32Array()
+var g_xp := PackedFloat32Array()  # how much of the value is also XP
 var g_col := PackedColorArray()
 var g_pull := PackedFloat32Array()  # 0 = idle, >0 = flying to the digger at this speed
 var g_hop := PackedFloat32Array()
@@ -86,7 +87,7 @@ func _star_texture() -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 
-func drop_gem(p: Vector3, value: float, color: Color) -> void:
+func drop_gem(p: Vector3, value: float, color: Color, xp_share := 1.0) -> void:
 	if g_pos.size() >= MAX:
 		# Too many on the floor: fold the value into a random existing gem.
 		var j := run.rng.randi() % g_pos.size()
@@ -94,6 +95,7 @@ func drop_gem(p: Vector3, value: float, color: Color) -> void:
 		return
 	g_pos.append(Vector3(p.x + run.rng.randf_range(-0.2, 0.2), 0.9, p.z + run.rng.randf_range(-0.2, 0.2)))
 	g_val.append(value)
+	g_xp.append(xp_share)
 	g_col.append(color)
 	g_pull.append(0.0)
 	g_hop.append(run.rng.randf_range(4.0, 6.0))
@@ -128,11 +130,11 @@ func update(delta: float) -> void:
 			# Checked after moving: at low frame rates you can outrun a small radius.
 			reached = reached or step >= d - 0.7
 		if reached:
-			run.add_xp(g_val[i])
+			run.add_xp(g_val[i] * g_xp[i])
 			run.add_loot(g_val[i])
 			run.debris.spray(p, g_col[i], 3, p, 0.7)
 			chime = true
-			for arr in [g_pos, g_val, g_col, g_pull, g_hop]:
+			for arr in [g_pos, g_val, g_xp, g_col, g_pull, g_hop]:
 				_swap_remove(arr, i)
 			continue
 		g_pos[i] = p

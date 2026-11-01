@@ -71,15 +71,17 @@ const WORLD := {
 ## The goal of a run and how it ends. heart_dist: metres from the start, heart_r: its size in cubes.
 ## heart_hit: the most one hit can take off a Heart cube, so nothing skips the fight. heart_bonus: gems
 ## for breaking it. heart_horde: seconds between hordes once it wakes. lifts: how many, lift_min to lift_max metres out; lift_pad is their radius and
-## lift_hold how long you stand there. death_keep: share of your gems you keep without a lift.
+## lift_hold how long you stand there; lifts run from lift_from seconds, so nobody leaves by accident
+## while digging at the start. death_keep: share of your gems you keep without a lift.
 ## geodes: how many hard shells full of gems, radius in cubes; geode_band adds to their worth per rock
-## band. glint_range: metres at which treasure sparkles through the fog and rock. vaults, shrines,
+## band; geode_xp is the share of their worth that counts as XP, so a burst pays gems, not ten level-ups.
+## glint_range: metres at which treasure sparkles through the fog and rock. vaults, shrines,
 ## relic_rooms: how many of each per run, room_gap metres apart. site_use: metres from a shrine or
 ## relic at which you use it.
 const RUN := {
 	"heart_dist": 66.0, "heart_r": 5, "heart_hit": 25.0, "heart_bonus": 500, "heart_horde": 12.0, "lifts": 8, "lift_min": 22.0, "lift_max": 70.0,
-	"lift_pad": 1.7, "lift_hold": 1.5, "death_keep": 0.5,
-	"geodes": 40, "geode_min": 2, "geode_max": 3, "geode_band": 0.5, "glint_range": 20.0,
+	"lift_pad": 1.7, "lift_hold": 1.5, "lift_from": 30.0, "death_keep": 0.5,
+	"geodes": 40, "geode_min": 2, "geode_max": 3, "geode_band": 0.3, "geode_xp": 0.1, "glint_range": 20.0,
 	"vaults": 12, "shrines": 6, "relic_rooms": 2, "room_gap": 12.0, "site_use": 1.4,
 }
 ## Shrines give something and take something, for this run.
@@ -102,12 +104,12 @@ const FRENZY := {"at": 500, "time": 5.0, "rest": 8.0, "score": 2.0, "color": Col
 ## Permanent upgrades bought with banked gems. value: per level. cost: the first level; each next one
 ## costs `grow` times more. Keep the whole shop reachable in hours, not days (owner: no 80-hour grind).
 const SHOP := {
-	"power": {"name": "Sharper Edge", "desc": "+6% digging damage", "value": 0.06, "max": 5, "cost": 60, "grow": 1.7},
-	"health": {"name": "Hard Hat", "desc": "+15 max health", "value": 15.0, "max": 5, "cost": 50, "grow": 1.7},
-	"legs": {"name": "Good Boots", "desc": "+3% move speed", "value": 0.03, "max": 5, "cost": 50, "grow": 1.7},
-	"magnet": {"name": "Long Reach", "desc": "+12% pickup range", "value": 0.12, "max": 5, "cost": 40, "grow": 1.6},
-	"greed": {"name": "Deep Pockets", "desc": "+8% gems found", "value": 0.08, "max": 5, "cost": 80, "grow": 1.8},
-	"cover": {"name": "Insurance", "desc": "+6% gems kept if you don't get out", "value": 0.06, "max": 5, "cost": 70, "grow": 1.7},
+	"power": {"name": "Sharper Edge", "desc": "+6% digging damage", "value": 0.06, "max": 5, "cost": 60, "grow": 2.0},
+	"health": {"name": "Hard Hat", "desc": "+15 max health", "value": 15.0, "max": 5, "cost": 50, "grow": 2.0},
+	"legs": {"name": "Good Boots", "desc": "+3% move speed", "value": 0.03, "max": 5, "cost": 50, "grow": 2.0},
+	"magnet": {"name": "Long Reach", "desc": "+12% pickup range", "value": 0.12, "max": 5, "cost": 40, "grow": 2.0},
+	"greed": {"name": "Deep Pockets", "desc": "+8% gems found", "value": 0.08, "max": 5, "cost": 80, "grow": 2.0},
+	"cover": {"name": "Insurance", "desc": "+6% gems kept if you don't get out", "value": 0.06, "max": 5, "cost": 70, "grow": 2.0},
 }
 
 ## Who digs: a starting tool and one rule. hp, speed and gems multiply the base numbers. no_aim: tools
@@ -176,7 +178,7 @@ const CUBES := [
 	{"name": "Bedrock", "hp": 1e9, "color": Color(0.08, 0.07, 0.08), "xp": 0.0, "score": 0},
 	{"name": "Gas Rock", "hp": 8.0, "color": Color(0.62, 0.68, 0.32), "xp": 0.01, "score": 5, "ring": 0.7, "chain": true, "gas": true},
 	{"name": "Heart", "hp": 6000.0, "color": Color(1.0, 0.15, 0.45), "xp": 0.0, "score": 2000, "ring": 0.6, "heart": true},
-	{"name": "Geode", "hp": 150.0, "color": Color(0.25, 0.95, 0.8), "xp": 0.0, "score": 60, "ring": 2.3, "gem": 6.0, "chain": true, "geode": true},
+	{"name": "Geode", "hp": 150.0, "color": Color(0.25, 0.95, 0.8), "xp": 0.0, "score": 60, "ring": 2.3, "gem": 4.0, "chain": true, "geode": true},
 	{"name": "Vault Wall", "hp": 130.0, "color": Color(0.62, 0.55, 0.35), "xp": 0.02, "score": 5, "ring": 1.8},
 ]
 ## Rock changes every band_width metres out from the start.

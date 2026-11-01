@@ -57,7 +57,7 @@ func _show_main() -> void:
 		Sfx.play("levelup", -6.0, 1.0, true)
 		start_pressed.emit(), 70.0)
 	_root.add_child(start)
-	_root.add_child(_button("Digger: %s" % Defs.CHARACTERS[Profile.character]["name"], _show_characters))
+	_root.add_child(_button("Playing as: %s" % Defs.CHARACTERS[Profile.character]["name"], _show_characters))
 	_root.add_child(_button("Shop", _show_shop))
 	_root.add_child(_button("Goals  (%d/%d)" % [Profile.done.size(), Defs.GOALS.size()], _show_goals))
 	var fog := _button(Options.fog_text(), func(): pass)

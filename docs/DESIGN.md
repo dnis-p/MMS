@@ -161,6 +161,22 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-01, a first full loop of progression** (owner: build the four points of the brainstorm without a theme, not a whole game, just to test progression and sense of achievement; rule checks, bots and screenshots of every new screen, the owner has not played it, and the browser version has not been tried)
+- **Run goal.** The Heart is a blob of bright cubes 66 m out in a random direction. A pink arrow shows the way and the distance, a green one the nearest lift. The first hit wakes it: a horde arrives, then another every 12 s. No hit takes more than 25 off a Heart cube, so bombs and blasts can't skip the fight, and Frenzy doesn't work on it. Breaking it ends the run and pays 500 gems.
+- **Differs from the proposal:** I suggested 15-20 minutes with bosses at some layers. Digging is almost as fast as walking, so a bot reaches the Heart in 4-30 s and the map is too small for 15 minutes. The Heart got a lot of health instead (6,000 per cube), which makes the length of a run the fight itself: a fresh bot won at 167 s, others died in the fight at 128-139 s. Bosses at the layers were left out.
+- **Lifts.** One next to the start and eight around the mine, hidden by the fog. Stand on one for 1.5 s to leave with everything you carry. They work from 30 s on, added after a bot left by accident while digging at the start. Dying or giving up keeps 50%. Gems also still give XP.
+- **Saving.** Banked gems, shop levels, unlocks, finished goals, relics and lifetime totals are in `user://profile.cfg`. Bots and rule checks don't touch it.
+- **Geodes.** 40 per mine, teal shells that take 150 damage, then burst as a chain into a gem per cube, worth more further out. Only 10% of a geode's worth counts as XP, because full XP made a bot reach level 42 in about two minutes.
+- **Frenzy.** 500 combo fills the bar under the combo counter, then for 5 s every cube pops in one hit, score doubles and the screen glows gold. The next one takes another 500 combo, and at least 8 s of rest. Bots got 0-2 per Heart run and 7-11 in about two to three minutes of free digging. The first try at 150 combo would have fired almost nonstop.
+- **Hints in the fog.** Geodes, vaults, shrines and relics sparkle through the fog from 20 m away, in their own colours.
+- **Results screen.** Gems count up, finished goals land one by one, then the three nearest goals fill their bars. A goal you reach in a run also shows in the run itself.
+- **Shop.** Six upgrades of 5 levels each, 40-80 gems for the first, doubling per level, about 11,000 gems in all. Bots earned 14-300 on bad runs and 1,200-3,500 on good ones, up to 6,400 with everything unlocked. Enemies don't scale with what you buy, so it stays an edge.
+- **Unlocks.** Twelve goals. Prospector (double gems, half health) and Rig (Drill, goes where you drive with no aiming, tougher, slower) are the two characters, picked in the menu. Bombs and Shock Pulse open through goals and Mining Beam through a relic. No new tools: the existing three were locked instead, so these unlocks show nothing new to someone who has already played. Saw Blades and Drill stay free.
+- **Vaults, shrines and relics.** 12 vaults per mine (walled, full of gold or ruby), 6 shrines (Blood: half your health for two upgrades. Greed: +50% gems, enemies hit 30% harder. Wind: +20% speed, -25% health) and up to 2 relic rooms. Five relics exist; touching one keeps it for good even if you die that run. A relic that adds health, speed or similar starts working on the next run.
+- **Evolutions.** Great Scoop (Shovel + Long Handle: swings all around, +50% damage), Tunnel Borer (Drill + Quick Hands: three times wider, +50%), Cluster Bombs (Bombs + Hard Edge: four smaller blasts). They appear at the next level-up once the tool is maxed and its boost is at level 3. **Differs from the proposal,** which said a maxed boost, so they can show up in a normal run.
+- **Bug found: swarms and hordes hardly came.** Sleeping nests filled the whole enemy pool of 640, so a swarm or horde could only spawn into slots freed by kills. A bot could fight the Heart with no enemies at all. The pool is now 1,500 with nests stopping at 640. This also means **every run the owner has played so far had far fewer enemies than intended**, and the balance entries below were measured with this bug.
+- Bots with the bug fixed (15 runs, 0 script errors): 4 fresh Heart runs: 1 won, 2 died in the fight, 1 died at 12 s rushing into a nest. 2 with the shop maxed: 1 won at 146 s, 1 was still fighting when the test ended. Lifts, a shrine, a relic and all three evolutions worked in play. 165 fps at 1080p.
+
 **2026-11-01, the fog follows the cube grid** (owner: like the soft fog below, but squared and following the cubes, which is what the Terraria picture meant; rule check, a bot and screenshots, the owner has not played it)
 - Each cell of the fog now has one flat darkness, and its squares line up with the rock, so the rings have stair-stepped edges instead of brush-like curves. The lamp's dimming is per cell too.
 - Same rings, opacities, colours and rules as the entry below. Only the look changed, so difficulty was not re-measured.
@@ -416,10 +432,10 @@ entries are the first ones in sections 8 and 9.
   in that boss fight. The bot never dashes or switches rings, so this is not a measure of real balance.
 
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
-**Owner, 2026-11-01, plans for the digging game (not built, details open; see the brainstorm in section 6)**
-- Unlockables, as in VS, where you unlock characters that give items or abilities you didn't have before. Not decided yet whether there will be several characters or just tools.
-- Meta progression.
-- Theme still undecided. Some mechanics could come from choosing it.
+**Owner, 2026-11-01, plans for the digging game (a first version is built, see section 8; the rest of these stay open)**
+- Unlockables, as in VS, where you unlock characters that give items or abilities you didn't have before. Not decided yet whether there will be several characters or just tools. Test first, then iterate.
+- Theme still undecided, not picked for now. Some mechanics could come from choosing it.
+- Your tunnels are the level (suggested, explained to the owner, not built, waiting for their decision): cracked rock that collapses a tunnel onto enemies and fills it with weak rubble, and fuel seams that burn along their whole length.
 
 **Owner, 2026-10-31, the refocus (the prototype is built, see section 8; these are still open)**
 - After playing: the late game of the car prototype is pretty satisfying, so the VS formula is probably better. The raccoon's theme
