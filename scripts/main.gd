@@ -7,6 +7,9 @@ extends Node
 ##   --give=<a,b>         with --autotest, start with these tools at max level; "all" also maxes boosts
 ##   --shots=<dir>        with --autotest, save screenshots into <dir>
 ##   --goal=<heart|lift>  with --autotest, go for the Heart, or leave by lift after a while
+##   --char=<id>          with --autotest, dig as this character
+##   --unlocked           with --autotest, everything is unlocked
+##   --shop=<n>           with --autotest, every shop upgrade is at level n
 ##   --quit-after-sec=<n> with --autotest, quit after n seconds
 
 var _current: Node
@@ -25,6 +28,11 @@ func _ready() -> void:
 		_args[kv[0]] = kv[1] if kv.size() > 1 else "true"
 	if _args.has("autotest"):
 		Profile.saving = false
+		if _args.has("unlocked"):
+			Profile.unlock_all()
+		Profile.character = _args.get("char", "digger")
+		for id in Defs.SHOP:
+			Profile.shop[id] = mini(int(_args.get("shop", "0")), Defs.SHOP[id]["max"])
 		start_run()
 	else:
 		Profile.load_file()

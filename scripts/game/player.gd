@@ -7,6 +7,7 @@ extends Node3D
 
 const RADIUS := 0.55
 
+var color: Color = Defs.DIGGER["color"]
 var speed: float = Defs.DIGGER["speed"]
 var base_speed: float = Defs.DIGGER["speed"]
 var radius := RADIUS
@@ -32,7 +33,6 @@ var _colors: Array[Color] = []
 func _ready() -> void:
 	_body = Node3D.new()
 	add_child(_body)
-	var color: Color = Defs.DIGGER["color"]
 	_box(Vector3(0.75, 0.9, 0.6), Vector3(0, 0.55, 0), color, _body)
 	_box(Vector3(0.5, 0.42, 0.5), Vector3(0, 1.2, -0.03), color.lightened(0.35), _body)
 	_box(Vector3(0.34, 0.12, 0.06), Vector3(0, 1.24, -0.3), Color(0.05, 0.05, 0.06), _body)

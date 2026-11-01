@@ -101,10 +101,15 @@ func _bonus(id: String) -> float:
 	return 1.0 + float(Defs.BOOSTS[id]["value"]) * boost(id)
 
 
+## How much stronger this tool is than at level 1 without boosts. Enemies keep up with this, so what
+## you bought in the shop stays an edge.
+func power_of(id: String) -> float:
+	return (1.0 + Defs.TOOLS[id]["dmg_up"] * (level(id) - 1)) * _bonus("power")
+
+
 ## A stat of a tool at its level with boosts applied. Keys: dmg, size, cd.
 func dmg(id: String) -> float:
-	var t: Dictionary = Defs.TOOLS[id]
-	return t["dmg"] * (1.0 + t["dmg_up"] * (level(id) - 1)) * _bonus("power")
+	return Defs.TOOLS[id]["dmg"] * power_of(id) * (1.0 + Profile.bonus("power"))
 
 
 func size(id: String) -> float:
@@ -149,7 +154,7 @@ func apply(option: Dictionary) -> void:
 func level_up_options(n: int) -> Array:
 	var pool: Array = []
 	for id in Defs.TOOLS:
-		if level(id) < Defs.MAX_TOOL_LEVEL:
+		if level(id) < Defs.MAX_TOOL_LEVEL and Profile.has_tool(id):
 			pool.append(_tool_option(id))
 			if owned.has(id):
 				pool.append(_tool_option(id))  # favour what you already have

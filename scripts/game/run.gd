@@ -26,6 +26,8 @@ var camera: Camera3D
 var hud: Hud
 var levelup_ui: LevelUpUI
 var overlay: Overlay
+var results: Results
+var character: Dictionary = Defs.CHARACTERS["digger"]
 
 var level := 1
 var xp := 0.0
@@ -34,6 +36,8 @@ var pending_levelups := 0
 var cubes := 0
 var kills := 0
 var loot := 0.0  # gems carried: only what you bring out counts
+var gem_rate := 1.0
+var base_hp: float = Defs.DIGGER["hp"]
 var hits_taken := 0
 var hardness := 1.0  # how much tougher enemies are, from your damage
 var crowd := 1.0  # how many more come, from your upgrades
@@ -65,6 +69,8 @@ var _note_timer := 0.0
 var _gem_chain := 0
 var _gem_chain_timer := 0.0
 var _heart_woken := false
+var _told := {}  # goals already announced this run
+var _goal_timer := 1.0
 var _frenzy_rest := 0.0
 var _frenzy_base := 0  # the combo the last Frenzy ended on
 var _geode_cd := 0.0
@@ -85,6 +91,7 @@ var _mouse_seen := false  # until the mouse moves, tools point the way you walk
 
 
 func _ready() -> void:
+	character = Defs.CHARACTERS[Profile.character]
 	if run_seed != 0:
 		rng.seed = run_seed
 	else:
@@ -128,11 +135,16 @@ func _ready() -> void:
 	sites.run = self
 	add_child(sites)
 	player = Player.new()
+	player.color = character["color"]
+	player.base_speed *= character.get("speed", 1.0) * (1.0 + Profile.bonus("legs"))
+	player.base_pickup *= 1.0 + Profile.bonus("magnet")
 	add_child(player)
 	tools = Tools.new()
 	tools.run = self
 	add_child(tools)
-	tools.add_tool("shovel")
+	tools.add_tool(character["tool"])
+	base_hp = (base_hp + Profile.bonus("health")) * character.get("hp", 1.0)
+	gem_rate = character.get("gems", 1.0) * (1.0 + Profile.bonus("greed"))
 	_lamp = OmniLight3D.new()
 	_lamp.position.y = 3.0
 	_lamp.light_color = Color(1.0, 0.85, 0.65)
@@ -155,7 +167,13 @@ func _ready() -> void:
 	ui.add_child(levelup_ui)
 	overlay = Overlay.new()
 	ui.add_child(overlay)
+	results = Results.new()
+	ui.add_child(results)
+	results.again_pressed.connect(_new_mine)
+	results.menu_pressed.connect(_quit_to_menu)
 
+	apply_boosts()
+	player.hp = player.max_hp
 	var t := _cam_targets()
 	_cam_pos = t[0]
 	_cam_look = t[1]
@@ -192,8 +210,8 @@ func _update_light(delta: float) -> void:
 
 func apply_boosts() -> void:
 	var extra: float = float(Defs.BOOSTS["tough"]["value"]) * tools.boost("tough")
-	player.hp += Defs.DIGGER["hp"] + extra - player.max_hp
-	player.max_hp = Defs.DIGGER["hp"] + extra
+	player.hp += base_hp + extra - player.max_hp
+	player.max_hp = base_hp + extra
 	player.speed = player.base_speed * (1.0 + float(Defs.BOOSTS["legs"]["value"]) * tools.boost("legs"))
 	player.pickup_radius = player.base_pickup * (1.0 + float(Defs.BOOSTS["magnet"]["value"]) * tools.boost("magnet"))
 
@@ -228,6 +246,7 @@ func _process(delta: float) -> void:
 	_update_chains(delta)
 	_update_camera(delta)
 	hud.refresh(self)
+	_announce_goals(delta)
 	if not dead and not left:
 		_try_open_modal()
 
@@ -237,7 +256,7 @@ func _update_aim() -> void:
 	var at := player.global_position
 	if autotest:
 		bot.aim(self)
-	if not _mouse_seen or autotest:
+	if not _mouse_seen or autotest or character.has("no_aim"):
 		aim_point = at + player.heading * 5.0
 		return
 	var screen := get_viewport().get_mouse_position()
@@ -270,7 +289,7 @@ func _update_power() -> void:
 	var best := 1.0
 	var upgrades := -1  # the starting shovel isn't an upgrade
 	for id in tools.order:
-		best = maxf(best, tools.dmg(id) / Defs.TOOLS[id]["dmg"])
+		best = maxf(best, tools.power_of(id))
 		upgrades += tools.level(id)
 	for id in tools.boost_order:
 		upgrades += tools.boost(id)
@@ -515,11 +534,31 @@ func _game_over() -> void:
 
 ## What share of the gems you carry stays yours.
 func keep_share(how: String) -> float:
-	return 1.0 if how == "heart" or how == "lift" else float(Defs.RUN["death_keep"])
+	return 1.0 if how == "heart" or how == "lift" else float(Defs.RUN["death_keep"]) + Profile.bonus("cover")
 
 
 func gems_kept(how: String) -> int:
 	return int(loot * keep_share(how)) + (int(Defs.RUN["heart_bonus"]) if how == "heart" else 0)
+
+
+func _run_stats(kept: int, how: String) -> Dictionary:
+	return {"runs": 1, "cubes": cubes, "kills": kills, "banked": kept, "band": band, "combo": best_combo, "geodes": geodes,
+		"frenzies": frenzies, "lifts": 1 if how == "lift" else 0, "hearts": 1 if how == "heart" else 0}
+
+
+## Goals are only paid out at the end, but you hear about them the moment you earn them.
+func _announce_goals(delta: float) -> void:
+	_goal_timer -= delta
+	if _goal_timer > 0.0:
+		return
+	_goal_timer = 1.0
+	var now := _run_stats(int(loot * keep_share("quit")), "")
+	for g in Defs.GOALS:
+		if Profile.done.has(g["id"]) or _told.has(g["id"]) or Profile.with_run(g["stat"], now[g["stat"]]) < g["need"]:
+			continue
+		_told[g["id"]] = true
+		hud.show_hint("GOAL: %s  >  %s" % [g["text"], Defs.reward_text(g)], 4.0)
+		Sfx.play("reward", -6.0, 1.3, true)
 
 
 ## Banks the run once, however it ended, and shows what it was worth.
@@ -528,15 +567,18 @@ func _finish(how: String) -> void:
 		return
 	banked = true
 	get_tree().paused = true
+	var before := Profile.stats.duplicate()
 	var kept := gems_kept(how)
 	Profile.gems += kept
-	Profile.record({"runs": 1, "cubes": cubes, "kills": kills, "banked": kept, "band": band, "combo": best_combo,
-		"lifts": 1 if how == "lift" else 0, "hearts": 1 if how == "heart" else 0, "geodes": geodes, "frenzies": frenzies})
+	Profile.record(_run_stats(kept, how))
+	var news := Profile.claim_goals()
 	Profile.save()
 	if autotest:
-		print("finished: %s kept=%d carried=%d t=%.0f" % [how, kept, int(loot), run_time])
+		print("finished: %s kept=%d carried=%d t=%.0f goals=%d" % [how, kept, int(loot), run_time, news.size()])
 	var title := {"heart": "HEART BROKEN", "lift": "YOU GOT OUT", "dead": "YOU DIED", "quit": "GAVE UP"}
-	overlay.show_panel(title[how], ["%d cubes  ·  %d kills  ·  %d m deep" % [cubes, kills, int(depth)], "Level %d  ·  best combo x%d  ·  score %d" % [level, best_combo, score], "%d gems kept of %d  ·  bank %d" % [kept, int(loot), Profile.gems]], [["Dig again", _new_mine], ["Quit to menu", _quit_to_menu]], Color(1, 0.35, 0.3) if how == "dead" else Color(1, 0.85, 0.3))
+	results.open({"title": title[how], "color": Color(1, 0.35, 0.3) if how == "dead" else Color(1, 0.85, 0.3),
+		"lines": ["%s cubes  ·  %d kills  ·  %d m deep  ·  level %d  ·  combo x%d" % [cubes, kills, int(depth), level, best_combo]],
+		"carried": int(loot), "kept": kept, "share": keep_share(how), "before": before, "news": news, "bank": Profile.gems})
 
 
 ## Each pop plays the next note of a rising scale, so digging sounds like a run up a keyboard.
@@ -558,7 +600,7 @@ func add_xp(amount: float) -> void:
 
 
 func add_loot(amount: float) -> void:
-	loot += amount
+	loot += amount * gem_rate
 
 
 func add_score(amount: int) -> void:
@@ -725,7 +767,7 @@ func _toggle_pause() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion:
+	if event is InputEventMouseMotion and not character.has("no_aim"):
 		_mouse_seen = true
 
 

@@ -83,6 +83,51 @@ const RUN := {
 ## at: how much combo it takes, counted from the end of the last Frenzy. Then at least `rest` seconds
 ## until the next one.
 const FRENZY := {"at": 500, "time": 5.0, "rest": 8.0, "score": 2.0, "color": Color(1.0, 0.8, 0.2)}
+## Permanent upgrades bought with banked gems. value: per level. cost: the first level; each next one
+## costs `grow` times more. Keep the whole shop reachable in hours, not days (owner: no 80-hour grind).
+const SHOP := {
+	"power": {"name": "Sharper Edge", "desc": "+6% digging damage", "value": 0.06, "max": 5, "cost": 60, "grow": 1.7},
+	"health": {"name": "Hard Hat", "desc": "+15 max health", "value": 15.0, "max": 5, "cost": 50, "grow": 1.7},
+	"legs": {"name": "Good Boots", "desc": "+3% move speed", "value": 0.03, "max": 5, "cost": 50, "grow": 1.7},
+	"magnet": {"name": "Long Reach", "desc": "+12% pickup range", "value": 0.12, "max": 5, "cost": 40, "grow": 1.6},
+	"greed": {"name": "Deep Pockets", "desc": "+8% gems found", "value": 0.08, "max": 5, "cost": 80, "grow": 1.8},
+	"cover": {"name": "Insurance", "desc": "+6% gems kept if you don't get out", "value": 0.06, "max": 5, "cost": 70, "grow": 1.7},
+}
+
+## Who digs: a starting tool and one rule. hp, speed and gems multiply the base numbers. no_aim: tools
+## point where you drive and the mouse does nothing. Locked ones open through Defs.GOALS.
+const CHARACTERS := {
+	"digger": {"name": "Digger", "desc": "Shovel. No tricks.", "tool": "shovel", "color": Color(0.2, 0.75, 0.8)},
+	"prospector": {"name": "Prospector", "desc": "Shovel. Double gems, half health.", "tool": "shovel", "gems": 2.0, "hp": 0.5,
+		"color": Color(0.95, 0.75, 0.2), "locked": true},
+	"rig": {"name": "Rig", "desc": "Drill. Goes where you drive, no aiming. Tough but slow.", "tool": "drill", "hp": 1.6, "speed": 0.85,
+		"no_aim": true, "color": Color(0.85, 0.4, 0.2), "locked": true},
+}
+
+## Lifetime goals, the list you work through. stat: a key of the profile's stats. A goal pays gems, an
+## unlock, or both. The "unlock" keys match Profile.unlocked: "tool:<id>" or "char:<id>".
+const GOALS := [
+	{"id": "lift", "text": "Get out by lift", "stat": "lifts", "need": 1, "unlock": "tool:bombs"},
+	{"id": "geodes", "text": "Open 5 geodes", "stat": "geodes", "need": 5, "gems": 100},
+	{"id": "stone", "text": "Reach the Stone layer", "stat": "band", "need": 3, "unlock": "char:prospector"},
+	{"id": "frenzies", "text": "Set off 3 Frenzies", "stat": "frenzies", "need": 3, "gems": 150},
+	{"id": "cubes", "text": "Break 25,000 cubes", "stat": "cubes", "need": 25000, "unlock": "tool:pulse"},
+	{"id": "kills", "text": "Kill 3,000 enemies", "stat": "kills", "need": 3000, "gems": 200},
+	{"id": "banked", "text": "Bank 2,000 gems in total", "stat": "banked", "need": 2000, "unlock": "char:rig"},
+	{"id": "basalt", "text": "Reach the Basalt layer", "stat": "band", "need": 5, "gems": 300},
+	{"id": "combo", "text": "Reach a x3,000 combo", "stat": "combo", "need": 3000, "gems": 300},
+	{"id": "heart", "text": "Break the Heart", "stat": "hearts", "need": 1, "gems": 1000},
+]
+
+## Dug up once, kept forever. Either unlocks something or adds value to a shop bonus for good.
+const RELICS := {
+	"lens": {"name": "Strange Lens", "desc": "Mining Beam unlocked", "unlock": "tool:beam"},
+	"idol": {"name": "Gold Idol", "desc": "+10% gems found, for good", "bonus": "greed", "value": 0.1},
+	"boots": {"name": "Worn Boots", "desc": "+5% move speed, for good", "bonus": "legs", "value": 0.05},
+	"charm": {"name": "Lucky Charm", "desc": "+25 max health, for good", "bonus": "health", "value": 25.0},
+	"stone": {"name": "Whetstone", "desc": "+10% digging damage, for good", "bonus": "power", "value": 0.1},
+}
+
 ## Lifetime stats that keep the best run instead of adding up.
 const BEST_STATS := ["band", "combo"]
 
@@ -134,11 +179,11 @@ const TOOLS := {
 		"dmg": 3.0, "dmg_up": 0.4, "size": 4.0, "size_up": 0.15, "cd": 0.05, "cd_up": 1.0},
 	"saws": {"name": "Saw Blades", "desc": "Blades circle you and cut what they touch.", "color": Color(0.9, 0.9, 0.95),
 		"dmg": 8.0, "dmg_up": 0.4, "size": 3.0, "size_up": 0.1, "cd": 0.09, "cd_up": 1.0, "spin": 5.0, "cut": 0.7},
-	"bombs": {"name": "Bombs", "desc": "Thrown into nearby rock. Boom.", "color": Color(1.0, 0.3, 0.2),
+	"bombs": {"name": "Bombs", "desc": "Thrown into nearby rock. Boom.", "color": Color(1.0, 0.3, 0.2), "locked": true,
 		"dmg": 60.0, "dmg_up": 0.4, "size": 3.0, "size_up": 0.12, "cd": 2.2, "cd_up": 0.93, "throw": 8.0},
-	"pulse": {"name": "Shock Pulse", "desc": "A ring bursts out from you.", "color": Color(0.5, 0.75, 1.0),
+	"pulse": {"name": "Shock Pulse", "desc": "A ring bursts out from you.", "color": Color(0.5, 0.75, 1.0), "locked": true,
 		"dmg": 30.0, "dmg_up": 0.4, "size": 5.0, "size_up": 0.12, "cd": 3.0, "cd_up": 0.93, "ring_time": 0.35},
-	"beam": {"name": "Mining Beam", "desc": "A long line of rock pops at once.", "color": Color(0.4, 1.0, 0.7),
+	"beam": {"name": "Mining Beam", "desc": "A long line of rock pops at once.", "color": Color(0.4, 1.0, 0.7), "locked": true,
 		"dmg": 40.0, "dmg_up": 0.4, "size": 14.0, "size_up": 0.12, "cd": 2.4, "cd_up": 0.93},
 }
 
@@ -155,6 +200,29 @@ const BOOSTS := {
 
 static func enemy_def(type_id: int) -> Dictionary:
 	return ENEMIES[ENEMY_ORDER[type_id]]
+
+
+## "Shock Pulse" for "tool:pulse", "Rig" for "char:rig".
+static func unlock_name(key: String) -> String:
+	var parts := key.split(":")
+	return (TOOLS if parts[0] == "tool" else CHARACTERS)[parts[1]]["name"]
+
+
+static func reward_text(goal: Dictionary) -> String:
+	var bits: Array[String] = []
+	if goal.has("unlock"):
+		bits.append(unlock_name(goal["unlock"]))
+	if goal.has("gems"):
+		bits.append("%d gems" % goal["gems"])
+	return " + ".join(bits)
+
+
+## What it takes to unlock this.
+static func goal_for(key: String) -> String:
+	for g in GOALS:
+		if g.get("unlock", "") == key:
+			return g["text"]
+	return "find it in the rock"
 
 
 static func xp_to_next(level: int) -> int:

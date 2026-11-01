@@ -44,6 +44,7 @@ func _process(delta: float) -> void:
 			_check_tools(r)
 			_check_goal(r)
 			_check_rewards(r)
+			_check_meta(r)
 			_clear_around(r)
 			Input.action_press("move_right")
 			_wait = 0.1
@@ -428,6 +429,57 @@ func _check_goal(r: Run) -> void:
 	Profile.saving = false
 	Profile.file = Profile.PATH
 	Profile.reset()
+
+
+## Shop, goals, unlocks and characters. Works on the profile, then leaves it empty again.
+func _check_meta(r: Run) -> void:
+	for o in r.tools.level_up_options(9):
+		_check("%s is not locked" % o["title"], o["kind"] != "tool" or Profile.has_tool(o["id"]))
+	Profile.unlocked["tool:beam"] = true
+	var seen := false
+	for k in 40:
+		for o in r.tools.level_up_options(3):
+			seen = seen or o["id"] == "beam"
+	_check("an unlocked tool joins the level-ups", seen)
+	Profile.reset()
+	_check("you can't buy what you can't pay for", not Profile.buy("power") and Profile.shop_level("power") == 0)
+	Profile.gems = 1000
+	var first := Profile.price("power")
+	var dmg := r.tools.dmg("shovel")
+	_check("buying spends gems", Profile.buy("power") and Profile.gems == 1000 - first)
+	_check("each level costs more", Profile.price("power") > first)
+	_check("shop damage counts", r.tools.dmg("shovel") > dmg)
+	r._update_power()
+	var hardness := r.hardness
+	Profile.shop["power"] = 5
+	r._update_power()
+	_check("enemies don't catch up with what you bought", r.hardness == hardness)
+	_check("a maxed upgrade can't be bought", not Profile.buy("power"))
+	Profile.shop["cover"] = 2
+	_check("insurance keeps more", is_equal_approx(r.keep_share("dead"), 0.62) and r.keep_share("lift") == 1.0)
+	Profile.reset()
+	Profile.record({"lifts": 1, "band": 3})
+	var news := Profile.claim_goals()
+	_check("finished goals are paid once", news.size() == 2 and Profile.claim_goals().is_empty())
+	_check("goals unlock things", Profile.has_tool("bombs") and Profile.has_character("prospector") and not Profile.has_character("rig"))
+	Profile.record({"geodes": 5})
+	var bank := Profile.gems
+	Profile.claim_goals()
+	_check("goals can pay gems", Profile.gems > bank)
+	_check("every locked thing has a way to get it", _all_reachable())
+	_check("the nearest goals come first", Profile.closest_goals(1)[0]["id"] != "heart")
+	Profile.reset()
+
+
+func _all_reachable() -> bool:
+	var keys: Array = Defs.GOALS.map(func(g): return g.get("unlock", ""))
+	for id in Defs.CHARACTERS:
+		if Defs.CHARACTERS[id].get("locked", false) and not keys.has("char:" + id):
+			return false
+	for id in ["bombs", "pulse"]:
+		if not keys.has("tool:" + id):
+			return false
+	return true
 
 
 func _check_rewards(r: Run) -> void:
