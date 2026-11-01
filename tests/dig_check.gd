@@ -127,7 +127,8 @@ func _check_world(r: Run) -> void:
 	for i in range(0, m.kind.size(), 3):
 		kinds[m.kind[i]] = true
 	_check("ore and crystal exist", kinds.has(9) and kinds.has(Defs.CRYSTAL))
-	_check("there are nests of sleepers", m.nests.size() > 10 and m.kind.count(Defs.GAS) > 50)
+	_check("there are nests of sleepers", m.nests.size() > 10)
+	_check("gas rock is rare (%d)" % m.kind.count(Defs.GAS), m.kind.count(Defs.GAS) > 0 and m.kind.count(Defs.GAS) < 1200)
 
 
 func _check_shovel(r: Run) -> void:
@@ -216,6 +217,26 @@ func _check_threats(r: Run) -> void:
 	e.hit(a, 1.0, Vector3.ZERO)
 	_check("hitting one wakes its whole nest", e.awake[b] == 1 and e.awake[c] == 1)
 	e.clear()
+	r.spawn_horde()
+	var sides := [0, 0, 0, 0]
+	for k in e.used:
+		var q := Vector2(e.pos[k].x, e.pos[k].z)
+		sides[(1 if q.x > 0.0 else 0) + (2 if q.y > 0.0 else 0)] += 1
+	_check("a horde comes from every side (%s)" % str(sides), e.alive_count >= 40 and sides.min() >= 8)
+	_check("hordes start out of reach", e.nearest_awake(Vector3.ZERO, 10.0) == -1)
+	_fill(r, Vector3(1.6, 0, 0), 2, 7)
+	var swarm := e.spawn(Enemies.CRAWLER, Vector3(1.6, 0, 0), -1, true, true)
+	for k in 3:
+		e.update(0.15, Vector3.ZERO, p.radius)
+	_check("the swarm digs through rock", m.kind_at(e.pos[swarm]) == 0)
+	p.invuln = 0.0
+	p.hp = p.max_hp
+	_fill(r, Vector3(1.6, 0, 0), 2, 0)
+	e.clear()
+	var one := e.spawn(Enemies.CRAWLER, Vector3(1.5, 0, 0), -1, true)
+	e.hit(one, r.tools.dmg("shovel"), Vector3.ZERO)
+	_check("one shovel hit pops a crawler", not e.is_alive(one))
+	_clear_gems(r)
 	_fill(r, Vector3(4, 0, 0), 2, 7)
 	var mole := e.spawn(Enemies.BURROWER, Vector3(5, 0, 0), -1, true)
 	var before := m.kind[m.cell_of(5.0) + m.cell_of(0.0) * Mine.SIZE]

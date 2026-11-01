@@ -54,6 +54,8 @@ var _pops_this_frame := 0
 var _big_pop_cd := 0.0
 var _scan_timer := 0.0
 var _burrow_timer: float = Defs.THREATS["burrow_from"]
+var _swarm_timer: float = Defs.THREATS["swarm_from"]
+var _horde_timer: float = Defs.THREATS["horde_from"]
 var _lamp: OmniLight3D
 var _cam_pos := Vector3.ZERO
 var _cam_look := Vector3.ZERO
@@ -196,6 +198,7 @@ func _process(delta: float) -> void:
 	enemies.update(delta, at, player.radius)
 	traps.update(delta, at)
 	_update_burrowers(delta)
+	_update_swarm(delta)
 	debris.update(delta)
 	pickups.update(delta)
 	fx.update(delta)
@@ -236,6 +239,38 @@ func _update_burrowers(delta: float) -> void:
 		var a := rng.randf() * TAU
 		var p := mine.clamp_inside(player.global_position + Vector3(cos(a), 0, sin(a)) * t["burrow_range"])
 		enemies.spawn(Enemies.BURROWER, p, -1, true)
+
+
+## The steady flow of crawlers, and now and then a whole ring of them, as in VS.
+func _update_swarm(delta: float) -> void:
+	var t := Defs.THREATS
+	_swarm_timer -= delta
+	if _swarm_timer <= 0.0:
+		_swarm_timer = t["swarm_every"]
+		var limit: float = minf(t["swarm_alive"] + t["swarm_alive_ramp"] * run_time, t["swarm_max"])
+		if enemies.awake_count < limit:
+			var a := rng.randf() * TAU
+			for k in int(t["swarm_size"] + t["swarm_size_ramp"] * run_time):
+				_swarm_in(a + rng.randf_range(-0.5, 0.5), t["swarm_range"])
+	_horde_timer -= delta
+	if _horde_timer <= 0.0:
+		_horde_timer = t["horde_every"]
+		spawn_horde()
+
+
+func spawn_horde() -> void:
+	var t := Defs.THREATS
+	var n := int(minf(t["horde_size"] + t["horde_ramp"] * run_time, t["horde_max"]))
+	for k in n:
+		_swarm_in(TAU * k / n, t["horde_range"] + rng.randf_range(0.0, 3.0))
+	overlay.banner("SWARM!", "", Color(1, 0.25, 0.2), 1.2)
+	Sfx.play("warn", -6.0, 1.0, true)
+	fx.shake(0.25)
+
+
+func _swarm_in(angle: float, dist: float) -> void:
+	var p := mine.clamp_inside(player.global_position + Vector3(cos(angle), 0, sin(angle)) * dist)
+	enemies.spawn(Enemies.CRAWLER, p, -1, true, true)
 
 
 func _update_depth() -> void:
@@ -298,9 +333,13 @@ func on_cube_popped(p: Vector3, k: int, color: Color) -> void:
 func on_enemy_killed(p: Vector3, t: int) -> void:
 	var d := Defs.enemy_def(t)
 	kills += 1
+	combo += 1
+	combo_timer = Defs.COMBO_WINDOW
+	best_combo = maxi(best_combo, combo)
 	add_score(int(d["score"] * combo_mult()))
 	pickups.drop_gem(p, d["gem"], d["color"])
-	Sfx.play("kill", -8.0, 1.0 + minf(kills % 30, 30) * 0.015)
+	_play_note()
+	Sfx.play("kill", -10.0)
 	if t == Enemies.BRUTE:
 		_hitstop(0.05)
 		fx.shake(0.3)

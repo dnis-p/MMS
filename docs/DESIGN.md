@@ -148,6 +148,14 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-01, the swarm** (owner: much less traps, more enemies, sometimes feel surrounded as in VS; rule checks, bots and screenshots, the owner has not played it)
+- Traps cut to about a sixth: 15 spike patches and 22 gas blobs. Nests: 80 instead of 55, about twice as full.
+- **Swarm** (suggested): from 12 s, crawlers arrive steadily from past your light, digging their own tunnels. **Hordes** (suggested): from
+  35 s, every 40 s, "SWARM!" and a full ring of 45 or more crawlers closes in from about 13 m, up to 170.
+- Crawlers now die to one starter shovel hit (8 health, was 14) and give less XP each. Kills count for the combo and play the rising notes.
+- Brutes now start from the third rock band, about 26 m out, because one caught a bot at level 1.
+- Bots (6 seeds, 200 s of game time, 0 script errors): 3 survived with 1,300-1,500 kills, 3 died at 14, 53 and 86 s. The 14 s one had run 28 m straight into a nest. Still about 150 fps with a horde on screen.
+
 **2026-11-01, enemies and traps** (owner: "traps and enemies you can run into"; rule checks, bots and screenshots, the owner has not played it)
 - **Health and death, added because threats need them.** 100 health, a short blink after each hit, a red screen flash. At 0 the run
   ends with "YOU DIED", your stats, and Dig again. Level-ups heal 30. New boost: Thick Skin, +20 max health. No other healing yet.

@@ -2,9 +2,10 @@ class_name Enemies
 extends Node3D
 ## Enemies are plain data in packed arrays, drawn with one MultiMesh per type, like the cubes. Most
 ## sleep in nests until you can see them; then the whole nest wakes and comes for you, stopped by
-## rock like you are. Burrowers come through the rock. Awake enemies in the dark show only their eyes.
+## rock like you are. Burrowers and the swarm dig their way through it. Awake enemies in the dark show
+## only their eyes.
 
-const MAX := 320
+const MAX := 640
 const CELL := 1.5
 const CRAWLER := 0
 const BRUTE := 1
@@ -16,8 +17,10 @@ var run: Run
 
 var used := 0
 var alive_count := 0
+var awake_count := 0
 var alive := PackedByteArray()
 var awake := PackedByteArray()
+var digs := PackedByteArray()  # goes through rock instead of being stopped by it
 var etype := PackedInt32Array()
 var nest := PackedInt32Array()  # -1 = on its own
 var pos := PackedVector3Array()
@@ -43,7 +46,7 @@ var _q_dmg := PackedFloat32Array()
 
 
 func _ready() -> void:
-	for arr in [alive, awake, etype, nest, pos, hp, speed, radius, dmg, flash, knock, yaw]:
+	for arr in [alive, awake, digs, etype, nest, pos, hp, speed, radius, dmg, flash, knock, yaw]:
 		arr.resize(MAX)
 	for id in Defs.ENEMY_ORDER:
 		_colors.append(Defs.ENEMIES[id]["color"])
@@ -99,7 +102,7 @@ func clear() -> void:
 	_q_dmg.clear()
 
 
-func spawn(type_id: int, p: Vector3, nest_id := -1, is_awake := false) -> int:
+func spawn(type_id: int, p: Vector3, nest_id := -1, is_awake := false, digger := false) -> int:
 	var i: int
 	if not _free.is_empty():
 		i = _free.pop_back()
@@ -112,6 +115,7 @@ func spawn(type_id: int, p: Vector3, nest_id := -1, is_awake := false) -> int:
 	var band := run.mine.band_at(Vector2(p.x, p.z).length())
 	alive[i] = 1
 	awake[i] = 1 if is_awake else 0
+	digs[i] = 1 if digger or type_id == BURROWER else 0
 	etype[i] = type_id
 	nest[i] = nest_id
 	pos[i] = Vector3(p.x, 0.0, p.z)
@@ -162,6 +166,7 @@ func update(delta: float, at: Vector3, player_radius: float) -> void:
 	var carve := _carve_left <= 0.0
 	if carve:
 		_carve_left = t["carve_every"]
+	var up := 0
 	for i in used:
 		if alive[i] == 0:
 			continue
@@ -178,13 +183,14 @@ func update(delta: float, at: Vector3, player_radius: float) -> void:
 		if d > FORGET_RANGE:
 			remove(i)
 			continue
+		up += 1
 		var dir := to / d if d > 0.001 else Vector3.ZERO
 		var v := dir * speed[i] * (1.0 - clampf(knock[i].length() * 0.2, 0.0, 0.8))
 		if knock[i] != Vector3.ZERO:
 			v += knock[i]
 			knock[i] = knock[i].move_toward(Vector3.ZERO, decay * delta)
 		p += (v + _separation(i, p)) * delta
-		if etype[i] == BURROWER:
+		if digs[i] == 1:
 			if carve:
 				mine.carve(p, radius[i] + 0.2)
 		elif (i + _frame) & 1 == 0:
@@ -195,6 +201,7 @@ func update(delta: float, at: Vector3, player_radius: float) -> void:
 			yaw[i] = atan2(dir.x, dir.z)
 		if d < radius[i] + player_radius:
 			run.player_hit(dmg[i])
+	awake_count = up
 	_render(at)
 
 
