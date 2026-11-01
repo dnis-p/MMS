@@ -51,7 +51,7 @@ const THREATS := {
 
 ## start_clear: open radius around the start. cave_at, ore_at: noise levels above which there is a
 ## cave or ore (higher = rarer). band_width: metres per rock band; band_warp bends their edges.
-## geodes: crystal blobs in the world, radius in cubes. chain_delay: seconds between links of a
+## crystals: crystal blobs in the world, radius in cubes. chain_delay: seconds between links of a
 ## chain reaction. shake: how far a hit cube rattles. *_wave: metres per second a hit spreads at.
 ## level_blast: radius cleared by a level-up. big_pop: pops in one frame that earn a hitstop, at most
 ## once per big_pop_every seconds. Fog of war: light is how far your sight reaches along open ground in
@@ -62,7 +62,7 @@ const THREATS := {
 ## the air gets toward the edge of your lamp. scan_every: seconds between sight updates.
 const WORLD := {
 	"start_clear": 3.5, "cave_at": 0.5, "band_width": 13.0, "band_warp": 6.0, "ore_at": 0.52,
-	"geodes": 55, "geode_min": 2, "geode_max": 5, "chain_delay": 0.028, "shake": 0.05,
+	"crystals": 55, "crystal_min": 2, "crystal_max": 5, "chain_delay": 0.028, "shake": 0.05,
 	"swing_wave": 22.0, "blast_wave": 20.0, "level_blast": 5.5, "big_pop": 16, "big_pop_every": 0.6,
 	"light": 10.0, "fog_bands": [0.0, 0.25, 0.42, 0.58, 0.72, 0.84, 0.93, 1.0], "fog_band": 1.3, "fog_rim": 0.7, "fog_reach": 7.0,
 	"fog_tint": 0.1, "fog_dim": 0.4, "haze": 0.15, "scan_every": 0.05,
@@ -70,12 +70,19 @@ const WORLD := {
 
 ## The goal of a run and how it ends. heart_dist: metres from the start, heart_r: its size in cubes.
 ## heart_hit: the most one hit can take off a Heart cube, so nothing skips the fight. heart_bonus: gems
-## for breaking it. lifts: how many, lift_min to lift_max metres out; lift_pad is their radius and
+## for breaking it. heart_horde: seconds between hordes once it wakes. lifts: how many, lift_min to lift_max metres out; lift_pad is their radius and
 ## lift_hold how long you stand there. death_keep: share of your gems you keep without a lift.
+## geodes: how many hard shells full of gems, radius in cubes; geode_band adds to their worth per rock
+## band. glint_range: metres at which treasure sparkles through the fog and rock.
 const RUN := {
-	"heart_dist": 66.0, "heart_r": 5, "heart_hit": 40.0, "heart_bonus": 500, "lifts": 8, "lift_min": 22.0, "lift_max": 70.0,
+	"heart_dist": 66.0, "heart_r": 5, "heart_hit": 25.0, "heart_bonus": 500, "heart_horde": 12.0, "lifts": 8, "lift_min": 22.0, "lift_max": 70.0,
 	"lift_pad": 1.7, "lift_hold": 1.5, "death_keep": 0.5,
+	"geodes": 40, "geode_min": 2, "geode_max": 3, "geode_band": 0.5, "glint_range": 20.0,
 }
+## A long combo starts a Frenzy: every cube pops in one hit for `time` seconds, score times `score`.
+## at: how much combo it takes, counted from the end of the last Frenzy. Then at least `rest` seconds
+## until the next one.
+const FRENZY := {"at": 500, "time": 5.0, "rest": 8.0, "score": 2.0, "color": Color(1.0, 0.8, 0.2)}
 ## Lifetime stats that keep the best run instead of adding up.
 const BEST_STATS := ["band", "combo"]
 
@@ -86,6 +93,7 @@ const BEDROCK := 14
 const CRYSTAL := 13
 const GAS := 15
 const HEART := 16
+const GEODE := 17
 const CUBES := [
 	{},
 	{"name": "Dirt", "hp": 10.0, "color": Color(0.56, 0.38, 0.23), "xp": 0.01, "score": 1, "ring": 0.8},
@@ -103,7 +111,8 @@ const CUBES := [
 	{"name": "Crystal", "hp": 12.0, "color": Color(0.55, 0.35, 1.0), "xp": 0.0, "score": 15, "ring": 2.0, "gem": 0.15, "chain": true},
 	{"name": "Bedrock", "hp": 1e9, "color": Color(0.08, 0.07, 0.08), "xp": 0.0, "score": 0},
 	{"name": "Gas Rock", "hp": 8.0, "color": Color(0.62, 0.68, 0.32), "xp": 0.01, "score": 5, "ring": 0.7, "chain": true, "gas": true},
-	{"name": "Heart", "hp": 900.0, "color": Color(1.0, 0.15, 0.45), "xp": 0.0, "score": 2000, "ring": 0.6, "heart": true},
+	{"name": "Heart", "hp": 6000.0, "color": Color(1.0, 0.15, 0.45), "xp": 0.0, "score": 2000, "ring": 0.6, "heart": true},
+	{"name": "Geode", "hp": 150.0, "color": Color(0.25, 0.95, 0.8), "xp": 0.0, "score": 60, "ring": 2.3, "gem": 6.0, "chain": true, "geode": true},
 ]
 ## Rock changes every band_width metres out from the start.
 const BANDS := [

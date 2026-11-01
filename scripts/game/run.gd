@@ -45,6 +45,9 @@ var score := 0
 var combo := 0
 var combo_timer := 0.0
 var best_combo := 0
+var frenzy_left := 0.0
+var frenzies := 0
+var geodes := 0
 var run_time := 0.0
 var depth := 0.0
 var band := 0
@@ -62,6 +65,9 @@ var _note_timer := 0.0
 var _gem_chain := 0
 var _gem_chain_timer := 0.0
 var _heart_woken := false
+var _frenzy_rest := 0.0
+var _frenzy_base := 0  # the combo the last Frenzy ended on
+var _geode_cd := 0.0
 var _pops_this_frame := 0
 var _big_pop_cd := 0.0
 var _scan_timer := 0.0
@@ -291,7 +297,7 @@ func _update_swarm(delta: float) -> void:
 				_swarm_in(a + rng.randf_range(-0.5, 0.5), t["swarm_range"])
 	_horde_timer -= delta
 	if _horde_timer <= 0.0:
-		_horde_timer = t["horde_every"] / sqrt(crowd)
+		_horde_timer = Defs.RUN["heart_horde"] if _heart_woken else t["horde_every"] / sqrt(crowd)
 		spawn_horde()
 
 
@@ -322,10 +328,19 @@ func _update_depth() -> void:
 
 
 func _update_chains(delta: float) -> void:
+	_geode_cd -= delta
+	_frenzy_rest -= delta
+	if frenzy_left > 0.0:
+		frenzy_left -= delta
+		if frenzy_left <= 0.0:
+			frenzy_left = 0.0
+			_frenzy_rest = Defs.FRENZY["rest"]
+			_frenzy_base = combo
 	if combo_timer > 0.0:
 		combo_timer -= delta
 		if combo_timer <= 0.0:
 			combo = 0
+			_frenzy_base = 0
 	if _note_timer > 0.0:
 		_note_timer -= delta
 		if _note_timer <= 0.0:
@@ -352,13 +367,16 @@ func on_cube_popped(p: Vector3, k: int, color: Color) -> void:
 	_pops_this_frame += 1
 	add_score(int(d["score"] * combo_mult()))
 	add_xp(d["xp"])
-	debris.spray(p, color, 5 if _pops_this_frame < 12 else 2, player.global_position)
+	debris.spray(p, color.lerp(Defs.FRENZY["color"], 0.6) if frenzy_left > 0.0 else color, 5 if _pops_this_frame < 12 else 2, player.global_position)
 	_play_note()
+	_check_frenzy()
 	if d.has("heart"):
 		_break_heart(p)
 	if d.has("gas"):
 		traps.light_gas(p)
-	if d.has("gem"):
+	if d.has("geode"):
+		_burst_geode(p)
+	elif d.has("gem"):
 		pickups.drop_gem(p, d["gem"], d["color"])
 		debris.spray(p, Color(1, 1, 0.8), 4, p, 1.3)
 		Sfx.play("clink", -8.0, 1.0 + minf(combo, 60) * 0.008)
@@ -367,6 +385,38 @@ func on_cube_popped(p: Vector3, k: int, color: Color) -> void:
 		_hitstop(0.03)
 		fx.shake(0.25)
 		Sfx.play("thud", -6.0)
+
+
+## Every cube of a geode throws a gem; the first one is the big moment.
+func _burst_geode(p: Vector3) -> void:
+	var worth: float = Defs.CUBES[Defs.GEODE]["gem"] * (1.0 + Defs.RUN["geode_band"] * mine.band_at(Vector2(p.x, p.z).length()))
+	pickups.drop_gem(p, worth, Color.from_hsv(rng.randf(), 0.55, 1.0))
+	debris.spray(p, Color(1, 1, 0.8), 6, p, 1.6)
+	Sfx.play("clink", -6.0, 1.2 + rng.randf() * 0.6)
+	if _geode_cd > 0.0:
+		return
+	_geode_cd = 0.6
+	geodes += 1
+	_hitstop(0.05)
+	fx.ring(p, 4.0, Color(0.4, 1.0, 0.85, 0.9), 0.35)
+	fx.shake(0.3)
+	Sfx.play("reward", -5.0, 1.2, true)
+
+
+func _check_frenzy() -> void:
+	if frenzy_fill() < 1.0 or frenzy_left > 0.0 or _frenzy_rest > 0.0:
+		return
+	frenzy_left = Defs.FRENZY["time"]
+	frenzies += 1
+	overlay.banner("FRENZY!", "", Defs.FRENZY["color"], 0.8)
+	overlay.flash(Color(1.0, 0.8, 0.2, 0.4), 0.4)
+	Sfx.play("levelup", -5.0, 1.5, true)
+	fx.shake(0.3)
+
+
+## How close the combo is to the next Frenzy, 1 = there.
+func frenzy_fill() -> float:
+	return float(combo - _frenzy_base) / float(Defs.FRENZY["at"])
 
 
 func on_enemy_killed(p: Vector3, t: int) -> void:
@@ -378,6 +428,7 @@ func on_enemy_killed(p: Vector3, t: int) -> void:
 	add_score(int(d["score"] * combo_mult()))
 	pickups.drop_gem(p, d["gem"], d["color"])
 	_play_note()
+	_check_frenzy()
 	Sfx.play("kill", -10.0)
 	if t == Enemies.BRUTE:
 		_hitstop(0.05)
@@ -397,6 +448,7 @@ func on_heart_hit() -> void:
 	_heart_woken = true
 	overlay.banner("THE HEART WAKES", "", Color(1, 0.2, 0.45), 1.5)
 	spawn_horde()
+	_horde_timer = Defs.RUN["heart_horde"]
 
 
 func _break_heart(p: Vector3) -> void:
@@ -479,7 +531,7 @@ func _finish(how: String) -> void:
 	var kept := gems_kept(how)
 	Profile.gems += kept
 	Profile.record({"runs": 1, "cubes": cubes, "kills": kills, "banked": kept, "band": band, "combo": best_combo,
-		"lifts": 1 if how == "lift" else 0, "hearts": 1 if how == "heart" else 0})
+		"lifts": 1 if how == "lift" else 0, "hearts": 1 if how == "heart" else 0, "geodes": geodes, "frenzies": frenzies})
 	Profile.save()
 	if autotest:
 		print("finished: %s kept=%d carried=%d t=%.0f" % [how, kept, int(loot), run_time])
@@ -514,7 +566,7 @@ func add_score(amount: int) -> void:
 
 
 func combo_mult() -> float:
-	return 1.0 + minf(combo, 300) / 60.0
+	return (1.0 + minf(combo, 300) / 60.0) * (float(Defs.FRENZY["score"]) if frenzy_left > 0.0 else 1.0)
 
 
 ## Called once per frame in which at least one gem was collected; the chime

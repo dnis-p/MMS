@@ -43,6 +43,7 @@ func _process(delta: float) -> void:
 			_check_pause(r)
 			_check_tools(r)
 			_check_goal(r)
+			_check_rewards(r)
 			_clear_around(r)
 			Input.action_press("move_right")
 			_wait = 0.1
@@ -427,6 +428,59 @@ func _check_goal(r: Run) -> void:
 	Profile.saving = false
 	Profile.file = Profile.PATH
 	Profile.reset()
+
+
+func _check_rewards(r: Run) -> void:
+	var m := r.mine
+	r.combo = 0
+	r.frenzy_left = 0.0
+	r._frenzy_rest = 0.0
+	r._frenzy_base = 0
+	_check("geodes are in the world and sparkle", m.kind.count(Defs.GEODE) > 100 and m.glint_pos.size() >= int(Defs.RUN["geodes"]))
+	var at := Vector3(0, 0, -4)
+	_fill(r, at, 2, Defs.GEODE)
+	var c := m.cell_of(at.x) + m.cell_of(at.z) * Mine.SIZE
+	_clear_gems(r)
+	r.geodes = 0
+	m.strike(c, 1.0, 0.0)
+	_check("a geode has a hard shell", m.kind[c] == Defs.GEODE)
+	m.strike(c, 1e9, 0.0)
+	for k in 40:
+		m.update(0.03)
+	_check("a geode bursts as one, into many gems (%d)" % r.pickups.g_pos.size(), r.pickups.g_pos.size() == 25 and m.kind[c] == 0)
+	_check("and counts once", r.geodes == 1)
+	_clear_gems(r)
+	r.combo = 0
+	r.frenzies = 0
+	r._frenzy_rest = 0.0
+	_fill(r, at, 0, 7)
+	m.strike(c, 1.0, 0.0)
+	_check("rock takes normal damage before a Frenzy", m.kind[c] == 7)
+	r.combo = int(Defs.FRENZY["at"]) - 1
+	var mult := r.combo_mult()
+	r.on_enemy_killed(Vector3(30, 0, 30), Enemies.CRAWLER)
+	_check("a long combo starts a Frenzy", r.frenzy_left > 0.0 and r.frenzies == 1)
+	_check("score doubles during it", r.combo_mult() > mult * 1.9)
+	m.strike(c, 1.0, 0.0)
+	_check("in a Frenzy any hit pops a cube", m.kind[c] == 0)
+	_fill(r, at, 0, Defs.HEART)
+	m.strike(c, 1.0, 0.0)
+	_check("but not the Heart", m.kind[c] == Defs.HEART)
+	r.enemies.clear()
+	_fill(r, at, 0, 0)
+	r._update_chains(float(Defs.FRENZY["time"]) + 0.1)
+	_check("a Frenzy ends", r.frenzy_left == 0.0)
+	r.combo = 5000
+	r._check_frenzy()
+	_check("and doesn't restart right away", r.frenzy_left == 0.0)
+	r._frenzy_rest = 0.0
+	r._frenzy_base = r.combo
+	r._check_frenzy()
+	_check("the next one takes a new long combo", r.frenzy_left == 0.0)
+	r.combo = 0
+	r._heart_woken = false
+	m.heart_left = 1.0
+	_clear_gems(r)
 
 
 func _check_pause(r: Run) -> void:

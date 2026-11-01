@@ -168,4 +168,21 @@ func _render() -> void:
 		_stars.set_instance_color(n, g_col[i].lerp(white, twinkle * twinkle * 0.5) * 0.5)
 		n += 1
 	_mm.visible_instance_count = n
-	_stars.visible_instance_count = n
+	_stars.visible_instance_count = _render_glints(n, at)
+
+
+## Sparkles for treasure in reach, after the gems' stars. Returns how many stars there are now.
+func _render_glints(n: int, at: Vector3) -> int:
+	var m: Mine = run.mine
+	var far: float = Defs.RUN["glint_range"] * Defs.RUN["glint_range"]
+	for i in m.glint_pos.size():
+		var p := m.glint_pos[i]
+		var cell := m.glint_cell[i]
+		if n >= MAX or at.distance_squared_to(p) > far or (cell >= 0 and m.kind[cell] == 0):
+			continue
+		var twinkle := pow(absf(sin(_time * 2.5 + i * 1.3)), 4.0)
+		var size := 0.9 + 1.1 * twinkle
+		_stars.set_instance_transform(n, Transform3D((Basis(_star_basis.z, _time * 0.5 + i) * _star_basis).scaled(Vector3(size, size, size)), p))
+		_stars.set_instance_color(n, m.glint_col[i].lerp(Color.WHITE, twinkle * 0.5) * (0.5 + 0.5 * twinkle))
+		n += 1
+	return n

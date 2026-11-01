@@ -20,6 +20,8 @@ var _hint: Label
 var _fps_label: Label
 var _compass: Control
 var _lift_bar: ProgressBar
+var _gold: ColorRect
+var _frenzy_bar: ProgressBar
 var _run: Node
 var _last_combo := 0
 var _icon_key := ""
@@ -35,6 +37,12 @@ func _ready() -> void:
 	_vignette.color = Color(1, 0, 0, 0)
 	_vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_vignette)
+
+	_gold = ColorRect.new()
+	Ui.full_rect(_gold)
+	_gold.color = Color(1.0, 0.75, 0.15, 0.0)
+	_gold.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_gold)
 
 	_xp_bar = Ui.bar(Color(0.3, 0.65, 1.0), 16)
 	_xp_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
@@ -121,6 +129,15 @@ func _ready() -> void:
 	_combo_sub.offset_bottom = 40
 	_combo_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_combo_sub)
+
+	_frenzy_bar = Ui.bar(Defs.FRENZY["color"], 12)
+	_frenzy_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT)
+	_frenzy_bar.offset_left = -230
+	_frenzy_bar.offset_right = -30
+	_frenzy_bar.offset_top = 44
+	_frenzy_bar.offset_bottom = 56
+	_frenzy_bar.visible = false
+	add_child(_frenzy_bar)
 
 	_fps_label = Ui.label("", 16, Color(1, 1, 1, 0.6))
 	_fps_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
@@ -209,9 +226,13 @@ func refresh(run: Node) -> void:
 	_depth_label.text = "%s  ·  %d m   %d:%02d" % [Defs.BANDS[run.band]["name"], int(run.depth), t / 60, t % 60]
 	_fps_label.text = "%d fps" % Engine.get_frames_per_second()
 	var combo: int = run.combo
+	var frenzy: float = run.frenzy_left
+	_gold.color.a = 0.1 + 0.05 * sin(run.run_time * 14.0) if frenzy > 0.0 else 0.0
+	_frenzy_bar.visible = frenzy > 0.0 or combo >= 5
+	_frenzy_bar.value = frenzy / float(Defs.FRENZY["time"]) if frenzy > 0.0 else run.frenzy_fill()
 	if combo >= 5:
 		_combo_label.text = "x%d" % combo
-		_combo_sub.text = "COMBO  %.1fx score" % run.combo_mult()
+		_combo_sub.text = "FRENZY  %.1fx score" % run.combo_mult() if frenzy > 0.0 else "COMBO  %.1fx score" % run.combo_mult()
 		_combo_label.modulate.a = clampf(run.combo_timer / 0.5, 0.0, 1.0)
 		_combo_sub.modulate.a = _combo_label.modulate.a
 		if combo > _last_combo:

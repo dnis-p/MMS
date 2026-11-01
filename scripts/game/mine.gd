@@ -97,6 +97,10 @@ var nests: Array = []  # [center, radius] of each pocket that holds sleeping ene
 var heart_pos := Vector3.ZERO
 var heart_left := 1.0  # share of health left in the Heart's weakest cube
 var lifts: Array[Vector3] = []
+## Treasure that sparkles through the fog, until glint_cell (when >= 0) is broken.
+var glint_pos := PackedVector3Array()
+var glint_col := PackedColorArray()
+var glint_cell := PackedInt32Array()
 var kind := PackedByteArray()  # index into Defs.CUBES, 0 = empty
 var hp := PackedFloat32Array()
 var _color := PackedColorArray()
@@ -219,9 +223,10 @@ func generate(rng: RandomNumberGenerator) -> void:
 	_q_time.clear()
 	_q_cell.clear()
 	_q_dmg.clear()
-	_scatter_geodes(rng)
+	_scatter_crystals(rng)
 	_scatter_gas(rng)
 	_dig_nests(rng)
+	_scatter_geodes(rng)
 	_open_lifts(rng)
 	_place_heart(rng)
 	forget()
@@ -256,20 +261,36 @@ func _pick(x: int, z: int, p: Vector2, warp: FastNoiseLite, grain: FastNoiseLite
 
 
 ## Blobs of crystal, which go off as one chain reaction.
-func _scatter_geodes(rng: RandomNumberGenerator) -> void:
+func _scatter_crystals(rng: RandomNumberGenerator) -> void:
 	var w := Defs.WORLD
-	for k in w["geodes"]:
+	for k in w["crystals"]:
 		var a := rng.randf() * TAU
 		var dist := rng.randf_range(w["start_clear"] * 2.0, SIZE * CELL * 0.48)
 		var cx := cell_of(cos(a) * dist)
 		var cz := cell_of(sin(a) * dist)
-		var r := rng.randi_range(w["geode_min"], w["geode_max"])
+		var r := rng.randi_range(w["crystal_min"], w["crystal_max"])
 		for z in range(cz - r, cz + r + 1):
 			for x in range(cx - r, cx + r + 1):
 				var c := x + z * SIZE
 				if x >= 2 and z >= 2 and x < SIZE - 2 and z < SIZE - 2 and Vector2i(x - cx, z - cz).length_squared() <= r * r + rng.randi_range(-3, 3):
 					kind[c] = Defs.CRYSTAL
 					hp[c] = _hp_of[Defs.CRYSTAL]
+
+
+## Hard shells that burst into gems. They sparkle through the fog, so you steer for them.
+func _scatter_geodes(rng: RandomNumberGenerator) -> void:
+	var r := Defs.RUN
+	for k in r["geodes"]:
+		var a := rng.randf() * TAU
+		var p := Vector3(cos(a), 0, sin(a)) * rng.randf_range(Defs.THREATS["safe_start"] * 0.7, SIZE * CELL * 0.46)
+		_stamp(p, rng.randi_range(r["geode_min"], r["geode_max"]), Defs.GEODE)
+		add_glint(p, Defs.CUBES[Defs.GEODE]["color"], cell_of(p.x) + cell_of(p.z) * SIZE)
+
+
+func add_glint(p: Vector3, color: Color, cell := -1) -> void:
+	glint_pos.append(Vector3(p.x, 1.0, p.z))
+	glint_col.append(color)
+	glint_cell.append(cell)
 
 
 ## Small blobs that pass for plain rock until you know the colour.
@@ -586,6 +607,8 @@ func _apply(c: int, dmg: float) -> void:
 		dmg = minf(dmg, Defs.RUN["heart_hit"])
 		heart_left = minf(heart_left, clampf((hp[c] - dmg) / _hp_of[k], 0.0, 1.0))
 		run.on_heart_hit()
+	elif run.frenzy_left > 0.0:
+		dmg = 1e9
 	hp[c] -= dmg
 	if hp[c] <= 0.0:
 		_pop(c)
