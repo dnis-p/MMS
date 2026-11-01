@@ -13,7 +13,7 @@ new idea or decision the owner gives you there (mark owner's words vs your sugge
 - Even the starter shovel hits multiple cubes.
 - Enemies and traps exist now (owner, 2026-11-01), but digging feel still comes first. No theme yet, so no specific models.
 - Fog of war, like an ARPG dungeon: the digger's light shows what is near, and you can only dig what you can see. It has a switch in the menus.
-- The fog follows what you have opened or seen: soft rings thickening with distance, over rock and unseen caves alike, and the path behind you stays clear but dims away from your lamp (owner's mockups, 2026-11-01).
+- The fog follows what you have opened or seen: rings thickening with distance, square and on the cube grid, over rock and unseen caves alike, and the path behind you stays clear but dims away from your lamp (owner's mockups, 2026-11-01).
 - PC only for now (owner, 2026-10-31). Keep input as actions and UI anchored.
 
 ## Technical rules

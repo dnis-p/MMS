@@ -16,7 +16,7 @@ const FADE := 8  # how far a cell of the fog map moves per sight update, so the 
 const FOG_SHADER := """
 shader_type spatial;
 render_mode unshaded, depth_draw_never, cull_disabled;
-uniform sampler2D fog_map : filter_linear, repeat_disable;
+uniform sampler2D fog_map : filter_nearest, repeat_disable;
 uniform float bands[8];
 uniform float band_width = 1.3;
 uniform float rim = 0.7;
@@ -24,6 +24,7 @@ uniform float cube_steps = 25.5;
 uniform vec3 digger;
 uniform float light = 10.0;
 uniform float world_size = 160.0;
+uniform float cell = 0.5;
 uniform float tint = 0.1;
 uniform float dim = 0.4;
 uniform float haze = 0.15;
@@ -34,21 +35,11 @@ varying vec3 wpos;
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
-float hash(vec2 p) {
-	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-float noise(vec2 p) {
-	vec2 i = floor(p);
-	vec2 f = fract(p);
-	f = f * f * (3.0 - 2.0 * f);
-	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
-}
 void fragment() {
-	float cubes = texture(fog_map, wpos.xz / world_size + 0.5).r * cube_steps;
-	float ring = max(cubes + (noise(wpos.xz * 0.7) - 0.5) * 0.6 - rim, 0.0) / band_width;
-	int i = min(int(ring), 6);
-	float fog = mix(bands[i], bands[i + 1], smoothstep(1.0 - fwidth(ring) * 1.5, 1.0, ring - float(i)));
-	float d = distance(wpos.xz, digger.xz);
+	vec2 center = (floor(wpos.xz / cell) + 0.5) * cell;  // everything per cube, so the fog follows the grid
+	float cubes = texture(fog_map, center / world_size + 0.5).r * cube_steps;
+	float fog = bands[min(int(max(cubes + 0.01 - rim, 0.0) / band_width), 7)];
+	float d = distance(center, digger.xz);
 	float clear = (1.0 - fog) * (1.0 - dim * smoothstep(light * 0.45, light, d));
 	float cool = tint * min(fog * 4.0, 1.0);
 	float dust = haze * smoothstep(light * 0.15, light, d) * (1.0 - fog);
@@ -190,6 +181,7 @@ func _build_fog() -> void:
 	_fog_mat.set_shader_parameter("cube_steps", 255.0 / STEP)
 	_fog_mat.set_shader_parameter("light", w["light"])
 	_fog_mat.set_shader_parameter("world_size", SIZE * CELL)
+	_fog_mat.set_shader_parameter("cell", CELL)
 	_fog_mat.set_shader_parameter("tint", w["fog_tint"])
 	_fog_mat.set_shader_parameter("dim", w["fog_dim"])
 	_fog_mat.set_shader_parameter("haze", w["haze"])

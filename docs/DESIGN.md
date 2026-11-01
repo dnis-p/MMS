@@ -148,6 +148,11 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-01, the fog follows the cube grid** (owner: like the soft fog below, but squared and following the cubes, which is what the Terraria picture meant; rule check, a bot and screenshots, the owner has not played it)
+- Each cell of the fog now has one flat darkness, and its squares line up with the rock, so the rings have stair-stepped edges instead of brush-like curves. The lamp's dimming is per cell too.
+- Same rings, opacities, colours and rules as the entry below. Only the look changed, so difficulty was not re-measured.
+- The approved soft version is kept as local git tag `fog-soft-rings` (commit e94d055).
+
 **2026-11-01, the fog follows what you have mined** (owner's Photoshop mockups and a video of their layers: a fog through all the terrain you haven't mined through, your path clear, the player's light kept so the path is darker away from you; rule checks, bots and screenshots, the owner has not played it)
 - Replaces the rock shading of the entry below: cubes keep their own colours, and the fog is one dark sheet over everything, built like the owner's layer stack. Seven soft rings thicken with
   distance from what you know (25%, 42%, 58%, 72%, 84%, 93%, then black), a 2-cube clear rim and about 1.3 cubes per ring, so black starts about 10 cubes out. Ring edges are smooth curves, not block steps. The fog has the mockups' navy black and cools what is under it a little, like their blue layer.
