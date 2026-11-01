@@ -148,6 +148,17 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-01, Terraria-style rock shading and a textured floor** (owner: blocks get darker the further they are from the open edge, 5-6 fading blocks and a 7th that is black or nearly; texture on the ground so moving reads visually; rule checks, bots and screenshots, the owner has not played it)
+- **Rock shading** (owner). With fog on, each cube's colour depends on how many cubes it sits from open air: full brightness at the edge, six steps
+  darker, and the 7th almost black (`rock_shade` in Defs). It updates as you dig, so the bright edge follows you in. It is off with fog off, or everything inside the rock would be black.
+- **Changed from before, not in the request:** light no longer passes through rock. Rays stop at the first cube, and rock shows up along with the open cell nearest to it, up to
+  7 cubes deep. This replaces "4 cubes along each ray", which made the band thin to 1-2 cubes along tunnel walls. So you can dig up to 7 cubes into a wall you can see, and you can no longer
+  see through thin walls into the next cave. A hidden cave near your wall shows only as a dark notch in the band.
+- **Haze** now stays off rock, and the grey fringe at the edge of the light is gone, because both turned deep rock grey instead of black.
+- **Ground** (owner). The flat floor is now chunky dirt fixed to the world: dark stains, grain, long cracks and scattered stones that catch the lamp. Enough shows at once to see it slide past as you move.
+- Bots: everything maxed (6 seeds, 120 s of game time, 0 script errors): 5 survived with 2-11 hits taken, mostly 7-11, against 4-7 before; 1 died at 78 s. Enemies were not touched, so the new sight rules
+  are the likely cause, but that is not confirmed. Normal runs (4 seeds, 200 s): 2 survived, 2 died at 98 and 116 s. 156-165 fps at 1280x720 in a maxed run. The browser version has not been tried with this.
+
 **2026-11-01, enemies scale with you** (owner: late game enemies can't get close; more and tougher as you get stronger, but still satisfying to kill, keep the player on edge; rule checks, bots and screenshots, the owner has not played it)
 - Scaling comes from what you own, not from time. Enemy health follows your strongest tool's damage. Past your first 8 upgrades, each
   tool or boost level adds 4% health, 5% more enemies, 1.2% speed (up to +45%), 2% damage, and less pushback; hordes come sooner too.

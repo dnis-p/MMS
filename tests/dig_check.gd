@@ -116,6 +116,7 @@ func _fill(r: Run, center: Vector3, half: int, k: int) -> void:
 			m.kind[c] = k
 			m.hp[c] = float(Defs.CUBES[k].get("hp", 0.0))
 			m._draw_cube(c)
+	m.measure_depth()
 
 
 func _check_world(r: Run) -> void:
@@ -343,9 +344,28 @@ func _check_fog(r: Run) -> void:
 	_check("you can see open floor nearby", m.can_see_at(Vector3(3, 0, 2)))
 	_check("you can see a little into rock", m.can_see_at(Vector3(0, 0, -2.6)))
 	_check("you can't see deep into rock", not m.can_see_at(Vector3(0, 0, -7)))
+	var front := m.cell_of(0.0) + m.cell_of(-1.75) * Mine.SIZE
+	var deep := front - Mine.SIZE * 6
+	var shade := []
+	for k in 7:
+		m._color[front - Mine.SIZE * k] = Color.WHITE  # this rock was filled in, it has no tint of its own
+		shade.append(m._worn(front - Mine.SIZE * k).r)
+	_check("rock gets darker going in (%s)" % str(shade), shade[0] > shade[1] and shade[1] > shade[3] and shade[3] > shade[6] and shade[6] > 0.0)
+	_check("the seventh cube is as far as you can see", m._near[deep] >= 0 and m._near[deep - Mine.SIZE] == -1 and m.can_see(deep) and not m.can_see(deep - Mine.SIZE))
+	m.hit_circle(m.pos_of(front), 0.3, 1e9, m.pos_of(front))
+	_check("breaking rock moves the shading in", m._depth[front - Mine.SIZE] == Mine.STEP and m._near[deep - Mine.SIZE] >= 0)
+	Options.fog = false
+	r.apply_fog()
+	_check("with fog off rock isn't shaded", m._worn(deep).is_equal_approx(m._color[deep]))
+	Options.fog = true
+	r.apply_fog()
 	_fill(r, wall, 8, 0)
 	m.scan_light(Vector3.ZERO)
 	_check("digging lets your light through", m.can_see_at(Vector3(0, 0, -7)))
+	_fill(r, Vector3(0, 0, -5), 1, 1)
+	m.scan_light(Vector3.ZERO)
+	_check("a wall hides what is behind it", not m.can_see_at(Vector3(0, 0, -7)))
+	_fill(r, Vector3(0, 0, -5), 1, 0)
 	_check("you can't see past your light", not m.can_see_at(Vector3(0, 0, 11)))
 	var far := Vector3(0, 0, 14)
 	_fill(r, far, 1, 1)

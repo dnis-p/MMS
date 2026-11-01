@@ -17,7 +17,7 @@ PC only for now.
 | Menus and upgrades | Mouse, or arrows and Enter |
 | Pause | Esc or P |
 
-Fog of war is on by default: you see and dig only what your light reaches, except Mining Beam and Shock Pulse, which go through it. Switch it on the main menu or pause menu.
+Fog of war is on by default: you see and dig only what your light reaches, up to 7 cubes into any wall in view, except Mining Beam and Shock Pulse, which go through it. Rock darkens the deeper it sits. Switch it on the main menu or pause menu.
 
 Movement is instant, like a 2D game, and separate from aiming. Tools dig by themselves where you aim. Cubes give a little XP, ore drops shiny gems worth more,
 and each level-up lets you pick 1 of 3 tools or boosts and blasts the rock around you. Crystal goes off as a chain reaction.
