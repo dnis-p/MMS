@@ -2,6 +2,8 @@ class_name Overlay
 extends Control
 ## Banners, screen flashes and simple modal panels (pause, stage clear, game over).
 
+signal back_pressed
+
 var _banner: Label
 var _banner_sub: Label
 var _flash: ColorRect
@@ -106,6 +108,13 @@ func show_panel(title: String, lines: Array, buttons: Array, title_color := Colo
 	_panel_root.visible = true
 	if first:
 		first.grab_focus()
+
+
+## Runs here because the game itself gets no input while it is paused.
+func _unhandled_input(event: InputEvent) -> void:
+	if _panel_root.visible and (event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel")):
+		get_viewport().set_input_as_handled()
+		back_pressed.emit()
 
 
 func hide_panel() -> void:

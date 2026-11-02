@@ -104,6 +104,8 @@ var _hitstop_left := 0.0
 var _last_real_us := 0
 var aim_point := Vector3.ZERO  # the spot on the rock under the pointer
 var _mouse_seen := false  # until the mouse moves, tools point the way you walk
+var _stick_left := 0.0  # how long the right stick still points the tools after it was let go
+var _aim_mark: MeshInstance3D  # the right stick's target: a mouse has its own pointer
 
 
 func _ready() -> void:
@@ -189,6 +191,7 @@ func _ready() -> void:
 	levelup_ui.auto_pick = autotest
 	ui.add_child(levelup_ui)
 	overlay = Overlay.new()
+	overlay.back_pressed.connect(_toggle_pause)
 	ui.add_child(overlay)
 	results = Results.new()
 	ui.add_child(results)
@@ -204,7 +207,9 @@ func _ready() -> void:
 	_place_camera()
 	apply_fog()
 	Input.set_custom_mouse_cursor(Ui.crosshair(Color(1, 1, 1)), Input.CURSOR_ARROW, Vector2(24, 24))
-	hud.show_hint("WASD to move  ·  aim with the mouse  ·  your tools dig by themselves", 6.0)
+	_make_aim_mark()
+	var controls := "Left stick to move  ·  right stick to aim" if Options.pad else "WASD to move  ·  aim with the mouse"
+	hud.show_hint("%s  ·  your tools dig by themselves" % controls, 6.0)
 	ready_to_play = true
 	set_process(true)
 	set_process_input(true)
@@ -217,6 +222,22 @@ func _exit_tree() -> void:
 	Input.set_custom_mouse_cursor(null)
 	if get_tree():
 		get_tree().paused = false
+
+
+func _make_aim_mark() -> void:
+	var mesh := PlaneMesh.new()
+	mesh.size = Vector2.ONE * 1.6
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_texture = Ui.crosshair(Color(1, 1, 1))
+	mat.no_depth_test = true
+	mat.render_priority = 1
+	mesh.material = mat
+	_aim_mark = MeshInstance3D.new()
+	_aim_mark.mesh = mesh
+	_aim_mark.visible = false
+	add_child(_aim_mark)
 
 
 func apply_fog() -> void:
@@ -257,7 +278,7 @@ func _process(delta: float) -> void:
 	run_time += delta
 	_pops_this_frame = 0
 	_big_pop_cd -= delta
-	_update_aim()
+	_update_aim(delta)
 	player.move(minf(delta, 0.05), _move_input(delta), mine)
 	mine.show_chunks(player.global_position)
 	_update_light(delta)
@@ -284,12 +305,19 @@ func _process(delta: float) -> void:
 		_try_open_modal()
 
 
-## Points the tools at the mouse. Aiming stays flat, at the height of the rock's top.
-func _update_aim() -> void:
+## Points the tools at the right stick or the mouse. Aiming stays flat, at the height of the rock's top.
+func _update_aim(delta: float) -> void:
 	var at := player.global_position
 	if autotest:
 		bot.aim(self)
-	if not _mouse_seen or autotest or character.has("no_aim"):
+	if Options.pad and _mouse_seen:
+		_mouse_seen = false
+		player.aiming = false
+	var free := not autotest and not character.has("no_aim")
+	_aim_mark.visible = free and _aim_stick(at, delta)
+	if _aim_mark.visible:
+		return
+	if not _mouse_seen or not free:
 		aim_point = at + player.heading * 5.0
 		return
 	var screen := get_viewport().get_mouse_position()
@@ -301,6 +329,25 @@ func _update_aim() -> void:
 	if to.length_squared() > 0.01:
 		player.aiming = true
 		player.heading = to.normalized()
+
+
+## Tools follow the right stick, and a moment after letting go they follow your walk again. Returns
+## true while it is the stick that aims.
+func _aim_stick(at: Vector3, delta: float) -> bool:
+	var stick := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down", Defs.PAD["deadzone"])
+	if stick != Vector2.ZERO:
+		_mouse_seen = false
+		_stick_left = Defs.PAD["aim_hold"]
+		player.aiming = true
+		player.heading = Vector3(stick.x, 0.0, stick.y).normalized()
+	elif _stick_left <= 0.0 or _mouse_seen:
+		return false
+	else:
+		_stick_left -= delta
+		player.aiming = _stick_left > 0.0
+	aim_point = at + player.heading * float(Defs.PAD["aim_reach"])
+	_aim_mark.position = Vector3(aim_point.x, Mine.HEIGHT + 0.05, aim_point.z)
+	return _stick_left > 0.0
 
 
 ## Burrowers keep coming, so no spot stays safe, and they come more often the deeper you are.
@@ -908,7 +955,7 @@ func _cam_targets() -> Array:
 	var cam := Defs.CAMERA
 	var at := player.global_position
 	var look: Vector3 = at + player.velocity * cam["lead"]
-	if _mouse_seen:
+	if _mouse_seen or _stick_left > 0.0:
 		var ahead := aim_point - at
 		ahead.y = 0.0
 		look += (ahead * cam["aim_lead"]).limit_length(cam["aim_lead_max"])
@@ -948,18 +995,19 @@ func _toggle_pause() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion and not character.has("no_aim"):
+	if event is InputEventMouseMotion and not Options.pad and not character.has("no_aim"):
 		_mouse_seen = true
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
+		get_viewport().set_input_as_handled()
 		_toggle_pause()
 
 
 ## Screen-relative move direction, in 8 directions.
 func _move_input(delta: float) -> Vector2:
-	var v := Input.get_vector("move_left", "move_right", "move_up", "move_down", 0.0)
+	var v := Input.get_vector("move_left", "move_right", "move_up", "move_down", Defs.PAD["deadzone"])
 	if autotest:
 		v = bot.steer(self, delta)
 	return v

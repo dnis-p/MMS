@@ -120,8 +120,23 @@ func _process(delta: float) -> void:
 		get_tree().quit()
 
 
+## Whichever was used last counts: a gamepad hides the pointer, moving the mouse brings it back.
+func _input(event: InputEvent) -> void:
+	var pad := Options.pad
+	if event is InputEventMouseMotion:
+		pad = pad and event.screen_relative.length() < Defs.PAD["mouse_wake"]
+	elif event is InputEventJoypadButton:
+		pad = true
+	elif event is InputEventJoypadMotion and event.axis <= JOY_AXIS_RIGHT_Y:
+		pad = pad or absf(event.axis_value) > Defs.PAD["stick_wake"]
+	if pad != Options.pad:
+		Options.pad = pad
+		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN if pad else Input.MOUSE_MODE_VISIBLE
+
+
 func _setup_input() -> void:
-	# Menus use Godot's ui_* actions: arrows, Space and Enter come built in, WASD is added here.
+	# Menus use Godot's ui_* actions: arrows, Space and Enter come built in, as do the left stick and
+	# d-pad. WASD and the gamepad's A and B are added here.
 	var nav_keys := {"ui_left": KEY_A, "ui_right": KEY_D, "ui_up": KEY_W, "ui_down": KEY_S}
 	for action in nav_keys:
 		var nav := InputEventKey.new()
@@ -133,6 +148,10 @@ func _setup_input() -> void:
 		"move_up": [KEY_W, KEY_UP],
 		"move_down": [KEY_S, KEY_DOWN],
 		"pause": [KEY_ESCAPE, KEY_P],
+		"aim_left": [],
+		"aim_right": [],
+		"aim_up": [],
+		"aim_down": [],
 	}
 	for action in map:
 		if not InputMap.has_action(action):
@@ -141,3 +160,33 @@ func _setup_input() -> void:
 			var ev := InputEventKey.new()
 			ev.physical_keycode = key
 			InputMap.action_add_event(action, ev)
+	var buttons := {
+		"ui_accept": JOY_BUTTON_A,
+		"ui_cancel": JOY_BUTTON_B,
+		"pause": JOY_BUTTON_START,
+		"move_left": JOY_BUTTON_DPAD_LEFT,
+		"move_right": JOY_BUTTON_DPAD_RIGHT,
+		"move_up": JOY_BUTTON_DPAD_UP,
+		"move_down": JOY_BUTTON_DPAD_DOWN,
+	}
+	for action in buttons:
+		var ev := InputEventJoypadButton.new()
+		ev.button_index = buttons[action]
+		ev.device = -1  # any gamepad, whichever slot it landed in
+		InputMap.action_add_event(action, ev)
+	var sticks := {
+		"move_left": [JOY_AXIS_LEFT_X, -1.0],
+		"move_right": [JOY_AXIS_LEFT_X, 1.0],
+		"move_up": [JOY_AXIS_LEFT_Y, -1.0],
+		"move_down": [JOY_AXIS_LEFT_Y, 1.0],
+		"aim_left": [JOY_AXIS_RIGHT_X, -1.0],
+		"aim_right": [JOY_AXIS_RIGHT_X, 1.0],
+		"aim_up": [JOY_AXIS_RIGHT_Y, -1.0],
+		"aim_down": [JOY_AXIS_RIGHT_Y, 1.0],
+	}
+	for action in sticks:
+		var ev := InputEventJoypadMotion.new()
+		ev.axis = sticks[action][0]
+		ev.axis_value = sticks[action][1]
+		ev.device = -1
+		InputMap.action_add_event(action, ev)

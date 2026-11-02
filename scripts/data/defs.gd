@@ -10,6 +10,12 @@ const FILLER_SCORE := 500
 ## seconds of travel it looks ahead. aim_lead: share of the way to the pointer it leans, up to
 ## aim_lead_max metres.
 const CAMERA := {"back": 7.0, "up": 19.0, "lead": 0.12, "aim_lead": 0.18, "aim_lead_max": 3.0, "fov": 60.0}
+## Gamepad. deadzone: how far a stick must lean to count, so a worn one doesn't drift. aim_hold: seconds
+## the tools keep pointing after you let go of the right stick. aim_reach: metres out the target sits.
+## stick_wake and mouse_wake: how far a push, or how many pixels of mouse, swaps the two. rumble_from:
+## the smallest screen shake felt in the hands, for rumble_time seconds.
+const PAD := {"deadzone": 0.25, "aim_hold": 0.6, "aim_reach": 7.0, "stick_wake": 0.5, "mouse_wake": 3.0,
+	"rumble_from": 0.1, "rumble_time": 0.16}
 
 ## regen: health per second once nothing has hurt you for regen_after seconds.
 const DIGGER := {"speed": 7.5, "pickup": 3.5, "hp": 100.0, "invuln": 0.8, "level_heal": 30.0, "regen": 3.0, "regen_after": 4.0, "color": Color(0.2, 0.75, 0.8)}

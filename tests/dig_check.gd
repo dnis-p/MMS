@@ -56,9 +56,19 @@ func _process(delta: float) -> void:
 			_check_caves(r)
 			_check_wipe()
 			_clear_around(r)
-			Input.action_press("move_right")
+			_check_pad(r)
+			r.levelup_ui.auto_pick = false
+			r.use_shrine("blood")
 			_wait = 0.1
-			_step = "right"
+			_step = "pad_cards"
+		"pad_cards":
+			if _wait <= 0.0:
+				_check_pad_cards(r)
+				r.levelup_ui.auto_pick = true
+				_clear_around(r)
+				Input.action_press("move_right")
+				_wait = 0.1
+				_step = "right"
 		"right":
 			if _wait <= 0.0:
 				_check("moving is at full speed at once", is_equal_approx(r.player.velocity.length(), r.player.speed))
@@ -966,11 +976,116 @@ func _check_aim(r: Run) -> void:
 	r.player.aiming = false
 	r._mouse_seen = true
 	r.player.heading = Vector3.ZERO
-	r._update_aim()
+	r._update_aim(0.016)
 	_check("the mouse sets your aim", r.player.aiming and r.player.heading.is_normalized() and r.aim_point.y == 0.0)
 	r._mouse_seen = false
 	r.player.aiming = false
 	r.player.heading = Vector3.FORWARD
+
+
+func _pad_axis(axis: JoyAxis, value: float, device := 0) -> void:
+	var ev := InputEventJoypadMotion.new()
+	ev.axis = axis
+	ev.axis_value = value
+	ev.device = device
+	Input.parse_input_event(ev)
+	Input.flush_buffered_events()
+
+
+func _pad_button(button: JoyButton) -> void:
+	for pressed in [true, false]:
+		var ev := InputEventJoypadButton.new()
+		ev.button_index = button
+		ev.pressed = pressed
+		Input.parse_input_event(ev)
+		Input.flush_buffered_events()
+
+
+func _press_key(key: Key) -> void:
+	for pressed in [true, false]:
+		var ev := InputEventKey.new()
+		ev.physical_keycode = key
+		ev.keycode = key
+		ev.pressed = pressed
+		Input.parse_input_event(ev)
+		Input.flush_buffered_events()
+
+
+func _mouse_nudge(amount: float) -> void:
+	var ev := InputEventMouseMotion.new()
+	ev.screen_relative = Vector2(amount, 0.0)
+	Input.parse_input_event(ev)
+	Input.flush_buffered_events()
+
+
+func _check_pad(r: Run) -> void:
+	Options.pad = false
+	r.player.aiming = false
+	_pad_axis(JOY_AXIS_LEFT_X, 0.1)
+	_check("a drifting stick doesn't walk or count as a gamepad", r._move_input(0.016) == Vector2.ZERO and not Options.pad)
+	_pad_axis(JOY_AXIS_LEFT_X, 0.8)
+	_check("the left stick walks", r._move_input(0.016).x > 0.5 and Options.pad)
+	_pad_axis(JOY_AXIS_LEFT_X, 0.0)
+	_pad_axis(JOY_AXIS_LEFT_Y, 0.8, 1)
+	_check("a gamepad in another slot works too", r._move_input(0.016).y > 0.5)
+	_pad_axis(JOY_AXIS_LEFT_Y, 0.0, 1)
+	_pad_axis(JOY_AXIS_RIGHT_X, 0.1)
+	r._update_aim(0.016)
+	_check("a drifting right stick doesn't aim", not r.player.aiming and not r._aim_mark.visible)
+	_pad_axis(JOY_AXIS_RIGHT_X, -0.9)
+	r._update_aim(0.016)
+	_check("the right stick aims and shows a target", r.player.aiming and r.player.heading == Vector3.LEFT and r._aim_mark.visible)
+	r.player.move(0.016, Vector2.RIGHT, r.mine)
+	_check("walking doesn't turn the right stick's aim", r.player.heading == Vector3.LEFT)
+	_pad_axis(JOY_AXIS_RIGHT_X, 0.0)
+	r._update_aim(0.016)
+	_check("letting go keeps the aim a moment", r.player.aiming)
+	r._update_aim(Defs.PAD["aim_hold"])
+	_check("then tools follow your walk again", not r.player.aiming and not r._aim_mark.visible)
+	r.player.move(0.016, Vector2.RIGHT, r.mine)
+	_check("a gamepad player with no aim points the way they walk", r.player.heading == Vector3.RIGHT)
+	r._mouse_seen = true
+	r.player.aiming = true
+	r._update_aim(0.016)
+	_check("a gamepad takes over from a parked mouse", not r._mouse_seen and not r.player.aiming)
+	_mouse_nudge(1.0)
+	_check("a nudged desk doesn't take the game off the gamepad", Options.pad)
+	_mouse_nudge(50.0)
+	_check("moving the mouse takes over from the gamepad", not Options.pad)
+	r._mouse_seen = false
+	r.player.aiming = false
+	_pad_button(JOY_BUTTON_START)
+	_check("Start pauses", r._paused_by_menu)
+	_pad_button(JOY_BUTTON_START)
+	_check("Start resumes", not r._paused_by_menu and not get_tree().paused and not r.overlay.panel_visible())
+	_pad_button(JOY_BUTTON_START)
+	_pad_button(JOY_BUTTON_B)
+	_check("B leaves the pause menu", not r._paused_by_menu and not get_tree().paused and not r.overlay.panel_visible())
+	_press_key(KEY_ESCAPE)
+	_check("Esc pauses", r._paused_by_menu)
+	_press_key(KEY_ESCAPE)
+	_check("Esc resumes", not r._paused_by_menu and not get_tree().paused)
+
+
+## On a shrine's two cards, as walking away changes nothing. Needs a frame after opening, for the
+## cards to have a place on screen.
+func _check_pad_cards(r: Run) -> void:
+	var ui := r.levelup_ui
+	var cards := ui._cards.get_children()
+	var hp := r.player.hp
+	_check("cards open with the first one picked out", cards.size() == 2 and cards[0].has_focus())
+	_pad_axis(JOY_AXIS_LEFT_X, 0.8)
+	_check("the left stick moves along the cards", cards[1].has_focus())
+	_pad_axis(JOY_AXIS_LEFT_X, 0.95)
+	_check("holding it moves only one card", cards[1].has_focus())
+	_pad_axis(JOY_AXIS_LEFT_X, 0.0)
+	_pad_button(JOY_BUTTON_DPAD_LEFT)
+	_check("so does the d-pad", cards[0].has_focus())
+	_pad_button(JOY_BUTTON_DPAD_RIGHT)
+	ui._opened_at -= 1000
+	_pad_button(JOY_BUTTON_A)
+	_check("A takes the card picked out", not ui.visible and not r._modal_open and r.player.hp == hp)
+	Options.pad = false
 
 
 func _check_walls(r: Run) -> void:

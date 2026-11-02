@@ -4,7 +4,10 @@ extends Control
 
 signal start_pressed
 
+const SCROLL_SPEED := 500.0
+
 var _root: VBoxContainer
+var _scroll: ScrollContainer  # the goals list, moved by up and down since nothing in it takes focus
 
 
 func _ready() -> void:
@@ -27,7 +30,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		_show_main()
 
 
+func _process(delta: float) -> void:
+	if _scroll:
+		_scroll.scroll_vertical += roundi(Input.get_axis("ui_up", "ui_down") * SCROLL_SPEED * delta)
+
+
 func _clear() -> void:
+	_scroll = null
 	for c in _root.get_children():
 		_root.remove_child(c)
 		c.queue_free()
@@ -104,10 +113,12 @@ func _show_characters() -> void:
 	back.grab_focus.call_deferred()
 
 
-func _show_shop() -> void:
+## `bought` keeps the cursor on that row, so buying several levels doesn't mean walking back to it.
+func _show_shop(bought := "") -> void:
 	_clear()
 	_heading("SHOP", 56, Color(1.0, 0.85, 0.3))
 	_heading("%d gems banked" % Profile.gems, 26, Color(0.4, 1.0, 0.85))
+	var keep: Button = null
 	for id in Defs.SHOP:
 		var d: Dictionary = Defs.SHOP[id]
 		var lvl := Profile.shop_level(id)
@@ -116,12 +127,14 @@ func _show_shop() -> void:
 		var b := _button("%s  ·  %s  ·  level %d/%d  ·  %s" % [d["name"], d["desc"], lvl, d["max"], price], func():
 			if Profile.buy(id):
 				Sfx.play("reward", -5.0, 1.1, true)
-				_show_shop(), 54.0, 900.0)
+				_show_shop(id), 54.0, 900.0)
 		b.disabled = full or Profile.gems < Profile.price(id)
 		_root.add_child(b)
+		if id == bought and not b.disabled:
+			keep = b
 	var back := _button("Back", _show_main)
 	_root.add_child(back)
-	back.grab_focus.call_deferred()
+	(keep if keep else back).grab_focus.call_deferred()
 
 
 func _show_goals() -> void:
@@ -136,6 +149,7 @@ func _show_goals() -> void:
 	list.add_theme_constant_override("separation", 10)
 	scroll.add_child(list)
 	_root.add_child(scroll)
+	_scroll = scroll
 	for g in Defs.GOALS:
 		var done := Profile.done.has(g["id"])
 		var now := mini(Profile.stat(g["stat"]), g["need"])

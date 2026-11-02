@@ -182,6 +182,7 @@ func bolt(a: Vector3, b: Vector3, color := Color(0.6, 0.9, 1.0)) -> void:
 ## Shakes don't add up, so more tools hitting at once never shake harder than the biggest one.
 func shake(amount: float) -> void:
 	trauma = maxf(trauma, amount)
+	Options.rumble(amount)
 
 
 func update(delta: float) -> void:
