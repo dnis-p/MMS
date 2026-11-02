@@ -20,6 +20,8 @@ var _hint: Label
 var _fps_label: Label
 var _compass: Control
 var _lift_bar: ProgressBar
+var _boss_bar: ProgressBar
+var _boss_label: Label
 var _gold: ColorRect
 var _frenzy_bar: ProgressBar
 var _run: Node
@@ -162,6 +164,21 @@ func _ready() -> void:
 	_lift_bar.visible = false
 	add_child(_lift_bar)
 
+	_boss_label = Ui.label("", 22, Color(1.0, 0.45, 0.4))
+	_boss_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_boss_label.offset_left = -220
+	_boss_label.offset_right = 220
+	_boss_label.offset_top = 56
+	_boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_boss_label)
+	_boss_bar = Ui.bar(Color(1.0, 0.3, 0.3), 16)
+	_boss_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_boss_bar.offset_left = -220
+	_boss_bar.offset_right = 220
+	_boss_bar.offset_top = 86
+	_boss_bar.offset_bottom = 102
+	add_child(_boss_bar)
+
 	_hint = Ui.label("", 28)
 	_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 	_hint.offset_left = -500
@@ -186,14 +203,23 @@ func damage_flash() -> void:
 	tw.tween_property(_vignette, "color:a", 0.0, 0.35)
 
 
-## Two arrows around the digger: where the Heart is, and the nearest way out.
+## One beat of the Heart, stronger the closer you are.
+func heart_pulse(near: float) -> void:
+	_vignette.color = Color(1, 0.1, 0.4, 0.02 + 0.09 * near)
+	var tw := create_tween()
+	tw.tween_property(_vignette, "color:a", 0.0, 0.3)
+
+
+## Arrows around the digger: the nearest way out, and a boss that is out of sight.
 func _draw_compass() -> void:
 	if not _run:
 		return
 	var at: Vector3 = _run.player.global_position
-	var heart: float = _run.mine.heart_left
-	_arrow(_run.mine.heart_pos - at, Color(1, 0.25, 0.5), "HEART" if heart >= 1.0 else "HEART %d%%" % ceili(heart * 100.0), 170.0)
 	_arrow(_run.sites.nearest_lift - at, Color(0.3, 1.0, 0.85), "LIFT", 130.0)
+	if _run.bosses.current >= 0:
+		var to: Vector3 = _run.enemies.pos[_run.bosses.current] - at
+		if to.length() > 14.0:
+			_arrow(to, Color(1.0, 0.3, 0.3), "BOSS", 170.0)
 
 
 func _arrow(to: Vector3, color: Color, text: String, r: float) -> void:
@@ -215,6 +241,12 @@ func refresh(run: Node) -> void:
 	_compass.queue_redraw()
 	_lift_bar.visible = run.sites.lift_t > 0.0
 	_lift_bar.value = run.sites.lift_t / float(Defs.RUN["lift_hold"])
+	var fight: Array = run.bosses.fight()
+	_boss_bar.visible = not fight.is_empty()
+	_boss_label.visible = _boss_bar.visible
+	if _boss_bar.visible:
+		_boss_label.text = fight[0]
+		_boss_bar.value = fight[1]
 	var p: Player = run.player
 	_hp_bar.value = p.hp / p.max_hp
 	_hp_label.text = "%d / %d" % [ceili(p.hp), ceili(p.max_hp)]

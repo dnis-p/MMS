@@ -20,6 +20,7 @@ var tools: Tools
 var enemies: Enemies
 var traps: Traps
 var sites: Sites
+var bosses: Bosses
 var fx: Fx
 var bot := Bot.new()
 var camera: Camera3D
@@ -54,6 +55,7 @@ var frenzies := 0
 var geodes := 0
 var relics := 0
 var evolutions := 0
+var seams := 0
 var greed_harm := 1.0  # a Greed Shrine's price
 var run_time := 0.0
 var depth := 0.0
@@ -71,7 +73,13 @@ var _note := 0
 var _note_timer := 0.0
 var _gem_chain := 0
 var _gem_chain_timer := 0.0
-var _heart_woken := false
+var heart_woken := false
+var _sealed_told := 0.0
+var _beat_left := 0.0
+var _unhurt := 0.0  # seconds since anything hurt you
+var _clue_told := false
+var _burns := 0
+var _burn_idle := 0.0  # seconds since fuel last burned: a long gap means a new seam
 var _told := {}  # goals already announced this run
 var _goal_timer := 1.0
 var _frenzy_rest := 0.0
@@ -122,7 +130,6 @@ func _ready() -> void:
 	enemies = Enemies.new()
 	enemies.run = self
 	add_child(enemies)
-	enemies.fill_nests()
 	traps = Traps.new()
 	traps.run = self
 	add_child(traps)
@@ -137,6 +144,9 @@ func _ready() -> void:
 	sites = Sites.new()
 	sites.run = self
 	add_child(sites)
+	bosses = Bosses.new()
+	bosses.run = self
+	add_child(bosses)
 	player = Player.new()
 	player.color = character["color"]
 	player.base_speed *= character.get("speed", 1.0) * (1.0 + Profile.bonus("legs"))
@@ -177,6 +187,7 @@ func _ready() -> void:
 
 	apply_boosts()
 	player.hp = player.max_hp
+	mine.show_chunks(player.global_position)
 	var t := _cam_targets()
 	_cam_pos = t[0]
 	_cam_look = t[1]
@@ -233,6 +244,7 @@ func _process(delta: float) -> void:
 	_big_pop_cd -= delta
 	_update_aim()
 	player.move(minf(delta, 0.05), _move_input(delta), mine)
+	mine.show_chunks(player.global_position)
 	_update_light(delta)
 	tools.update(delta)
 	mine.update(delta)
@@ -240,6 +252,9 @@ func _process(delta: float) -> void:
 	enemies.update(delta, at, player.radius)
 	traps.update(delta, at)
 	sites.update(delta, at)
+	bosses.update(delta, at)
+	_update_heartbeat(delta, at)
+	_update_regen(delta)
 	_update_burrowers(delta)
 	_update_swarm(delta)
 	debris.update(delta)
@@ -319,7 +334,7 @@ func _update_swarm(delta: float) -> void:
 				_swarm_in(a + rng.randf_range(-0.5, 0.5), t["swarm_range"])
 	_horde_timer -= delta
 	if _horde_timer <= 0.0:
-		_horde_timer = Defs.RUN["heart_horde"] if _heart_woken else t["horde_every"] / sqrt(crowd)
+		_horde_timer = Defs.RUN["heart_horde"] if heart_woken else t["horde_every"] / sqrt(crowd)
 		spawn_horde()
 
 
@@ -351,6 +366,7 @@ func _update_depth() -> void:
 
 func _update_chains(delta: float) -> void:
 	_geode_cd -= delta
+	_burn_idle += delta
 	_frenzy_rest -= delta
 	if frenzy_left > 0.0:
 		frenzy_left -= delta
@@ -396,6 +412,8 @@ func on_cube_popped(p: Vector3, k: int, color: Color) -> void:
 		_break_heart(p)
 	if d.has("gas"):
 		traps.light_gas(p)
+	if d.has("fuel"):
+		_burn(p)
 	if d.has("geode"):
 		_burst_geode(p)
 	elif d.has("gem"):
@@ -425,6 +443,29 @@ func _burst_geode(p: Vector3) -> void:
 	Sfx.play("reward", -5.0, 1.2, true)
 
 
+## Fire runs along a seam: it opens the rock beside it and burns what stands there, you included.
+func _burn(p: Vector3) -> void:
+	var r := Defs.RUN
+	if _burn_idle > 1.0:
+		seams += 1
+		overlay.flash(Color(1.0, 0.5, 0.1, 0.12), 0.3)
+		Sfx.play("fuse", -4.0, 0.7)
+	_burn_idle = 0.0
+	debris.spray(p, Color(1.0, 0.6, 0.1), 5, p, 1.2)
+	_burns += 1
+	if _burns % int(r["seam_every"]) != 0:
+		return
+	var reach: float = r["seam_r"]
+	mine.hit_circle(p, reach, r["seam_dmg"], p, 0.0, true)
+	enemies.hit_circle(p, reach, r["seam_dmg"])
+	Sfx.play("boom", -18.0, 1.5)
+	var at := player.global_position
+	if Vector2(at.x - p.x, at.z - p.z).length() < reach:
+		player_hit(r["seam_hurt"])
+	elif Vector2(at.x - p.x, at.z - p.z).length() < 20.0:
+		fx.shake(0.12)
+
+
 func _check_frenzy() -> void:
 	if frenzy_fill() < 1.0 or frenzy_left > 0.0 or _frenzy_rest > 0.0:
 		return
@@ -452,10 +493,23 @@ func on_enemy_killed(p: Vector3, t: int) -> void:
 	_play_note()
 	_check_frenzy()
 	Sfx.play("kill", -10.0)
-	if t == Enemies.BRUTE:
+	if t >= Enemies.BORER:
+		bosses.on_killed(p)
+	elif t == Enemies.BRUTE:
 		_hitstop(0.05)
 		fx.shake(0.3)
 		Sfx.play("boom", -6.0)
+
+
+func boss_down(p: Vector3, sub: String) -> void:
+	_hitstop(0.12)
+	fx.ring(p, 12.0, Color(1, 0.8, 0.4, 0.9), 0.6)
+	fx.shake(0.8)
+	Sfx.play("big_boom", -2.0, 1.0, true)
+	overlay.banner("GUARDIAN DOWN", sub, Color(1, 0.8, 0.4), 2.5)
+	player.hp = player.max_hp
+	if autotest:
+		print("boss down: t=%.0f level=%d" % [run_time, level])
 
 
 func on_nest_woken(p: Vector3) -> void:
@@ -463,11 +517,39 @@ func on_nest_woken(p: Vector3) -> void:
 	Sfx.play("warn", -14.0, 1.6, true)
 
 
-## The first hit wakes everything nearby.
-func on_heart_hit() -> void:
-	if _heart_woken:
+func _update_regen(delta: float) -> void:
+	_unhurt += delta
+	if _unhurt >= float(Defs.DIGGER["regen_after"]):
+		player.hp = minf(player.max_hp, player.hp + float(Defs.DIGGER["regen"]) * delta)
+
+
+## You hear the Heart before you see it, faster and louder the closer you get. Nothing says which way.
+func _update_heartbeat(delta: float, at: Vector3) -> void:
+	if not _clue_told and run_time > 7.0:
+		_clue_told = true
+		hud.show_hint("Somewhere out there beats a Heart. Listen for it, and look for pink veins in the rock", 7.0)
+	_beat_left -= delta
+	if heart_woken or _beat_left > 0.0:
 		return
-	_heart_woken = true
+	var near: float = 1.0 - at.distance_to(mine.heart_pos) / float(Defs.RUN["heart_hear"])
+	_beat_left = 0.5
+	if near <= 0.0:
+		return
+	_beat_left = lerpf(2.0, 0.55, near)
+	Sfx.play("thud", lerpf(-24.0, -5.0, near), 0.5, true)
+	hud.heart_pulse(near)
+
+
+## The first hit wakes everything nearby, once the guardians are dead.
+func on_heart_hit() -> void:
+	if heart_woken:
+		return
+	if bosses.left() > 0:
+		if run_time >= _sealed_told:
+			_sealed_told = run_time + 8.0
+			hud.show_hint("The Heart is sealed. Guardians left: %d" % bosses.left(), 4.0)
+		return
+	heart_woken = true
 	if autotest:
 		print("heart woke: t=%.0f level=%d awake=%d" % [run_time, level, enemies.awake_count])
 	overlay.banner("THE HEART WAKES", "", Color(1, 0.2, 0.45), 1.5)
@@ -566,6 +648,7 @@ func player_hit(amount: float) -> void:
 	if god_mode or dead or left or not player.hurt(amount):
 		return
 	hits_taken += 1
+	_unhurt = 0.0
 	fx.shake(0.3)
 	hud.damage_flash()
 	Sfx.play("hurt", -4.0)
@@ -595,7 +678,7 @@ func gems_kept(how: String) -> int:
 
 func _run_stats(kept: int, how: String) -> Dictionary:
 	return {"runs": 1, "cubes": cubes, "kills": kills, "banked": kept, "band": band, "combo": best_combo, "geodes": geodes,
-		"frenzies": frenzies, "relics": relics, "evolutions": evolutions, "lifts": 1 if how == "lift" else 0, "hearts": 1 if how == "heart" else 0}
+		"frenzies": frenzies, "relics": relics, "evolutions": evolutions, "bosses": bosses.killed, "seams": seams, "lifts": 1 if how == "lift" else 0, "hearts": 1 if how == "heart" else 0}
 
 
 ## Goals are only paid out at the end, but you hear about them the moment you earn them.
@@ -604,6 +687,8 @@ func _announce_goals(delta: float) -> void:
 	if _goal_timer > 0.0:
 		return
 	_goal_timer = 1.0
+	if autotest and int(run_time) % 60 == 0:
+		print("t=%d level=%d gems=%d band=%d hp=%d awake=%d kills=%d" % [run_time, level, int(loot), band, player.hp, enemies.awake_count, kills])
 	var now := _run_stats(int(loot * keep_share("quit")), "")
 	for g in Defs.GOALS:
 		if Profile.done.has(g["id"]) or _told.has(g["id"]) or Profile.with_run(g["stat"], now[g["stat"]]) < g["need"]:
@@ -652,7 +737,7 @@ func add_xp(amount: float) -> void:
 
 
 func add_loot(amount: float) -> void:
-	loot += amount * gem_rate
+	loot += amount * gem_rate * Defs.RUN["gem_bank"]
 
 
 func add_score(amount: int) -> void:

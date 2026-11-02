@@ -4,7 +4,7 @@ extends Node3D
 ## and go up and down on a beat you can read. Gas rock looks like rock and blows a short moment after
 ## it breaks, which hurts you and anything else nearby.
 
-const MAX_SPIKES := 700
+const MAX_SPIKES := 3000
 const MAX_FUSES := 10
 const DRAW_RANGE := 26.0
 const CONES := 4
@@ -75,10 +75,9 @@ func generate(rng: RandomNumberGenerator) -> void:
 	var t := Defs.THREATS
 	var world := Mine.SIZE * Mine.CELL * 0.48
 	for k in t["spike_patches"]:
-		var a := rng.randf() * TAU
-		var dist := rng.randf_range(t["safe_start"], world)
-		var cx := roundi(cos(a) * dist)
-		var cz := roundi(sin(a) * dist)
+		var at := run.mine._spot(rng, t["safe_start"], world)
+		var cx := roundi(at.x)
+		var cz := roundi(at.z)
 		var size: int = rng.randi_range(1, 3)
 		var beat := rng.randf() * float(t["spike_cycle"])
 		for z in range(-size, size + 1):

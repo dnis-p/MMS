@@ -4,6 +4,7 @@ extends Node3D
 ## firing, and the level-up choices. All numbers are in Defs.TOOLS and Defs.BOOSTS.
 
 const MAX_BOMBS := 6
+const MAX_MOLES := 6
 
 var run: Run
 ## tool id -> {"level": int, "timer": float}
@@ -23,6 +24,8 @@ var _bombs: Array[MeshInstance3D] = []
 var _bomb_from: Array[Vector3] = []
 var _bomb_to: Array[Vector3] = []
 var _bomb_t: Array[float] = []
+var _moles: Array[MeshInstance3D] = []
+var _mole_to: Array[Vector3] = []
 
 
 func _ready() -> void:
@@ -62,6 +65,21 @@ func _ready() -> void:
 		_bomb_from.append(Vector3.ZERO)
 		_bomb_to.append(Vector3.ZERO)
 		_bomb_t.append(-1.0)
+	var pup := SphereMesh.new()
+	pup.radius = 0.32
+	pup.height = 0.5
+	pup.radial_segments = 8
+	pup.rings = 4
+	var mole_mat := StandardMaterial3D.new()
+	mole_mat.albedo_color = Defs.TOOLS["moles"]["color"]
+	for i in MAX_MOLES:
+		var m := MeshInstance3D.new()
+		m.mesh = pup
+		m.material_override = mole_mat
+		m.visible = false
+		add_child(m)
+		_moles.append(m)
+		_mole_to.append(Vector3.ZERO)
 
 
 func _shovel_arc() -> float:
@@ -243,7 +261,10 @@ func update(delta: float) -> void:
 			"beam":
 				w["timer"] = cooldown(id)
 				_beam(mine, p, at)
+			"spark":
+				w["timer"] = cooldown(id) if _spark(mine, p, at) else 0.2
 	_update_saws(delta, mine, at)
+	_update_moles(delta, mine, at)
 	_update_bombs(delta, mine, at)
 	_update_slash(delta, p)
 
@@ -367,6 +388,65 @@ func _pulse(mine: Mine, at: Vector3) -> void:
 		run.fx.ring(at, r, Color(0.6, 0.8, 1.0, 0.9), time)
 		run.fx.shake(0.12)
 		Sfx.play("thud", -5.0, 1.4)
+
+
+## Jumps from enemy to enemy, biting the rock under each. With no enemy in reach it bites rock ahead.
+func _spark(mine: Mine, p: Player, at: Vector3) -> bool:
+	var t: Dictionary = Defs.TOOLS["spark"]
+	var e: Enemies = run.enemies
+	var reach := size("spark")
+	var up := Vector3(0, 0.9, 0)
+	var last := at
+	var done: Array[int] = []
+	var hops: int = (t["hops"] + level("spark") / 2) * (Defs.EVOLUTIONS["spark"]["hops"] if evolved.has("spark") else 1)
+	var i := e.nearest_awake(at, reach)
+	if i < 0:
+		var to := at + p.heading * run.rng.randf_range(reach * 0.3, reach * 0.6)
+		if mine.hit_circle(to, t["bite"], dmg("spark"), to) == 0:
+			return false
+		run.fx.bolt(at + up, to + up, t["color"])
+		Sfx.play("zap", -12.0, 1.3)
+		return true
+	while i >= 0 and done.size() < hops:
+		done.append(i)
+		var q := e.pos[i]
+		run.fx.bolt(last + up, q + up, t["color"])
+		mine.hit_circle(q, t["bite"], dmg("spark"), q)
+		e.hit(i, dmg("spark"), last)
+		last = q
+		i = e.nearest_awake(q, reach * 0.6, done)
+	Sfx.play("zap", -9.0, 1.3)
+	return true
+
+
+## Moles run to spots around you and bite what they pass, so side tunnels open by themselves.
+func _update_moles(delta: float, mine: Mine, at: Vector3) -> void:
+	var lvl := level("moles")
+	var count := 0
+	var tick := false
+	if lvl > 0:
+		count = mini(1 + lvl / 2 + (Defs.EVOLUTIONS["moles"]["extra"] if evolved.has("moles") else 0), MAX_MOLES)
+		if owned["moles"]["timer"] <= 0.0:
+			owned["moles"]["timer"] = cooldown("moles")
+			tick = true
+	var t: Dictionary = Defs.TOOLS["moles"]
+	var roam := size("moles")
+	for k in MAX_MOLES:
+		var m := _moles[k]
+		m.visible = k < count
+		if not m.visible:
+			continue
+		var p := Vector3(m.position.x, 0, m.position.z)
+		if p.distance_to(_mole_to[k]) < 0.5 or _mole_to[k].distance_to(at) > roam * 1.3:
+			var a := run.rng.randf() * TAU
+			_mole_to[k] = at + Vector3(cos(a), 0, sin(a)) * run.rng.randf_range(roam * 0.4, roam)
+			if p.distance_to(at) > roam * 1.5:
+				p = at
+		p = p.move_toward(_mole_to[k], float(t["speed"]) * delta)
+		m.position = p + Vector3(0, Mine.HEIGHT + 0.2, 0)
+		if tick:
+			mine.hit_circle(p, t["bite"], dmg("moles"), p, 0.0, true)
+			run.enemies.hit_circle(p, t["bite"], dmg("moles"))
 
 
 func _beam(mine: Mine, p: Player, at: Vector3) -> void:

@@ -8,8 +8,9 @@ extends Node3D
 ## is underneath. Tools can only hit cubes near enough to what you know.
 
 const CELL := 0.5
-const SIZE := 320  # cubes per side
+const SIZE := 960  # cubes per side
 const CHUNK := 32
+const CHUNKS := SIZE / CHUNK
 const HEIGHT := 0.7
 const FLASH := 0.13  # seconds a hit cube stays white and shaking
 const FADE := 8  # how far a cell of the fog map moves per sight update, so the rings glide instead of jump
@@ -23,7 +24,8 @@ uniform float rim = 0.7;
 uniform float cube_steps = 25.5;
 uniform vec3 digger;
 uniform float light = 10.0;
-uniform float world_size = 160.0;
+uniform vec2 window_at;
+uniform float window_size = 128.0;
 uniform float cell = 0.5;
 uniform float tint = 0.1;
 uniform float dim = 0.4;
@@ -37,7 +39,7 @@ void vertex() {
 }
 void fragment() {
 	vec2 center = (floor(wpos.xz / cell) + 0.5) * cell;  // everything per cube, so the fog follows the grid
-	float cubes = texture(fog_map, center / world_size + 0.5).r * cube_steps;
+	float cubes = texture(fog_map, (center - window_at) / window_size).r * cube_steps;
 	float fog = bands[min(int(max(cubes + 0.01 - rim, 0.0) / band_width), 7)];
 	float d = distance(center, digger.xz);
 	float clear = (1.0 - fog) * (1.0 - dim * smoothstep(light * 0.45, light, d));
@@ -87,6 +89,8 @@ void fragment() {
 	NORMAL_MAP = vec3(at / max(size, 0.001) * 0.4 * stone + 0.5, 1.0);
 }
 """
+const FOG_WINDOW := 256  # the fog map on the GPU only covers this many cubes around you
+const FOG_SNAP := 16
 const HIDDEN := Transform3D(Basis(Vector3.ZERO, Vector3.ZERO, Vector3.ZERO), Vector3.ZERO)
 const STEP := 10  # one cube of distance in the fog map, straight; a diagonal costs 14, about the true distance
 const DIAGONAL := 14
@@ -104,10 +108,11 @@ var glint_col := PackedColorArray()
 var glint_cell := PackedInt32Array()
 var kind := PackedByteArray()  # index into Defs.CUBES, 0 = empty
 var hp := PackedFloat32Array()
-var _color := PackedColorArray()
 var _heat := PackedFloat32Array()
 var _hot := PackedInt32Array()
-var _mm: Array[MultiMesh] = []
+var _mm: Array[MultiMesh] = []  # null until you come near
+var _cube: BoxMesh
+var _cube_mat: StandardMaterial3D
 var _hp_of: Array[float] = []
 var _q_time := PackedFloat32Array()
 var _q_cell := PackedInt32Array()
@@ -119,6 +124,7 @@ var _moving := PackedInt32Array()  # cells where _shown hasn't caught up
 var _farthest: int = int((Defs.WORLD["fog_rim"] + Defs.WORLD["fog_band"] * 7.0 + 1.0) * STEP)
 var _reach: int = int(Defs.WORLD["fog_reach"] * STEP)
 var _fog_image: Image
+var _window_at := Vector2i(-1, -1)
 var _fog_texture: ImageTexture
 var _fog: MeshInstance3D
 var _fog_mat: ShaderMaterial
@@ -127,32 +133,15 @@ var _fog_mat: ShaderMaterial
 func _ready() -> void:
 	kind.resize(SIZE * SIZE)
 	hp.resize(SIZE * SIZE)
-	_color.resize(SIZE * SIZE)
 	_heat.resize(SIZE * SIZE)
 	for d in Defs.CUBES:
 		_hp_of.append(float(d.get("hp", 0.0)))
-	var cube := BoxMesh.new()
-	cube.size = Vector3(CELL, HEIGHT, CELL)
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.8
-	var chunks := SIZE / CHUNK
-	var span := CHUNK * CELL
-	for z in chunks:
-		for x in chunks:
-			var mm := MultiMesh.new()
-			mm.transform_format = MultiMesh.TRANSFORM_3D
-			mm.use_colors = true
-			mm.mesh = cube
-			mm.instance_count = CHUNK * CHUNK
-			_mm.append(mm)
-			var mmi := MultiMeshInstance3D.new()
-			mmi.multimesh = mm
-			mmi.material_override = mat
-			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			mmi.custom_aabb = AABB(Vector3.ZERO, Vector3(span, HEIGHT + 1.0, span))
-			mmi.position = Vector3((x - chunks * 0.5) * span, 0, (z - chunks * 0.5) * span)
-			add_child(mmi)
+	_cube = BoxMesh.new()
+	_cube.size = Vector3(CELL, HEIGHT, CELL)
+	_cube_mat = StandardMaterial3D.new()
+	_cube_mat.vertex_color_use_as_albedo = true
+	_cube_mat.roughness = 0.8
+	_mm.resize(CHUNKS * CHUNKS)
 	var floor_mesh := PlaneMesh.new()
 	floor_mesh.size = Vector2.ONE * (SIZE * CELL + 40.0)
 	var floor_shader := Shader.new()
@@ -169,13 +158,47 @@ func _ready() -> void:
 	_build_fog()
 
 
+## Chunks are only made once you come near: the mine is far bigger than what a run ever sees.
+func show_chunks(at: Vector3) -> void:
+	var r: int = Defs.WORLD["draw_chunks"]
+	var cx := clampi(cell_of(at.x) / CHUNK, 0, CHUNKS - 1)
+	var cz := clampi(cell_of(at.z) / CHUNK, 0, CHUNKS - 1)
+	for z in range(maxi(cz - r, 0), mini(cz + r, CHUNKS - 1) + 1):
+		for x in range(maxi(cx - r, 0), mini(cx + r, CHUNKS - 1) + 1):
+			if _mm[x + z * CHUNKS] == null:
+				_build_chunk(x, z)
+
+
+func _build_chunk(cx: int, cz: int) -> void:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	mm.mesh = _cube
+	mm.instance_count = CHUNK * CHUNK
+	_mm[cx + cz * CHUNKS] = mm
+	var span := CHUNK * CELL
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	mmi.material_override = _cube_mat
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mmi.custom_aabb = AABB(Vector3.ZERO, Vector3(span, HEIGHT + 1.0, span))
+	mmi.position = Vector3((cx - CHUNKS * 0.5) * span, 0, (cz - CHUNKS * 0.5) * span)
+	add_child(mmi)
+	for z in CHUNK:
+		for x in CHUNK:
+			_draw_cube(cx * CHUNK + x + (cz * CHUNK + z) * SIZE)
+
+
 ## A sheet level with the top of the rock: it covers the rock, the floor and whatever lies on it, so
 ## nothing else needs to know about the fog.
 func _build_fog() -> void:
 	_known.resize(SIZE * SIZE)
 	_shown.resize(SIZE * SIZE)
 	forget()
-	_fog_image = Image.create_from_data(SIZE, SIZE, false, Image.FORMAT_R8, _shown)
+	var blank := PackedByteArray()
+	blank.resize(FOG_WINDOW * FOG_WINDOW)
+	blank.fill(_farthest)
+	_fog_image = Image.create_from_data(FOG_WINDOW, FOG_WINDOW, false, Image.FORMAT_R8, blank)
 	_fog_texture = ImageTexture.create_from_image(_fog_image)
 	var w := Defs.WORLD
 	var shader := Shader.new()
@@ -188,7 +211,7 @@ func _build_fog() -> void:
 	_fog_mat.set_shader_parameter("rim", w["fog_rim"])
 	_fog_mat.set_shader_parameter("cube_steps", 255.0 / STEP)
 	_fog_mat.set_shader_parameter("light", w["light"])
-	_fog_mat.set_shader_parameter("world_size", SIZE * CELL)
+	_fog_mat.set_shader_parameter("window_size", FOG_WINDOW * CELL)
 	_fog_mat.set_shader_parameter("cell", CELL)
 	_fog_mat.set_shader_parameter("tint", w["fog_tint"])
 	_fog_mat.set_shader_parameter("dim", w["fog_dim"])
@@ -231,11 +254,11 @@ func generate(rng: RandomNumberGenerator) -> void:
 	_open_lifts(rng)
 	_place_heart(rng)
 	_dig_rooms(rng)
+	_lay_veins(rng)
+	_lay_seams(rng)
 	forget()
 	for c in SIZE * SIZE:
-		_color[c] = _tint(c)
 		hp[c] *= 0.75 + 0.5 * fmod(c * 0.7548776662, 1.0)  # so one swing doesn't pop a whole flat front
-		_draw_cube(c)
 
 
 func _noise(rng: RandomNumberGenerator, frequency: float) -> FastNoiseLite:
@@ -262,14 +285,19 @@ func _pick(x: int, z: int, p: Vector2, warp: FastNoiseLite, grain: FastNoiseLite
 	return b["rock"][0 if grain.get_noise_2dv(p) < 0.0 else 1]
 
 
+## A random spot this far out, spread evenly over the ground rather than bunched near the start.
+func _spot(rng: RandomNumberGenerator, near: float, far: float) -> Vector3:
+	var a := rng.randf() * TAU
+	return Vector3(cos(a), 0, sin(a)) * sqrt(rng.randf_range(near * near, far * far))
+
+
 ## Blobs of crystal, which go off as one chain reaction.
 func _scatter_crystals(rng: RandomNumberGenerator) -> void:
 	var w := Defs.WORLD
 	for k in w["crystals"]:
-		var a := rng.randf() * TAU
-		var dist := rng.randf_range(w["start_clear"] * 2.0, SIZE * CELL * 0.48)
-		var cx := cell_of(cos(a) * dist)
-		var cz := cell_of(sin(a) * dist)
+		var at := _spot(rng, w["start_clear"] * 2.0, SIZE * CELL * 0.48)
+		var cx := cell_of(at.x)
+		var cz := cell_of(at.z)
 		var r := rng.randi_range(w["crystal_min"], w["crystal_max"])
 		for z in range(cz - r, cz + r + 1):
 			for x in range(cx - r, cx + r + 1):
@@ -283,8 +311,7 @@ func _scatter_crystals(rng: RandomNumberGenerator) -> void:
 func _scatter_geodes(rng: RandomNumberGenerator) -> void:
 	var r := Defs.RUN
 	for k in r["geodes"]:
-		var a := rng.randf() * TAU
-		var p := Vector3(cos(a), 0, sin(a)) * rng.randf_range(Defs.THREATS["safe_start"] * 0.7, SIZE * CELL * 0.46)
+		var p := _spot(rng, Defs.THREATS["safe_start"] * 0.7, SIZE * CELL * 0.46)
 		_stamp(p, rng.randi_range(r["geode_min"], r["geode_max"]), Defs.GEODE)
 		add_glint(p, Defs.CUBES[Defs.GEODE]["color"], cell_of(p.x) + cell_of(p.z) * SIZE)
 
@@ -308,10 +335,9 @@ func drop_glint(p: Vector3) -> void:
 func _scatter_gas(rng: RandomNumberGenerator) -> void:
 	var t := Defs.THREATS
 	for k in t["gas_blobs"]:
-		var a := rng.randf() * TAU
-		var dist := rng.randf_range(t["safe_start"], SIZE * CELL * 0.48)
-		var cx := cell_of(cos(a) * dist)
-		var cz := cell_of(sin(a) * dist)
+		var at := _spot(rng, t["safe_start"], SIZE * CELL * 0.48)
+		var cx := cell_of(at.x)
+		var cz := cell_of(at.z)
 		var r := rng.randi_range(1, 2)
 		for z in range(cz - r, cz + r + 1):
 			for x in range(cx - r, cx + r + 1):
@@ -325,9 +351,7 @@ func _dig_nests(rng: RandomNumberGenerator) -> void:
 	var t := Defs.THREATS
 	nests.clear()
 	for k in t["nests"]:
-		var a := rng.randf() * TAU
-		var dist := rng.randf_range(t["safe_start"], SIZE * CELL * 0.46)
-		var center := Vector3(cos(a) * dist, 0, sin(a) * dist)
+		var center := _spot(rng, t["safe_start"], SIZE * CELL * 0.46)
 		var r := rng.randf_range(t["nest_min"], t["nest_max"])
 		nests.append([center, r])
 		var cells := ceili(r / CELL)
@@ -346,7 +370,7 @@ func _open_lifts(rng: RandomNumberGenerator) -> void:
 	lifts.append(Vector3(0, 0, 2.6))
 	var n: int = r["lifts"]
 	for k in n:
-		var a := TAU * k / n + rng.randf_range(-0.3, 0.3)
+		var a := TAU * k / n + rng.randf_range(-0.2, 0.2)
 		var p := Vector3(cos(a), 0, sin(a)) * lerpf(r["lift_min"], r["lift_max"], (k % 3) / 2.0)
 		_stamp(p, 4, 0)
 		lifts.append(p)
@@ -356,6 +380,49 @@ func _place_heart(rng: RandomNumberGenerator) -> void:
 	var a := rng.randf() * TAU
 	heart_pos = Vector3(cos(a), 0, sin(a)) * Defs.RUN["heart_dist"]
 	_stamp(heart_pos, Defs.RUN["heart_r"], Defs.HEART)
+
+
+## Veins run out from the Heart and thin to nothing, so a thick vein means you are close.
+func _lay_veins(rng: RandomNumberGenerator) -> void:
+	var r := Defs.RUN
+	var n: int = r["vein_arms"]
+	var a := rng.randf() * TAU
+	for k in n:
+		_wander(rng, heart_pos, a + TAU * k / n, r["vein_len"], func(p: Vector3, done: float) -> void:
+			_lace(p, roundi(r["vein_r"] * (1.0 - done)), Defs.VEIN))
+
+
+func _lay_seams(rng: RandomNumberGenerator) -> void:
+	var r := Defs.RUN
+	for k in r["seams"]:
+		var from := _spot(rng, Defs.THREATS["safe_start"], SIZE * CELL * 0.47)
+		_wander(rng, from, rng.randf() * TAU, rng.randf_range(r["seam_min"], r["seam_max"]), func(p: Vector3, _done: float) -> void:
+			_lace(p, 1, Defs.FUEL))
+
+
+## Walks a crooked line, calling `paint` every cube with the position and the share of the way done.
+func _wander(rng: RandomNumberGenerator, from: Vector3, angle: float, length: float, paint: Callable) -> void:
+	var p := from
+	var steps := int(length / CELL)
+	for k in steps:
+		paint.call(p, float(k) / steps)
+		angle += rng.randf_range(-0.14, 0.14)
+		p += Vector3(cos(angle), 0, sin(angle)) * CELL
+
+
+## Turns plain rock into this kind; open ground, rooms and the Heart stay as they are.
+func _lace(center: Vector3, cells: int, k: int) -> void:
+	var cx := cell_of(center.x)
+	var cz := cell_of(center.z)
+	for z in range(cz - cells, cz + cells + 1):
+		for x in range(cx - cells, cx + cells + 1):
+			if x < 2 or z < 2 or x >= SIZE - 2 or z >= SIZE - 2 or Vector2i(x - cx, z - cz).length_squared() > cells * cells:
+				continue
+			var c := x + z * SIZE
+			var was := kind[c]
+			if was != 0 and was != Defs.HEART and was != Defs.VAULT and was != Defs.GEODE:
+				kind[c] = k
+				hp[c] = _hp_of[k]
 
 
 ## Vaults are walled boxes full of the best ore. Shrines stand in open pockets, relics in walled ones.
@@ -386,8 +453,7 @@ func _free_spot(rng: RandomNumberGenerator, taken: Array[Vector3]) -> Vector3:
 	var gap: float = Defs.RUN["room_gap"]
 	var p := Vector3.ZERO
 	for k in 30:
-		var a := rng.randf() * TAU
-		p = Vector3(cos(a), 0, sin(a)) * rng.randf_range(Defs.THREATS["safe_start"], SIZE * CELL * 0.45)
+		p = _spot(rng, Defs.THREATS["safe_start"], SIZE * CELL * 0.45)
 		if taken.all(func(q: Vector3) -> bool: return q.distance_to(p) >= gap):
 			break
 	taken.append(p)
@@ -424,9 +490,10 @@ func carve(p: Vector3, r: float) -> void:
 			var c := x + z * SIZE
 			var k := kind[c]
 			if k != 0 and k != Defs.BEDROCK and k != Defs.HEART:
+				var color := _tint(c)
 				kind[c] = 0
 				_draw_cube(c)
-				run.debris.spray(pos_of(c), _color[c], 1, pos_of(c), 0.6)
+				run.debris.spray(pos_of(c), color, 1, pos_of(c), 0.6)
 
 
 func band_at(dist: float) -> int:
@@ -526,12 +593,13 @@ func scan_light(from: Vector3) -> void:
 			x += dx
 			z += dz
 	_spread_known()
-	_draw_fog()
+	_draw_fog(from)
 
 
 ## Lets the drawn fog catch up, which is what makes the rings glide outward as you dig.
-func _draw_fog() -> void:
-	if _moving.is_empty():
+func _draw_fog(at: Vector3) -> void:
+	var window := Vector2i(_window_cell(at.x), _window_cell(at.z))
+	if _moving.is_empty() and window == _window_at:
 		return
 	for k in range(_moving.size() - 1, -1, -1):
 		var c := _moving[k]
@@ -539,8 +607,18 @@ func _draw_fog() -> void:
 		if _shown[c] == _known[c]:
 			_moving[k] = _moving[_moving.size() - 1]
 			_moving.resize(_moving.size() - 1)
-	_fog_image.set_data(SIZE, SIZE, false, Image.FORMAT_R8, _shown)
+	_window_at = window
+	var rows := PackedByteArray()
+	for z in FOG_WINDOW:
+		var left := window.x + (window.y + z) * SIZE
+		rows.append_array(_shown.slice(left, left + FOG_WINDOW))
+	_fog_image.set_data(FOG_WINDOW, FOG_WINDOW, false, Image.FORMAT_R8, rows)
 	_fog_texture.update(_fog_image)
+	_fog_mat.set_shader_parameter("window_at", (Vector2(window) - Vector2.ONE * SIZE * 0.5) * CELL)
+
+
+func _window_cell(v: float) -> int:
+	return clampi((cell_of(v) - FOG_WINDOW / 2) / FOG_SNAP * FOG_SNAP, 0, SIZE - FOG_WINDOW)
 
 
 # --- coordinates -----------------------------------------------------------------
@@ -579,7 +657,9 @@ func _tint(c: int) -> Color:
 func _draw_cube(c: int) -> void:
 	var x := c % SIZE
 	var z := c / SIZE
-	var mm := _mm[x / CHUNK + (z / CHUNK) * (SIZE / CHUNK)]
+	var mm := _mm[x / CHUNK + (z / CHUNK) * CHUNKS]
+	if mm == null:
+		return
 	var i := (x % CHUNK) + (z % CHUNK) * CHUNK
 	if kind[c] == 0:
 		mm.set_instance_transform(i, HIDDEN)
@@ -594,7 +674,7 @@ func _rest(x: int, z: int) -> Transform3D:
 
 ## Damaged cubes stay darker, so you can see what is about to go.
 func _worn(c: int) -> Color:
-	return _color[c].darkened(clampf(1.0 - hp[c] / _hp_of[kind[c]], 0.0, 1.0) * 0.45)
+	return _tint(c).darkened(clampf(1.0 - hp[c] / _hp_of[kind[c]], 0.0, 1.0) * 0.45)
 
 
 func update(delta: float) -> void:
@@ -631,7 +711,9 @@ func _draw_hot(c: int) -> void:
 	var t := _heat[c] / FLASH
 	var x := c % SIZE
 	var z := c / SIZE
-	var mm := _mm[x / CHUNK + (z / CHUNK) * (SIZE / CHUNK)]
+	var mm := _mm[x / CHUNK + (z / CHUNK) * CHUNKS]
+	if mm == null:
+		return
 	var i := (x % CHUNK) + (z % CHUNK) * CHUNK
 	var form := _rest(x, z)
 	var shake: float = Defs.WORLD["shake"] * t
@@ -660,7 +742,7 @@ func _apply(c: int, dmg: float) -> void:
 	if k == 0 or k == Defs.BEDROCK:
 		return
 	if k == Defs.HEART:
-		dmg = minf(dmg, Defs.RUN["heart_hit"])
+		dmg = minf(dmg, Defs.RUN["heart_hit"]) if run.bosses.left() == 0 else 0.0
 		heart_left = minf(heart_left, clampf((hp[c] - dmg) / _hp_of[k], 0.0, 1.0))
 		run.on_heart_hit()
 	elif run.frenzy_left > 0.0:
@@ -677,14 +759,16 @@ func _apply(c: int, dmg: float) -> void:
 
 func _pop(c: int) -> void:
 	var k := kind[c]
+	var color := _tint(c)
 	kind[c] = 0
 	_draw_cube(c)
 	_learn(c)
-	run.on_cube_popped(pos_of(c), k, _color[c])
+	run.on_cube_popped(pos_of(c), k, color)
 	if Defs.CUBES[k].get("chain", false):
+		var delay: float = Defs.RUN["seam_burn"] if k == Defs.FUEL else Defs.WORLD["chain_delay"]
 		for n in [c - 1, c + 1, c - SIZE, c + SIZE, c - SIZE - 1, c - SIZE + 1, c + SIZE - 1, c + SIZE + 1]:
 			if kind[n] == k:
-				strike(n, 1e9, Defs.WORLD["chain_delay"])
+				strike(n, 1e9, delay)
 
 
 ## Hits every cube in the circle. `wave` is how fast (m/s) the hit spreads from `from`; 0 = at once.

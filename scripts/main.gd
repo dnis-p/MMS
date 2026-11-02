@@ -10,6 +10,9 @@ extends Node
 ##   --char=<id>          with --autotest, dig as this character
 ##   --unlocked           with --autotest, everything is unlocked
 ##   --shop=<n>           with --autotest, every shop upgrade is at level n
+##   --god                with --autotest, the bot can't die, to measure a whole run
+##   --near-heart         with --autotest, start most of the way to the Heart
+##   --boss-at=<s>        with --autotest, the first boss comes at this time
 ##   --quit-after-sec=<n> with --autotest, quit after n seconds
 
 var _current: Node
@@ -57,9 +60,15 @@ func start_run() -> void:
 		run.autotest = true
 		run.base_time_scale = 2.0
 		run.bot.goal = _args.get("goal", "")
+		run.god_mode = _args.has("god")
 	run.exit_to_menu.connect(show_menu)
 	run.retry_requested.connect(start_run)
 	_set_current(run)
+	if _args.has("near-heart"):
+		run.player.global_position = run.mine.heart_pos * 0.7
+		run.mine.hit_circle(run.player.global_position, 3.0, 1e9, run.player.global_position, 0.0, true)
+	if _args.has("boss-at"):
+		run.bosses._next_at = float(_args["boss-at"])
 	if _args.has("give"):
 		var ids: Array = Defs.TOOLS.keys() if _args["give"] == "all" else Array(String(_args["give"]).split(","))
 		for id in ids:

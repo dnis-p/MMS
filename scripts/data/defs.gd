@@ -11,17 +11,29 @@ const FILLER_SCORE := 500
 ## aim_lead_max metres.
 const CAMERA := {"back": 7.0, "up": 19.0, "lead": 0.12, "aim_lead": 0.18, "aim_lead_max": 3.0, "fov": 60.0}
 
-const DIGGER := {"speed": 7.5, "pickup": 3.5, "hp": 100.0, "invuln": 0.8, "level_heal": 30.0, "color": Color(0.2, 0.75, 0.8)}
+## regen: health per second once nothing has hurt you for regen_after seconds.
+const DIGGER := {"speed": 7.5, "pickup": 3.5, "hp": 100.0, "invuln": 0.8, "level_heal": 30.0, "regen": 3.0, "regen_after": 4.0, "color": Color(0.2, 0.75, 0.8)}
 
 ## Enemies, in the order of Enemies.CRAWLER and friends. knock: how far hits push it.
-const ENEMY_ORDER := ["crawler", "brute", "burrower", "runner"]
+const ENEMY_ORDER := ["crawler", "brute", "burrower", "runner", "borer", "brood"]
 const ENEMIES := {
 	"crawler": {"hp": 8.0, "speed": 4.6, "radius": 0.34, "dmg": 4.0, "gem": 0.3, "score": 30, "knock": 1.0, "color": Color(0.85, 0.15, 0.3)},
 	"brute": {"hp": 130.0, "speed": 3.0, "radius": 0.8, "dmg": 15.0, "gem": 8.0, "score": 300, "knock": 0.2, "color": Color(0.5, 0.2, 0.75)},
 	"runner": {"hp": 5.0, "speed": 7.0, "radius": 0.3, "dmg": 3.0, "gem": 0.3, "score": 40, "knock": 1.2, "color": Color(1.0, 0.8, 0.15)},
 	"burrower": {"hp": 45.0, "speed": 3.8, "radius": 0.5, "dmg": 8.0, "gem": 3.0, "score": 120, "knock": 0.6, "color": Color(0.1, 0.65, 0.45)},
+	"borer": {"hp": 900.0, "speed": 3.6, "radius": 1.5, "dmg": 14.0, "gem": 0.0, "score": 5000, "knock": 0.0, "color": Color(0.85, 0.55, 0.2)},
+	"brood": {"hp": 1600.0, "speed": 2.4, "radius": 2.0, "dmg": 18.0, "gem": 0.0, "score": 10000, "knock": 0.0, "color": Color(0.75, 0.2, 0.6)},
 }
-## nests: pockets of sleepers, radius in metres, never within safe_start of the start. Enemies get
+## Guardians come for you on a timer, in this order, and dig through rock to do it. at: seconds into
+## the run, and never sooner than boss_gap seconds after the last one died. The Borer stops for `aim`
+## seconds, then charges in a straight line at `charge` m/s for charge_time, every `every` seconds. The
+## Brood throws `lob` gas bombs at you and drops `brood` crawlers around itself every `every` seconds.
+const BOSSES := [
+	{"enemy": "borer", "name": "THE BORER", "at": 210.0, "every": 5.0, "aim": 0.9, "charge": 16.0, "charge_time": 0.9},
+	{"enemy": "brood", "name": "THE BROOD", "at": 420.0, "every": 4.5, "lob": 3, "brood": 12},
+]
+## nests: pockets of sleepers, radius in metres, never within safe_start of the start. They only fill
+## once you are within nest_fill metres, since the mine holds far more than you ever meet. Enemies get
 ## tougher per rock band (hp_band, dmg_band). burrow_*: burrowers tunnel in from burrow_range metres
 ## away, first after burrow_from seconds, then every burrow_every seconds, less with depth.
 ## spike_cycle: seconds per up-and-down, spike_up of them dangerous, spike_warn of warning before.
@@ -37,14 +49,14 @@ const ENEMIES := {
 ## pace_per to their speed up to pace_max, harm_per to their damage, nudge_per makes them harder to
 ## push back, and runner_per to the share of the swarm that are runners, up to runner_max.
 const THREATS := {
-	"safe_start": 20.0, "nests": 80, "nest_min": 2.5, "nest_max": 5.0, "nest_size": 10, "nest_band": 3, "brutes_from": 2,
-	"hp_band": 0.3, "dmg_band": 0.15, "wake_every": 0.2, "wake_range": 12.0, "knock": 8.0, "knock_max": 12.0, "knock_decay": 26.0,
-	"burrow_from": 40.0, "burrow_every": 22.0, "burrow_min": 7.0, "burrow_range": 18.0, "carve_every": 0.12,
-	"spike_patches": 15, "spike_cycle": 2.6, "spike_up": 0.9, "spike_warn": 0.5, "spike_dmg": 8.0,
-	"gas_blobs": 22, "gas_fuse": 0.9, "gas_radius": 3.0, "gas_merge": 3.0, "gas_dmg": 18.0, "gas_hurts_enemies": 150.0,
-	"swarm_from": 12.0, "swarm_every": 1.2, "swarm_size": 2.0, "swarm_size_ramp": 0.04, "swarm_range": 15.0,
-	"swarm_alive": 25.0, "swarm_alive_ramp": 0.6, "swarm_max": 430.0,
-	"horde_from": 35.0, "horde_every": 40.0, "horde_size": 45.0, "horde_ramp": 0.35, "horde_max": 320.0, "horde_range": 13.0,
+	"safe_start": 20.0, "nests": 220, "nest_fill": 50.0, "nest_min": 2.5, "nest_max": 5.0, "nest_size": 10, "nest_band": 2, "brutes_from": 3,
+	"hp_band": 0.2, "dmg_band": 0.1, "wake_every": 0.2, "wake_range": 12.0, "knock": 8.0, "knock_max": 12.0, "knock_decay": 26.0,
+	"burrow_from": 60.0, "burrow_every": 22.0, "burrow_min": 7.0, "burrow_range": 18.0, "carve_every": 0.12,
+	"spike_patches": 80, "spike_cycle": 2.6, "spike_up": 0.9, "spike_warn": 0.5, "spike_dmg": 8.0,
+	"gas_blobs": 150, "gas_fuse": 0.9, "gas_radius": 3.0, "gas_merge": 3.0, "gas_dmg": 18.0, "gas_hurts_enemies": 150.0,
+	"swarm_from": 20.0, "swarm_every": 1.2, "swarm_size": 2.0, "swarm_size_ramp": 0.012, "swarm_range": 15.0,
+	"swarm_alive": 25.0, "swarm_alive_ramp": 0.3, "swarm_max": 430.0,
+	"horde_from": 75.0, "horde_every": 55.0, "horde_size": 40.0, "horde_ramp": 0.12, "horde_max": 320.0, "horde_range": 13.0,
 	"hard_power": 1.0, "free_upgrades": 8, "tough_per": 0.04, "crowd_per": 0.05, "pace_per": 0.012, "pace_max": 1.45,
 	"harm_per": 0.02, "nudge_per": 0.05, "runner_per": 0.012, "runner_max": 0.45,
 }
@@ -59,18 +71,28 @@ const THREATS := {
 ## rim outward, each fog_band cubes wide after a clear fog_rim, measured from everywhere you have opened
 ## or seen. fog_reach: how many cubes into the fog tools can dig. fog_tint: how much the fog cools what
 ## is under it. fog_dim: how much darker places out of your lamp's reach get (0-1). haze: how thick
-## the air gets toward the edge of your lamp. scan_every: seconds between sight updates.
+## the air gets toward the edge of your lamp. scan_every: seconds between sight updates. draw_chunks:
+## how many chunks around you are drawn.
 const WORLD := {
-	"start_clear": 3.5, "cave_at": 0.5, "band_width": 13.0, "band_warp": 6.0, "ore_at": 0.52,
-	"crystals": 55, "crystal_min": 2, "crystal_max": 5, "chain_delay": 0.028, "shake": 0.05,
-	"swing_wave": 22.0, "blast_wave": 20.0, "level_blast": 5.5, "big_pop": 16, "big_pop_every": 0.6,
+	"start_clear": 3.5, "cave_at": 0.5, "band_width": 33.0, "band_warp": 12.0, "ore_at": 0.52,
+	"crystals": 350, "crystal_min": 2, "crystal_max": 5, "chain_delay": 0.028, "shake": 0.05,
+	"swing_wave": 22.0, "blast_wave": 20.0, "level_blast": 3.5, "big_pop": 16, "big_pop_every": 0.6,
 	"light": 10.0, "fog_bands": [0.0, 0.25, 0.42, 0.58, 0.72, 0.84, 0.93, 1.0], "fog_band": 1.3, "fog_rim": 0.7, "fog_reach": 7.0,
-	"fog_tint": 0.1, "fog_dim": 0.4, "haze": 0.15, "scan_every": 0.05,
+	"fog_tint": 0.1, "fog_dim": 0.4, "haze": 0.15, "scan_every": 0.05, "draw_chunks": 3,
 }
 
-## The goal of a run and how it ends. heart_dist: metres from the start, heart_r: its size in cubes.
-## heart_hit: the most one hit can take off a Heart cube, so nothing skips the fight. heart_bonus: gems
-## for breaking it. heart_horde: seconds between hordes once it wakes. lifts: how many, lift_min to lift_max metres out; lift_pad is their radius and
+## The goal of a run and how it ends. gem_xp and gem_bank: what one gem's worth gives in XP and in
+## banked gems. heart_dist: metres from the start, heart_r: its size in cubes. heart_hit: the most one
+## hit can take off a Heart cube, so nothing skips the fight. heart_bonus: gems for breaking it.
+## heart_horde: seconds between hordes once it wakes. Nothing points at the Heart. Its veins run out
+## from it, vein_arms of them, vein_len metres long and vein_r cubes thick at the Heart, thinning to
+## nothing. Within heart_hear metres you hear it beat, faster and louder the closer you get.
+## boss_gap, boss_range: see BOSSES, and how far off a boss starts; boss_leash keeps it from losing
+## you. A dead boss leaves boss_gems gems worth boss_gem each, and boss_levels free level-ups.
+## Fuel seams: seams of them, seam_min to seam_max metres long. Once lit they burn at seam_burn seconds
+## per cube; every seam_every cubes the fire blasts seam_r metres around for seam_dmg to rock and
+## enemies. seam_hurt is what it does to you within that reach.
+## lifts: how many, lift_min to lift_max metres out; lift_pad is their radius and
 ## lift_hold how long you stand there; lifts run from lift_from seconds, so nobody leaves by accident
 ## while digging at the start. death_keep: share of your gems you keep without a lift.
 ## geodes: how many hard shells full of gems, radius in cubes; geode_band adds to their worth per rock
@@ -79,10 +101,15 @@ const WORLD := {
 ## relic_rooms: how many of each per run, room_gap metres apart. site_use: metres from a shrine or
 ## relic at which you use it.
 const RUN := {
-	"heart_dist": 66.0, "heart_r": 5, "heart_hit": 25.0, "heart_bonus": 500, "heart_horde": 12.0, "lifts": 8, "lift_min": 22.0, "lift_max": 70.0,
+	"gem_xp": 0.35, "gem_bank": 0.12,
+	"heart_dist": 190.0, "heart_r": 5, "heart_hit": 25.0, "heart_bonus": 500, "heart_horde": 12.0,
+	"vein_arms": 7, "vein_len": 130.0, "vein_r": 3.0, "heart_hear": 120.0,
+	"boss_gap": 90.0, "boss_range": 24.0, "boss_leash": 45.0, "boss_gems": 40, "boss_gem": 12.0, "boss_levels": 2,
+	"seams": 60, "seam_min": 40.0, "seam_max": 110.0, "seam_burn": 0.05, "seam_every": 4, "seam_r": 1.6, "seam_dmg": 60.0, "seam_hurt": 6.0,
+	"lifts": 15, "lift_min": 40.0, "lift_max": 215.0,
 	"lift_pad": 1.7, "lift_hold": 1.5, "lift_from": 30.0, "death_keep": 0.5,
-	"geodes": 40, "geode_min": 2, "geode_max": 3, "geode_band": 0.3, "geode_xp": 0.1, "glint_range": 20.0,
-	"vaults": 12, "shrines": 6, "relic_rooms": 2, "room_gap": 12.0, "site_use": 1.4,
+	"geodes": 120, "geode_min": 2, "geode_max": 3, "geode_band": 0.3, "geode_xp": 0.4, "glint_range": 20.0,
+	"vaults": 40, "shrines": 14, "relic_rooms": 2, "room_gap": 12.0, "site_use": 1.4,
 }
 ## Shrines give something and take something, for this run.
 const SHRINES := {
@@ -96,20 +123,22 @@ const EVOLUTIONS := {
 	"shovel": {"boost": "reach", "name": "Great Scoop", "desc": "Swings all the way around you. +50% damage.", "dmg": 1.5, "arc": PI},
 	"drill": {"boost": "haste", "name": "Tunnel Borer", "desc": "Bores a corridor three times wider. +50% damage.", "dmg": 1.5, "width": 1.5},
 	"bombs": {"boost": "power", "name": "Cluster Bombs", "desc": "Every blast throws four smaller ones.", "dmg": 1.0, "cluster": 4},
+	"spark": {"boost": "magnet", "name": "Storm Coil", "desc": "Twice as many jumps. +50% damage.", "dmg": 1.5, "hops": 2},
+	"moles": {"boost": "tough", "name": "Mole Army", "desc": "Two more moles, biting twice as hard.", "dmg": 2.0, "extra": 2},
 }
 ## A long combo starts a Frenzy: every cube pops in one hit for `time` seconds, score times `score`.
 ## at: how much combo it takes, counted from the end of the last Frenzy. Then at least `rest` seconds
 ## until the next one.
-const FRENZY := {"at": 500, "time": 5.0, "rest": 8.0, "score": 2.0, "color": Color(1.0, 0.8, 0.2)}
+const FRENZY := {"at": 800, "time": 5.0, "rest": 15.0, "score": 2.0, "color": Color(1.0, 0.8, 0.2)}
 ## Permanent upgrades bought with banked gems. value: per level. cost: the first level; each next one
 ## costs `grow` times more. Keep the whole shop reachable in hours, not days (owner: no 80-hour grind).
 const SHOP := {
-	"power": {"name": "Sharper Edge", "desc": "+6% digging damage", "value": 0.06, "max": 5, "cost": 60, "grow": 2.0},
-	"health": {"name": "Hard Hat", "desc": "+15 max health", "value": 15.0, "max": 5, "cost": 50, "grow": 2.0},
-	"legs": {"name": "Good Boots", "desc": "+3% move speed", "value": 0.03, "max": 5, "cost": 50, "grow": 2.0},
-	"magnet": {"name": "Long Reach", "desc": "+12% pickup range", "value": 0.12, "max": 5, "cost": 40, "grow": 2.0},
-	"greed": {"name": "Deep Pockets", "desc": "+8% gems found", "value": 0.08, "max": 5, "cost": 80, "grow": 2.0},
-	"cover": {"name": "Insurance", "desc": "+6% gems kept if you don't get out", "value": 0.06, "max": 5, "cost": 70, "grow": 2.0},
+	"power": {"name": "Sharper Edge", "desc": "+6% digging damage", "value": 0.06, "max": 5, "cost": 240, "grow": 2.0},
+	"health": {"name": "Hard Hat", "desc": "+15 max health", "value": 15.0, "max": 5, "cost": 200, "grow": 2.0},
+	"legs": {"name": "Good Boots", "desc": "+3% move speed", "value": 0.03, "max": 5, "cost": 200, "grow": 2.0},
+	"magnet": {"name": "Long Reach", "desc": "+12% pickup range", "value": 0.12, "max": 5, "cost": 150, "grow": 2.0},
+	"greed": {"name": "Deep Pockets", "desc": "+8% gems found", "value": 0.08, "max": 5, "cost": 300, "grow": 2.0},
+	"cover": {"name": "Insurance", "desc": "+6% gems kept if you don't get out", "value": 0.06, "max": 5, "cost": 260, "grow": 2.0},
 }
 
 ## Who digs: a starting tool and one rule. hp, speed and gems multiply the base numbers. no_aim: tools
@@ -131,11 +160,14 @@ const GOALS := [
 	{"id": "frenzies", "text": "Set off 3 Frenzies", "stat": "frenzies", "need": 3, "gems": 150},
 	{"id": "cubes", "text": "Break 25,000 cubes", "stat": "cubes", "need": 25000, "unlock": "tool:pulse"},
 	{"id": "kills", "text": "Kill 3,000 enemies", "stat": "kills", "need": 3000, "gems": 200},
-	{"id": "banked", "text": "Bank 2,000 gems in total", "stat": "banked", "need": 2000, "unlock": "char:rig"},
+	{"id": "boss", "text": "Kill a boss", "stat": "bosses", "need": 1, "unlock": "tool:spark"},
+	{"id": "seams", "text": "Burn 5 fuel seams", "stat": "seams", "need": 5, "unlock": "tool:moles"},
+	{"id": "banked", "text": "Bank 3,000 gems in total", "stat": "banked", "need": 3000, "unlock": "char:rig"},
 	{"id": "basalt", "text": "Reach the Basalt layer", "stat": "band", "need": 5, "gems": 300},
 	{"id": "combo", "text": "Reach a x3,000 combo", "stat": "combo", "need": 3000, "gems": 300},
 	{"id": "relics", "text": "Find 3 relics", "stat": "relics", "need": 3, "gems": 400},
 	{"id": "evolve", "text": "Evolve a tool", "stat": "evolutions", "need": 1, "gems": 300},
+	{"id": "bosses", "text": "Kill 5 bosses", "stat": "bosses", "need": 5, "gems": 800},
 	{"id": "heart", "text": "Break the Heart", "stat": "hearts", "need": 1, "gems": 1000},
 ]
 
@@ -151,15 +183,17 @@ const RELICS := {
 ## Lifetime stats that keep the best run instead of adding up.
 const BEST_STATS := ["band", "combo"]
 
-## Index = cube kind, 0 is empty. xp is earned on the spot, gem drops a shiny worth that much XP.
-## Every shiny mineral always drops its gem. ring: pitch of the hit sound. chain: goes off with the
-## same kind touching it.
+## Index = cube kind, 0 is empty. xp is earned on the spot, gem drops a shiny of that worth. Every
+## shiny mineral always drops its gem. ring: pitch of the hit sound. chain: goes off with the same kind
+## touching it.
 const BEDROCK := 14
 const CRYSTAL := 13
 const GAS := 15
 const HEART := 16
 const GEODE := 17
 const VAULT := 18
+const FUEL := 19
+const VEIN := 20
 const CUBES := [
 	{},
 	{"name": "Dirt", "hp": 10.0, "color": Color(0.56, 0.38, 0.23), "xp": 0.01, "score": 1, "ring": 0.8},
@@ -180,6 +214,8 @@ const CUBES := [
 	{"name": "Heart", "hp": 6000.0, "color": Color(1.0, 0.15, 0.45), "xp": 0.0, "score": 2000, "ring": 0.6, "heart": true},
 	{"name": "Geode", "hp": 150.0, "color": Color(0.25, 0.95, 0.8), "xp": 0.0, "score": 60, "ring": 2.3, "gem": 4.0, "chain": true, "geode": true},
 	{"name": "Vault Wall", "hp": 130.0, "color": Color(0.62, 0.55, 0.35), "xp": 0.02, "score": 5, "ring": 1.8},
+	{"name": "Fuel", "hp": 20.0, "color": Color(1.0, 0.42, 0.0), "xp": 0.01, "score": 5, "ring": 0.6, "chain": true, "fuel": true},
+	{"name": "Heart Vein", "hp": 35.0, "color": Color(0.72, 0.12, 0.34), "xp": 0.03, "score": 8, "ring": 0.5},
 ]
 ## Rock changes every band_width metres out from the start.
 const BANDS := [
@@ -193,7 +229,8 @@ const BANDS := [
 ]
 
 ## Tools work by themselves. dmg, size and cd are level 1; *_up is what each level adds (cd_up
-## multiplies). size means: shovel reach, drill length, saw orbit, blast radius, beam length.
+## multiplies). size means: shovel reach, drill length, saw orbit, blast radius, beam length, how far
+## sparks reach, how far moles roam.
 const TOOLS := {
 	"shovel": {"name": "Shovel", "desc": "Swings at everything in front of you.", "color": Color(0.8, 0.82, 0.86),
 		"dmg": 9.0, "dmg_up": 0.4, "size": 2.4, "size_up": 0.12, "cd": 0.3, "cd_up": 0.95, "arc": 1.15},
@@ -207,6 +244,10 @@ const TOOLS := {
 		"dmg": 30.0, "dmg_up": 0.4, "size": 5.0, "size_up": 0.12, "cd": 3.0, "cd_up": 0.93, "ring_time": 0.35},
 	"beam": {"name": "Mining Beam", "desc": "A long line of rock pops at once.", "color": Color(0.4, 1.0, 0.7), "locked": true,
 		"dmg": 40.0, "dmg_up": 0.4, "size": 14.0, "size_up": 0.12, "cd": 2.4, "cd_up": 0.93},
+	"spark": {"name": "Spark Coil", "desc": "Lightning jumps from enemy to enemy, or bites rock.", "color": Color(0.7, 0.75, 1.0), "locked": true,
+		"dmg": 16.0, "dmg_up": 0.4, "size": 9.0, "size_up": 0.1, "cd": 1.0, "cd_up": 0.93, "hops": 3, "bite": 1.2},
+	"moles": {"name": "Mole Pack", "desc": "Little moles chew their own tunnels around you.", "color": Color(0.8, 0.6, 0.35), "locked": true,
+		"dmg": 7.0, "dmg_up": 0.4, "size": 8.0, "size_up": 0.12, "cd": 0.14, "cd_up": 0.97, "speed": 7.0, "bite": 0.9},
 }
 
 ## value: per level, added to 100%. haste multiplies cooldowns instead.
@@ -248,4 +289,4 @@ static func goal_for(key: String) -> String:
 
 
 static func xp_to_next(level: int) -> int:
-	return 14 + (level - 1) * 10 + maxi(0, level - 20) * 8
+	return 24 + (level - 1) * 10 + maxi(0, level - 15) * 10

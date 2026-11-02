@@ -130,7 +130,7 @@ func update(delta: float) -> void:
 			# Checked after moving: at low frame rates you can outrun a small radius.
 			reached = reached or step >= d - 0.7
 		if reached:
-			run.add_xp(g_val[i] * g_xp[i])
+			run.add_xp(g_val[i] * g_xp[i] * Defs.RUN["gem_xp"])
 			run.add_loot(g_val[i])
 			run.debris.spray(p, g_col[i], 3, p, 0.7)
 			chime = true

@@ -25,6 +25,13 @@ static func reset() -> void:
 	relics = {}
 
 
+## Back to zero for good: everything above, and the file. For testing from the menu.
+static func wipe() -> void:
+	reset()
+	if saving:
+		DirAccess.remove_absolute(file)
+
+
 static func load_file() -> void:
 	reset()
 	var cfg := ConfigFile.new()

@@ -65,7 +65,22 @@ func _show_main() -> void:
 		Options.toggle_fog()
 		fog.text = Options.fog_text())
 	_root.add_child(fog)
+	_root.add_child(_button("Reset progress", _show_reset, 44.0, 280.0))
 	start.grab_focus.call_deferred()
+
+
+func _show_reset() -> void:
+	_clear()
+	_heading("RESET PROGRESS?", 56, Color(1.0, 0.4, 0.3))
+	_heading("Banked gems, shop upgrades, unlocks, goals and relics all go back to zero.", 24, Color(0.9, 0.85, 0.8))
+	_heading("This can't be undone.", 24, Color(0.9, 0.85, 0.8))
+	_root.add_child(_button("Yes, erase it all", func():
+		Profile.wipe()
+		Sfx.play("thud", -5.0)
+		_show_main()))
+	var back := _button("Cancel", _show_main)
+	_root.add_child(back)
+	back.grab_focus.call_deferred()
 
 
 func _show_characters() -> void:

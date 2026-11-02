@@ -12,6 +12,8 @@ const CRAWLER := 0
 const BRUTE := 1
 const BURROWER := 2
 const RUNNER := 3
+const BORER := 4  # this and up are bosses
+const BROOD := 5
 const DRAW_RANGE := 32.0
 const FORGET_RANGE := 70.0
 
@@ -27,6 +29,7 @@ var etype := PackedInt32Array()
 var nest := PackedInt32Array()  # -1 = on its own
 var pos := PackedVector3Array()
 var hp := PackedFloat32Array()
+var full := PackedFloat32Array()  # health when it was made
 var speed := PackedFloat32Array()
 var radius := PackedFloat32Array()
 var dmg := PackedFloat32Array()
@@ -34,6 +37,7 @@ var flash := PackedFloat32Array()
 var knock := PackedVector3Array()
 var yaw := PackedFloat32Array()
 var _free: Array[int] = []
+var _filled := {}  # nests with their sleepers out
 var _grid := {}
 var _mm: Array[MultiMesh] = []
 var _eyes: MultiMesh
@@ -48,7 +52,7 @@ var _q_dmg := PackedFloat32Array()
 
 
 func _ready() -> void:
-	for arr in [alive, awake, digs, etype, nest, pos, hp, speed, radius, dmg, flash, knock, yaw]:
+	for arr in [alive, awake, digs, etype, nest, pos, hp, full, speed, radius, dmg, flash, knock, yaw]:
 		arr.resize(MAX)
 	for id in Defs.ENEMY_ORDER:
 		_colors.append(Defs.ENEMIES[id]["color"])
@@ -65,7 +69,17 @@ func _ready() -> void:
 	runner.height = 0.55
 	runner.radial_segments = 6
 	runner.rings = 3
-	for mesh in [crawler, brute, burrower, runner]:
+	var borer := CylinderMesh.new()
+	borer.top_radius = 0.2
+	borer.bottom_radius = 0.5
+	borer.height = 0.8
+	borer.radial_segments = 8
+	var brood := SphereMesh.new()
+	brood.radius = 0.5
+	brood.height = 0.6
+	brood.radial_segments = 12
+	brood.rings = 6
+	for mesh in [crawler, brute, burrower, runner, borer, brood]:
 		_mm.append(_make_mm(mesh, false))
 	var eye := SphereMesh.new()
 	eye.radius = 0.09
@@ -103,6 +117,7 @@ func clear() -> void:
 		alive[i] = 0
 	used = 0
 	alive_count = 0
+	_filled.clear()
 	_free.clear()
 	_q_time.clear()
 	_q_slot.clear()
@@ -133,16 +148,20 @@ func spawn(type_id: int, p: Vector3, nest_id := -1, is_awake := false, digger :=
 	return i
 
 
-## Fills every nest in the mine with sleepers; deeper nests hold more, and brutes.
-func fill_nests() -> void:
+## Fills the nests you are getting near with sleepers; deeper nests hold more, and brutes.
+func fill_near(from: Vector3) -> void:
 	var t := Defs.THREATS
+	var reach: float = t["nest_fill"] * t["nest_fill"]
 	for n in run.mine.nests.size():
 		var c: Vector3 = run.mine.nests[n][0]
+		if _filled.has(n) or Vector2(c.x - from.x, c.z - from.z).length_squared() > reach:
+			continue
+		_filled[n] = true
 		var r: float = run.mine.nests[n][1]
 		var band := run.mine.band_at(Vector2(c.x, c.z).length())
 		var count: int = t["nest_size"] + t["nest_band"] * band
 		for k in count:
-			if used >= SLEEPERS:
+			if alive_count - awake_count >= SLEEPERS:
 				return
 			var a := run.rng.randf() * TAU
 			var at := c + Vector3(cos(a), 0, sin(a)) * r * 0.7 * sqrt(run.rng.randf())
@@ -155,6 +174,7 @@ func _scale_up(i: int) -> void:
 	var t := Defs.THREATS
 	var band := run.mine.band_at(Vector2(pos[i].x, pos[i].z).length())
 	hp[i] = d["hp"] * (1.0 + t["hp_band"] * band) * run.hardness
+	full[i] = hp[i]
 	speed[i] = d["speed"] * run.pace * run.rng.randf_range(0.9, 1.1)
 	dmg[i] = d["dmg"] * (1.0 + t["dmg_band"] * band) * run.harm
 
@@ -177,6 +197,7 @@ func update(delta: float, at: Vector3, player_radius: float) -> void:
 	var look := _wake_left <= 0.0
 	if look:
 		_wake_left = t["wake_every"]
+		fill_near(at)
 	_carve_left -= delta
 	var carve := _carve_left <= 0.0
 	if carve:
@@ -192,10 +213,13 @@ func update(delta: float, at: Vector3, player_radius: float) -> void:
 		to.y = 0.0
 		var d := to.length()
 		if awake[i] == 0:
-			if look and (mine.has_seen_at(p) if Options.fog else d < t["wake_range"]):
+			if d > FORGET_RANGE:
+				_filled.erase(nest[i])
+				remove(i)
+			elif look and (mine.has_seen_at(p) if Options.fog else d < t["wake_range"]):
 				_wake_nest(i)
 			continue
-		if d > FORGET_RANGE:
+		if d > FORGET_RANGE and etype[i] < BORER:
 			remove(i)
 			continue
 		up += 1
@@ -228,16 +252,10 @@ func _wake_nest(i: int) -> void:
 	for j in used:
 		if alive[j] == 1 and nest[j] == n and awake[j] == 0:
 			awake[j] = 1
-			var left := hp[j] / _full_hp(j)  # a sleeper you already hit stays hurt
+			var left := hp[j] / full[j]  # a sleeper you already hit stays hurt
 			_scale_up(j)
 			hp[j] *= left
 	run.on_nest_woken(pos[i])
-
-
-## What a sleeper's health was when it was put in the nest, at the start of the run.
-func _full_hp(i: int) -> float:
-	var band := run.mine.band_at(Vector2(pos[i].x, pos[i].z).length())
-	return Defs.enemy_def(etype[i])["hp"] * (1.0 + Defs.THREATS["hp_band"] * band)
 
 
 func _separation(i: int, p: Vector3) -> Vector3:
@@ -405,14 +423,14 @@ func hit_line(from: Vector3, dir: Vector3, length: float, half_width: float, amo
 	return count
 
 
-## The closest enemy awake within `r`, or -1.
-func nearest_awake(center: Vector3, r: float) -> int:
+## The closest enemy awake within `r` and not in `skip`, or -1.
+func nearest_awake(center: Vector3, r: float, skip: Array[int] = []) -> int:
 	var best := -1
 	var best_d := r * r
 	for i in used:
 		if alive[i] == 1 and awake[i] == 1:
 			var d2 := center.distance_squared_to(pos[i])
-			if d2 < best_d:
+			if d2 < best_d and not skip.has(i):
 				best_d = d2
 				best = i
 	return best
@@ -421,7 +439,7 @@ func nearest_awake(center: Vector3, r: float) -> int:
 # --- drawing ---------------------------------------------------------------------------
 
 func _render(at: Vector3) -> void:
-	var counts := [0, 0, 0, 0]
+	var counts := [0, 0, 0, 0, 0, 0]
 	var eyes := 0
 	var far := DRAW_RANGE * DRAW_RANGE
 	var white := Color(1, 1, 1)
@@ -434,7 +452,7 @@ func _render(at: Vector3) -> void:
 			continue
 		var t := etype[i]
 		var s := radius[i] * 2.0
-		var lift := 0.35 * s if t != BRUTE else 0.5 * s
+		var lift := 0.35 * s if t != BRUTE and t != BORER else 0.5 * s
 		var seen := run.mine.can_see_at(p)
 		if seen:
 			var bob := absf(sin(_time * 11.0 + i)) * 0.12 if awake[i] == 1 else 0.0

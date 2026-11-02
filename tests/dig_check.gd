@@ -17,6 +17,7 @@ func _ready() -> void:
 	Profile.reset()
 	_main = load("res://scenes/main.tscn").instantiate()
 	add_child(_main)
+	Profile.reset()  # the menu just loaded the real save
 	_main._clear()
 	var r := Run.new()
 	r.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -47,6 +48,11 @@ func _process(delta: float) -> void:
 			_check_meta(r)
 			_check_rooms(r)
 			_check_evolutions(r)
+			_check_clues(r)
+			_check_seams(r)
+			_check_bosses(r)
+			_check_new_tools(r)
+			_check_wipe()
 			_clear_around(r)
 			Input.action_press("move_right")
 			_wait = 0.1
@@ -139,7 +145,7 @@ func _check_world(r: Run) -> void:
 		kinds[m.kind[i]] = true
 	_check("ore and crystal exist", kinds.has(9) and kinds.has(Defs.CRYSTAL))
 	_check("there are nests of sleepers", m.nests.size() > 10)
-	_check("gas rock is rare (%d)" % m.kind.count(Defs.GAS), m.kind.count(Defs.GAS) > 0 and m.kind.count(Defs.GAS) < 1200)
+	_check("gas rock is rare (%d)" % m.kind.count(Defs.GAS), m.kind.count(Defs.GAS) > 0 and m.kind.count(Defs.GAS) < 6000)
 
 
 func _check_shovel(r: Run) -> void:
@@ -263,9 +269,19 @@ func _check_threats(r: Run) -> void:
 	_check("other enemies are stopped by rock", e.pos[crawl].x > 3.5)
 	e.clear()
 	_fill(r, Vector3(3, 0, 0), 2, 0)
-	e.fill_nests()
+	e.fill_near(Vector3.ZERO)
+	_check("only nests near you have sleepers (%d)" % e.alive_count, e.alive_count > 0 and e.alive_count < Enemies.SLEEPERS)
+	var sleepers := e.alive_count
+	for k in Enemies.MAX:
+		e.spawn(Enemies.CRAWLER, Vector3(0, 0, 40), 9)
+		if e.alive_count >= Enemies.SLEEPERS:
+			break
 	r.spawn_horde()
-	_check("sleeping nests leave room for hordes (%d)" % e.alive_count, e.alive_count >= Enemies.SLEEPERS + 40)
+	_check("sleeping nests leave room for hordes (%d)" % e.alive_count, sleepers > 0 and e.alive_count >= Enemies.SLEEPERS + 40)
+	e.clear()
+	e.spawn(Enemies.CRAWLER, Vector3(0, 0, 100), 3)
+	e.update(0.016, Vector3.ZERO, p.radius)
+	_check("nests you left behind empty out again", e.alive_count == 0)
 	e.clear()
 	_check_traps(r)
 	_check_scaling(r)
@@ -404,7 +420,7 @@ func _check_fog(r: Run) -> void:
 ## The world's goal and the two ways out, without ending this run.
 func _check_goal(r: Run) -> void:
 	var m := r.mine
-	_check("the Heart is out near the edge", m.heart_pos.length() > 60.0)
+	_check("the Heart is far from the start", m.heart_pos.length() > 150.0)
 	_check("every run has lifts, one by the start", m.lifts.size() > 5 and m.lifts[0].length() < 3.5)
 	_check("a lift keeps all you carry, dying keeps half", r.keep_share("lift") == 1.0 and r.keep_share("dead") == 0.5)
 	r.loot = 100.5
@@ -415,6 +431,11 @@ func _check_goal(r: Run) -> void:
 	var c := m.cell_of(at.x) + m.cell_of(at.z) * Mine.SIZE
 	r.overlay.hide_panel()
 	m.strike(c, 1e9, 0.0)
+	_check("the Heart is sealed while guardians live", m.hp[c] == Defs.CUBES[Defs.HEART]["hp"] and not r.heart_woken)
+	r.bosses.killed = Defs.BOSSES.size()
+	m.strike(c, 1e9, 0.0)
+	r.bosses.killed = 0
+	r.heart_woken = false
 	_check("nothing breaks a Heart cube in one hit", m.kind[c] == Defs.HEART and m.heart_left < 1.0 and m.hp[c] == Defs.CUBES[Defs.HEART]["hp"] - Defs.RUN["heart_hit"])
 	m.carve(at, 0.3)
 	_check("tunnelling enemies can't eat the Heart", m.kind[c] == Defs.HEART)
@@ -540,6 +561,190 @@ func _check_evolutions(r: Run) -> void:
 	r.mine.update(1.0)
 
 
+## Nothing points at the Heart: veins lead there, and its beat gets closer.
+func _check_clues(r: Run) -> void:
+	var m := r.mine
+	_check("veins run through the rock (%d)" % m.kind.count(Defs.VEIN), m.kind.count(Defs.VEIN) > 500)
+	var near := 0
+	var far := 0
+	for k in 12:
+		var a := TAU * k / 12.0
+		for d in [12.0, 60.0]:
+			var p: Vector3 = m.heart_pos + Vector3(cos(a), 0, sin(a)) * d
+			for x in range(-4, 5):
+				for z in range(-4, 5):
+					if m.kind_at(p + Vector3(x, 0, z) * Mine.CELL) == Defs.VEIN:
+						if d < 20.0:
+							near += 1
+						else:
+							far += 1
+	_check("veins get thicker toward the Heart (%d near, %d far)" % [near, far], near > far)
+	r._beat_left = 0.0
+	r.heart_woken = false
+	r._update_heartbeat(0.016, Vector3(9999, 0, 0))
+	_check("you can't hear it from far off", r._beat_left == 0.5)
+	r._beat_left = 0.0
+	r._update_heartbeat(0.016, m.heart_pos + Vector3(100, 0, 0))
+	var slow := r._beat_left
+	r._beat_left = 0.0
+	r._update_heartbeat(0.016, m.heart_pos + Vector3(10, 0, 0))
+	_check("it beats faster the closer you get (%.2f, then %.2f)" % [slow, r._beat_left], r._beat_left < slow)
+
+
+func _check_seams(r: Run) -> void:
+	var m := r.mine
+	_check("fuel seams run through the mine (%d)" % m.kind.count(Defs.FUEL), m.kind.count(Defs.FUEL) > 2000)
+	var at := Vector3(0, 0, -4)
+	_fill(r, at, 0, 0)
+	var cz := m.cell_of(-4.0)
+	var first := m.cell_of(-10.0) + cz * Mine.SIZE
+	for k in 40:
+		_set_cube(m, first + k, Defs.FUEL)
+	var mob := r.enemies.spawn(Enemies.CRAWLER, m.pos_of(first + 30), -1, true)
+	r.player.invuln = 0.0
+	r._burn_idle = 9.0
+	r.seams = 0
+	var before := r.cubes
+	m.strike(first, 1e9, 0.0)
+	_check("a fuel seam doesn't burn all at once", r.cubes - before < 5)
+	m.update(0.1)
+	var part := r.cubes - before
+	for k in 60:
+		m.update(0.05)
+	_check("it burns along its whole length", part < 20 and m.kind[first + 39] == 0 and r.cubes - before >= 40)
+	_check("and counts as one seam", r.seams == 1)
+	_check("the fire kills what stands by it", not r.enemies.is_alive(mob))
+	r.enemies.clear()
+	_clear_gems(r)
+	r.pending_levelups = 0
+	r.combo = 0
+	r._frenzy_base = 0
+	r.frenzy_left = 0.0
+	m.update(1.0)
+
+
+func _set_cube(m: Mine, c: int, k: int) -> void:
+	m.kind[c] = k
+	m.hp[c] = float(Defs.CUBES[k].get("hp", 0.0))
+
+
+func _check_bosses(r: Run) -> void:
+	var b := r.bosses
+	var e := r.enemies
+	_check("the Heart waits for every guardian", b.left() == Defs.BOSSES.size())
+	r.run_time = Defs.BOSSES[0]["at"] - 1.0
+	b.update(0.016, Vector3.ZERO)
+	_check("no boss before its time", b.current < 0)
+	r.run_time += 2.0
+	b.update(0.016, Vector3.ZERO)
+	_check("a boss comes on time", e.is_alive(b.current) and e.etype[b.current] == Enemies.BORER and not b.fight().is_empty())
+	var i := b.current
+	e.pos[i] = Vector3(10, 0, 0)
+	e.update(0.016, Vector3(500, 0, 0), r.player.radius)
+	_check("a boss doesn't lose you", e.is_alive(i))
+	b.update(0.016, Vector3(500, 0, 0))
+	_check("it catches up when you run", Vector2(e.pos[i].x - 500.0, e.pos[i].z).length() < float(Defs.RUN["boss_leash"]))
+	e.pos[i] = Vector3(10, 0, 0)
+	b._timer = 0.0
+	b.update(0.016, Vector3.ZERO)
+	_check("the Borer stops to aim", b._state == "aim" and e.speed[i] == 0.0)
+	b._timer = 0.0
+	b.update(0.016, Vector3.ZERO)
+	var from: Vector3 = e.pos[i]
+	b.update(0.1, Vector3.ZERO)
+	_check("then charges in a line", b._state == "charge" and e.pos[i].x < from.x)
+	var levels := r.pending_levelups
+	r.run_time = 500.0
+	e.hit(i, 1e9, Vector3.ZERO)
+	_check("a dead boss pays out", b.killed == 1 and b.current < 0 and r.pending_levelups == levels + int(Defs.RUN["boss_levels"]) and r.pickups.g_pos.size() >= int(Defs.RUN["boss_gems"]))
+	b.update(0.016, Vector3.ZERO)
+	_check("the next one takes a while", b.current < 0)
+	r.run_time += float(Defs.RUN["boss_gap"]) + 1.0
+	b.update(0.016, Vector3.ZERO)
+	_check("then the Brood comes", e.is_alive(b.current) and e.etype[b.current] == Enemies.BROOD)
+	var alive := e.alive_count
+	b._timer = 0.0
+	b.update(0.016, Vector3.ZERO)
+	_check("it drops crawlers", e.alive_count > alive)
+	e.hit(b.current, 1e9, Vector3.ZERO)
+	_check("with both dead the Heart is open", b.left() == 0 and b.current < 0)
+	b.killed = 0
+	b._next_at = Defs.BOSSES[0]["at"]
+	r.run_time = 0.0
+	r.pending_levelups = 0
+	r._update_chains(float(Defs.FRENZY["time"]) + 0.1)
+	r.combo = 0
+	r._frenzy_rest = 0.0
+	r._frenzy_base = 0
+	r.frenzies = 0
+	e.clear()
+	_clear_gems(r)
+	for k in 12:
+		r.traps.update(0.2, Vector3(9999, 0, 0))
+	r.mine.update(1.0)
+	r.player.invuln = 0.0
+	r.player.hp = r.player.max_hp
+
+
+func _check_new_tools(r: Run) -> void:
+	var t := r.tools
+	var e := r.enemies
+	var m := r.mine
+	t.add_tool("spark")
+	var a := e.spawn(Enemies.BRUTE, Vector3(3, 0, 0), -1, true)
+	var b := e.spawn(Enemies.BRUTE, Vector3(5, 0, 0), -1, true)
+	var hp: float = e.hp[b]
+	t._spark(m, r.player, Vector3.ZERO)
+	_check("sparks jump from enemy to enemy", e.hp[a] < e.full[a] and e.hp[b] < hp)
+	e.clear()
+	_fill(r, Vector3(3, 0, 0), 3, 5)
+	r.player.heading = Vector3.RIGHT
+	var cubes := m.kind.count(5)
+	for k in 12:
+		t._spark(m, r.player, Vector3.ZERO)
+	m.update(1.0)
+	_check("with no enemies they bite rock", t._spark(m, r.player, Vector3.ZERO) or m.kind.count(5) < cubes)
+	_fill(r, Vector3(3, 0, 0), 3, 0)
+	t.add_tool("moles")
+	_fill(r, Vector3.ZERO, 30, 5)
+	for k in 200:
+		t._update_moles(0.05, m, Vector3.ZERO)
+		t.owned["moles"]["timer"] = 0.0
+	m.update(1.0)
+	var worn := 0
+	for c in range(0, m.hp.size()):
+		if m.kind[c] == 5 and m.hp[c] < 40.0:
+			worn += 1
+	_check("moles bite rock on their own (%d)" % worn, worn > 5 or m.kind.count(0) > 0)
+	_fill(r, Vector3.ZERO, 30, 0)
+	t.owned.erase("spark")
+	t.order.erase("spark")
+	t.owned.erase("moles")
+	t.order.erase("moles")
+	t._update_moles(0.05, m, Vector3.ZERO)
+	_clear_gems(r)
+	r.pending_levelups = 0
+	r.combo = 0
+	r._frenzy_base = 0
+	m.update(1.0)
+
+
+## The reset button: the file goes too, and a new start really is empty.
+func _check_wipe() -> void:
+	Profile.saving = true
+	Profile.file = "user://test_profile.cfg"
+	Profile.gems = 77
+	Profile.shop["power"] = 3
+	Profile.save()
+	Profile.wipe()
+	_check("a reset goes back to zero", Profile.gems == 0 and Profile.shop.is_empty())
+	Profile.load_file()
+	_check("and stays there after a reload", Profile.gems == 0 and Profile.shop.is_empty() and not FileAccess.file_exists(Profile.file))
+	Profile.saving = false
+	Profile.file = Profile.PATH
+	Profile.reset()
+
+
 func _offers(t: Tools, id: String) -> bool:
 	return t._evolution_options().any(func(o): return o["id"] == id)
 
@@ -549,7 +754,7 @@ func _all_reachable() -> bool:
 	for id in Defs.CHARACTERS:
 		if Defs.CHARACTERS[id].get("locked", false) and not keys.has("char:" + id):
 			return false
-	for id in ["bombs", "pulse"]:
+	for id in ["bombs", "pulse", "spark", "moles"]:
 		if not keys.has("tool:" + id):
 			return false
 	return true
@@ -589,7 +794,9 @@ func _check_rewards(r: Run) -> void:
 	m.strike(c, 1.0, 0.0)
 	_check("in a Frenzy any hit pops a cube", m.kind[c] == 0)
 	_fill(r, at, 0, Defs.HEART)
+	r.bosses.killed = Defs.BOSSES.size()
 	m.strike(c, 1.0, 0.0)
+	r.bosses.killed = 0
 	_check("but not the Heart", m.kind[c] == Defs.HEART)
 	r.enemies.clear()
 	_fill(r, at, 0, 0)
@@ -603,7 +810,7 @@ func _check_rewards(r: Run) -> void:
 	r._check_frenzy()
 	_check("the next one takes a new long combo", r.frenzy_left == 0.0)
 	r.combo = 0
-	r._heart_woken = false
+	r.heart_woken = false
 	m.heart_left = 1.0
 	_clear_gems(r)
 
