@@ -2,12 +2,14 @@ class_name Traps
 extends Node3D
 ## Things in the mine that hurt without being alive. Spike plates lie on the floor, often under rock,
 ## and go up and down on a beat you can read. Gas rock looks like rock and blows a short moment after
-## it breaks, which hurts you and anything else nearby.
+## it breaks, which hurts you and anything else nearby. Pale loose rock brings the roof of the mine
+## down a moment after it breaks: rubble fills the tunnels around it and crushes what stands there.
 
 const MAX_SPIKES := 3000
 const MAX_FUSES := 10
 const DRAW_RANGE := 26.0
 const CONES := 4
+const MAX_CAVES := 4
 
 var run: Run
 var _pos := PackedVector3Array()
@@ -18,6 +20,9 @@ var _spikes: MultiMesh
 var _fuse_mesh: Array[MeshInstance3D] = []
 var _fuse_pos: Array[Vector3] = []
 var _fuse_left: Array[float] = []
+var _cave_pos: Array[Vector3] = []
+var _cave_left: Array[float] = []
+var _cave_mesh: Array[MeshInstance3D] = []
 var _time := 0.0
 
 
@@ -50,6 +55,25 @@ func _ready() -> void:
 		_fuse_mesh.append(m)
 		_fuse_pos.append(Vector3.ZERO)
 		_fuse_left.append(0.0)
+	var disc := CylinderMesh.new()
+	disc.top_radius = 1.0
+	disc.bottom_radius = 1.0
+	disc.height = 0.02
+	disc.radial_segments = 32
+	disc.rings = 1
+	for i in MAX_CAVES:
+		var m := MeshInstance3D.new()
+		m.mesh = disc
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.material_override = mat
+		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		m.visible = false
+		add_child(m)
+		_cave_mesh.append(m)
+		_cave_left.append(0.0)
+		_cave_pos.append(Vector3.ZERO)
 
 
 func _make_mm(mesh: Mesh, count: int) -> MultiMesh:
@@ -106,6 +130,7 @@ func height(i: int) -> float:
 func update(delta: float, at: Vector3) -> void:
 	_time += delta
 	_update_fuses(delta)
+	_update_caves(delta, at)
 	var mine := run.mine
 	var plate = _at.get(Vector2i(floori(at.x), floori(at.z)))
 	if plate != null and height(plate) >= 1.0 and mine.kind_at(at) == 0:
@@ -132,6 +157,46 @@ func update(delta: float, at: Vector3) -> void:
 			cones += 1
 	_plates.visible_instance_count = n
 	_spikes.visible_instance_count = cones
+
+
+## Loose rock broke here. One cave-in covers a whole patch of it.
+func start_cave_in(p: Vector3) -> void:
+	var spot := -1
+	var r := Defs.RUN
+	for i in MAX_CAVES:
+		if _cave_left[i] > 0.0:
+			if p.distance_to(_cave_pos[i]) < r["cave_r"]:
+				return
+		elif spot < 0:
+			spot = i
+	if spot < 0:
+		return
+	_cave_left[spot] = r["cave_warn"]
+	_cave_pos[spot] = Vector3(p.x, 0, p.z)
+	var m := _cave_mesh[spot]
+	m.position = Vector3(p.x, Mine.HEIGHT + 0.05, p.z)
+	m.scale = Vector3(r["cave_r"], 1.0, r["cave_r"])
+	m.visible = true
+	if p.distance_to(run.player.global_position) < 30.0:
+		run.fx.shake(0.3)
+		Sfx.play("thud", -3.0, 0.45, true)
+
+
+## The warning: a shadow on the ground and dust raining down, then the rubble.
+func _update_caves(delta: float, at: Vector3) -> void:
+	var r := Defs.RUN
+	for i in MAX_CAVES:
+		if _cave_left[i] <= 0.0:
+			continue
+		_cave_left[i] -= delta
+		var k := 1.0 - _cave_left[i] / float(r["cave_warn"])
+		(_cave_mesh[i].material_override as StandardMaterial3D).albedo_color = Color(0.1, 0.05, 0.02, 0.15 + 0.3 * k + 0.1 * sin(k * 40.0))
+		var a := run.rng.randf() * TAU
+		var dust := _cave_pos[i] + Vector3(cos(a), 2.5, sin(a)) * run.rng.randf_range(0.0, float(r["cave_r"]))
+		run.debris.spray(dust, Color(0.5, 0.45, 0.4), 3, dust, 0.5)
+		if _cave_left[i] <= 0.0:
+			_cave_mesh[i].visible = false
+			run.cave_in(_cave_pos[i], at)
 
 
 ## Gas rock broke here. One fuse covers a whole pocket of it.

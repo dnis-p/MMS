@@ -22,6 +22,7 @@ func _ready() -> void:
 	var r := Run.new()
 	r.process_mode = Node.PROCESS_MODE_PAUSABLE
 	r.run_seed = 7
+	r.instant = true
 	_main._set_current(r)
 	r.levelup_ui.auto_pick = true
 	r.god_mode = true  # the threats have their own checks
@@ -52,6 +53,7 @@ func _process(delta: float) -> void:
 			_check_seams(r)
 			_check_bosses(r)
 			_check_new_tools(r)
+			_check_caves(r)
 			_check_wipe()
 			_clear_around(r)
 			Input.action_press("move_right")
@@ -621,6 +623,58 @@ func _check_seams(r: Run) -> void:
 	r._frenzy_base = 0
 	r.frenzy_left = 0.0
 	m.update(1.0)
+
+
+func _check_caves(r: Run) -> void:
+	var m := r.mine
+	var e := r.enemies
+	var t := r.traps
+	_check("loose rock is in the mine (%d)" % m.kind.count(Defs.LOOSE), m.kind.count(Defs.LOOSE) > 300)
+	_fill(r, Vector3(0, 0, 8), 16, 0)
+	r.player.global_position = Vector3(0, 0, 4)
+	r.god_mode = false
+	r.player.invuln = 0.0
+	r.player.hp = r.player.max_hp
+	var at := Vector3(0, 0, 8)
+	_fill(r, at, 0, Defs.LOOSE)
+	var mob := e.spawn(Enemies.BRUTE, at + Vector3(2, 0, 0), -1, true)
+	var boss := e.spawn(Enemies.BORER, at + Vector3(-2, 0, 0), -1, true)
+	var c := m.cell_of(at.x) + m.cell_of(at.z) * Mine.SIZE
+	m.strike(c, 1e9, 0.0)
+	_check("loose rock gives way", m.kind[c] == 0)
+	_check("rubble doesn't land at once", m.kind_at(at + Vector3(2, 0, 0)) == 0 and e.is_alive(mob))
+	t.update(float(Defs.RUN["cave_warn"]) * 0.5, r.player.global_position)
+	_check("nothing falls during the warning", m.kind_at(at) == 0)
+	var you := Vector3(0, 0, 4)
+	r.crushed = 0
+	t.update(float(Defs.RUN["cave_warn"]), you)
+	_check("then the tunnel fills with rubble", m.kind_at(at + Vector3(1, 0, 0)) == Defs.RUBBLE and m.kind_at(at + Vector3(0, 0, 3)) == Defs.RUBBLE)
+	_check("what stood there is crushed", not e.is_alive(mob) and r.crushed >= 1)
+	_check("a boss only takes a hit", e.is_alive(boss) and e.hp[boss] < e.full[boss])
+	_check("you get a pocket to stand in", m.kind_at(you) == 0)
+	_check("and it hurts if you stayed", r.player.hp < r.player.max_hp)
+	_check("beyond the reach nothing changes", m.kind_at(at + Vector3(0, 0, 6)) == 0)
+	m.update(1.0)
+	_check("all of it has landed", m._fall_c.is_empty())
+	var cell := m.cell_of(at.x + 1.0) + m.cell_of(at.z) * Mine.SIZE
+	m.strike(cell, r.tools.dmg("shovel") * 2.0, 0.0)
+	_check("rubble is weak", m.kind[cell] == 0)
+	e.clear()
+	_fill(r, Vector3(0, 0, 8), 16, 0)
+	var lift: Vector3 = m.lifts[0]
+	_fill(r, lift, 12, 0)
+	m.collapse(lift, 5.0, Vector3(99, 0, 99), 1.0)
+	_check("lifts stay clear", m.kind_at(lift) == 0 and m.kind_at(lift + Vector3(3.5, 0, 0)) == Defs.RUBBLE)
+	m.update(1.0)
+	_fill(r, lift, 12, 0)
+	_clear_gems(r)
+	r.god_mode = true
+	r.player.global_position = Vector3.ZERO
+	r.player.invuln = 0.0
+	r.player.hp = r.player.max_hp
+	r.pending_levelups = 0
+	r.combo = 0
+	r._frenzy_base = 0
 
 
 func _set_cube(m: Mine, c: int, k: int) -> void:

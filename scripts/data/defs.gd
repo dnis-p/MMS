@@ -14,13 +14,14 @@ const CAMERA := {"back": 7.0, "up": 19.0, "lead": 0.12, "aim_lead": 0.18, "aim_l
 ## regen: health per second once nothing has hurt you for regen_after seconds.
 const DIGGER := {"speed": 7.5, "pickup": 3.5, "hp": 100.0, "invuln": 0.8, "level_heal": 30.0, "regen": 3.0, "regen_after": 4.0, "color": Color(0.2, 0.75, 0.8)}
 
-## Enemies, in the order of Enemies.CRAWLER and friends. knock: how far hits push it.
+## Enemies, in the order of Enemies.CRAWLER and friends. knock: how far hits push it. Bodies stay dark
+## so they never pass for gems; shine is the colour of the gem they drop.
 const ENEMY_ORDER := ["crawler", "brute", "burrower", "runner", "borer", "brood"]
 const ENEMIES := {
-	"crawler": {"hp": 8.0, "speed": 4.6, "radius": 0.34, "dmg": 4.0, "gem": 0.3, "score": 30, "knock": 1.0, "color": Color(0.85, 0.15, 0.3)},
-	"brute": {"hp": 130.0, "speed": 3.0, "radius": 0.8, "dmg": 15.0, "gem": 8.0, "score": 300, "knock": 0.2, "color": Color(0.5, 0.2, 0.75)},
-	"runner": {"hp": 5.0, "speed": 7.0, "radius": 0.3, "dmg": 3.0, "gem": 0.3, "score": 40, "knock": 1.2, "color": Color(1.0, 0.8, 0.15)},
-	"burrower": {"hp": 45.0, "speed": 3.8, "radius": 0.5, "dmg": 8.0, "gem": 3.0, "score": 120, "knock": 0.6, "color": Color(0.1, 0.65, 0.45)},
+	"crawler": {"hp": 8.0, "speed": 4.6, "radius": 0.34, "dmg": 4.0, "gem": 0.3, "score": 30, "knock": 1.0, "color": Color(0.34, 0.1, 0.13), "shine": Color(0.95, 0.2, 0.35)},
+	"brute": {"hp": 130.0, "speed": 3.0, "radius": 0.8, "dmg": 15.0, "gem": 8.0, "score": 300, "knock": 0.2, "color": Color(0.2, 0.11, 0.32), "shine": Color(0.6, 0.3, 0.9)},
+	"runner": {"hp": 5.0, "speed": 7.0, "radius": 0.3, "dmg": 3.0, "gem": 0.3, "score": 40, "knock": 1.2, "color": Color(0.36, 0.25, 0.08), "shine": Color(1.0, 0.8, 0.15)},
+	"burrower": {"hp": 45.0, "speed": 3.8, "radius": 0.5, "dmg": 8.0, "gem": 3.0, "score": 120, "knock": 0.6, "color": Color(0.07, 0.24, 0.18), "shine": Color(0.1, 0.8, 0.55)},
 	"borer": {"hp": 900.0, "speed": 3.6, "radius": 1.5, "dmg": 14.0, "gem": 0.0, "score": 5000, "knock": 0.0, "color": Color(0.85, 0.55, 0.2)},
 	"brood": {"hp": 1600.0, "speed": 2.4, "radius": 2.0, "dmg": 18.0, "gem": 0.0, "score": 10000, "knock": 0.0, "color": Color(0.75, 0.2, 0.6)},
 }
@@ -92,6 +93,9 @@ const WORLD := {
 ## Fuel seams: seams of them, seam_min to seam_max metres long. Once lit they burn at seam_burn seconds
 ## per cube; every seam_every cubes the fire blasts seam_r metres around for seam_dmg to rock and
 ## enemies. seam_hurt is what it does to you within that reach.
+## Cave-ins: cave_blobs patches of pale loose rock. Break one and after cave_warn seconds rubble drops
+## on all open ground within cave_r metres, except cave_spare metres around you. It does cave_crush
+## (times how tough enemies are right now) to enemies there, and cave_hurt to you.
 ## lifts: how many, lift_min to lift_max metres out; lift_pad is their radius and
 ## lift_hold how long you stand there; lifts run from lift_from seconds, so nobody leaves by accident
 ## while digging at the start. death_keep: share of your gems you keep without a lift.
@@ -106,6 +110,7 @@ const RUN := {
 	"vein_arms": 7, "vein_len": 130.0, "vein_r": 3.0, "heart_hear": 120.0,
 	"boss_gap": 90.0, "boss_range": 24.0, "boss_leash": 45.0, "boss_gems": 40, "boss_gem": 12.0, "boss_levels": 2,
 	"seams": 60, "seam_min": 40.0, "seam_max": 110.0, "seam_burn": 0.05, "seam_every": 4, "seam_r": 1.6, "seam_dmg": 60.0, "seam_hurt": 6.0,
+	"cave_blobs": 500, "cave_r": 5.0, "cave_warn": 0.8, "cave_spare": 1.4, "cave_crush": 400.0, "cave_hurt": 12.0,
 	"lifts": 15, "lift_min": 40.0, "lift_max": 215.0,
 	"lift_pad": 1.7, "lift_hold": 1.5, "lift_from": 30.0, "death_keep": 0.5,
 	"geodes": 120, "geode_min": 2, "geode_max": 3, "geode_band": 0.3, "geode_xp": 0.4, "glint_range": 20.0,
@@ -167,6 +172,7 @@ const GOALS := [
 	{"id": "combo", "text": "Reach a x3,000 combo", "stat": "combo", "need": 3000, "gems": 300},
 	{"id": "relics", "text": "Find 3 relics", "stat": "relics", "need": 3, "gems": 400},
 	{"id": "evolve", "text": "Evolve a tool", "stat": "evolutions", "need": 1, "gems": 300},
+	{"id": "crushed", "text": "Crush 50 enemies in cave-ins", "stat": "crushed", "need": 50, "gems": 250},
 	{"id": "bosses", "text": "Kill 5 bosses", "stat": "bosses", "need": 5, "gems": 800},
 	{"id": "heart", "text": "Break the Heart", "stat": "hearts", "need": 1, "gems": 1000},
 ]
@@ -194,6 +200,8 @@ const GEODE := 17
 const VAULT := 18
 const FUEL := 19
 const VEIN := 20
+const LOOSE := 21
+const RUBBLE := 22
 const CUBES := [
 	{},
 	{"name": "Dirt", "hp": 10.0, "color": Color(0.56, 0.38, 0.23), "xp": 0.01, "score": 1, "ring": 0.8},
@@ -216,6 +224,8 @@ const CUBES := [
 	{"name": "Vault Wall", "hp": 130.0, "color": Color(0.62, 0.55, 0.35), "xp": 0.02, "score": 5, "ring": 1.8},
 	{"name": "Fuel", "hp": 20.0, "color": Color(1.0, 0.42, 0.0), "xp": 0.01, "score": 5, "ring": 0.6, "chain": true, "fuel": true},
 	{"name": "Heart Vein", "hp": 35.0, "color": Color(0.72, 0.12, 0.34), "xp": 0.03, "score": 8, "ring": 0.5},
+	{"name": "Loose Rock", "hp": 6.0, "color": Color(0.8, 0.78, 0.68), "xp": 0.0, "score": 2, "ring": 0.7, "chain": true, "loose": true},
+	{"name": "Rubble", "hp": 6.0, "color": Color(0.34, 0.31, 0.28), "xp": 0.0, "score": 1, "ring": 0.6},
 ]
 ## Rock changes every band_width metres out from the start.
 const BANDS := [

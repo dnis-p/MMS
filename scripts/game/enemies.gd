@@ -373,6 +373,13 @@ func hit_circle(center: Vector3, r: float, amount: float) -> int:
 	return count
 
 
+## Hits everything in the circle but what stands within `spare_r` of `spare`.
+func crush(center: Vector3, r: float, spare: Vector3, spare_r: float, amount: float) -> void:
+	for i in used:
+		if alive[i] == 1 and _in_circle(i, center, r) and Vector2(pos[i].x - spare.x, pos[i].z - spare.z).length() >= spare_r:
+			hit(i, amount, center)
+
+
 ## Hits each enemy in a Fx ring as the ring reaches it.
 func hit_ring(center: Vector3, r: float, amount: float, duration: float) -> int:
 	var count := 0

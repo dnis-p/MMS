@@ -53,7 +53,13 @@ func show_menu() -> void:
 
 func start_run() -> void:
 	_clear()
+	var screen := CanvasLayer.new()
+	var loading := Loading.new()
+	screen.add_child(loading)
+	add_child(screen)
 	var run := Run.new()
+	run.load_progress.connect(loading.show_progress)
+	run.loaded.connect(screen.queue_free)
 	run.process_mode = Node.PROCESS_MODE_PAUSABLE
 	run.run_seed = int(_args.get("seed", "0"))
 	if _args.has("autotest"):
@@ -64,6 +70,8 @@ func start_run() -> void:
 	run.exit_to_menu.connect(show_menu)
 	run.retry_requested.connect(start_run)
 	_set_current(run)
+	if not run.ready_to_play:
+		await run.loaded
 	if _args.has("near-heart"):
 		run.player.global_position = run.mine.heart_pos * 0.7
 		run.mine.hit_circle(run.player.global_position, 3.0, 1e9, run.player.global_position, 0.0, true)

@@ -5,12 +5,16 @@ extends Node3D
 
 signal exit_to_menu
 signal retry_requested
+signal load_progress(share: float, what: String)
+signal loaded
 
 const PENTATONIC := [0, 2, 4, 7, 9]  # any run of these notes sounds good
 
 ## All gameplay randomness comes from `rng` so a seed can reproduce a run.
 var rng := RandomNumberGenerator.new()
 var run_seed := 0  # 0 = pick a random one
+var instant := false  # no loading screen, for tests
+var ready_to_play := false
 
 var player: Player
 var mine: Mine
@@ -56,6 +60,7 @@ var geodes := 0
 var relics := 0
 var evolutions := 0
 var seams := 0
+var crushed := 0
 var greed_harm := 1.0  # a Greed Shrine's price
 var run_time := 0.0
 var depth := 0.0
@@ -102,6 +107,9 @@ var _mouse_seen := false  # until the mouse moves, tools point the way you walk
 
 
 func _ready() -> void:
+	set_process(false)
+	set_process_input(false)
+	set_process_unhandled_input(false)
 	character = Defs.CHARACTERS[Profile.character]
 	if run_seed != 0:
 		rng.seed = run_seed
@@ -125,8 +133,10 @@ func _ready() -> void:
 
 	mine = Mine.new()
 	mine.run = self
+	mine.instant = instant
+	mine.progress.connect(load_progress.emit)
 	add_child(mine)
-	mine.generate(rng)
+	await mine.generate(rng)
 	enemies = Enemies.new()
 	enemies.run = self
 	add_child(enemies)
@@ -195,6 +205,11 @@ func _ready() -> void:
 	apply_fog()
 	Input.set_custom_mouse_cursor(Ui.crosshair(Color(1, 1, 1)), Input.CURSOR_ARROW, Vector2(24, 24))
 	hud.show_hint("WASD to move  ·  aim with the mouse  ·  your tools dig by themselves", 6.0)
+	ready_to_play = true
+	set_process(true)
+	set_process_input(true)
+	set_process_unhandled_input(true)
+	loaded.emit()
 
 
 func _exit_tree() -> void:
@@ -414,6 +429,8 @@ func on_cube_popped(p: Vector3, k: int, color: Color) -> void:
 		traps.light_gas(p)
 	if d.has("fuel"):
 		_burn(p)
+	if d.has("loose"):
+		traps.start_cave_in(p)
 	if d.has("geode"):
 		_burst_geode(p)
 	elif d.has("gem"):
@@ -466,6 +483,25 @@ func _burn(p: Vector3) -> void:
 		fx.shake(0.12)
 
 
+## The rubble lands: it fills the tunnels around `p` and crushes what stands in them.
+func cave_in(p: Vector3, at: Vector3) -> void:
+	var r := Defs.RUN
+	var reach: float = r["cave_r"]
+	var spare: float = r["cave_spare"]
+	var before := enemies.alive_count
+	mine.collapse(p, reach, at, spare)
+	var near := Vector2(at.x - p.x, at.z - p.z).length() < reach
+	enemies.crush(p, reach, at, spare, r["cave_crush"] * hardness)
+	crushed += before - enemies.alive_count
+	if autotest:
+		print("cave-in: t=%.0f crushed=%d near=%s" % [run_time, before - enemies.alive_count, near])
+	if near:
+		player_hit(r["cave_hurt"])
+	if at.distance_to(p) < 30.0:
+		fx.shake(0.45)
+		Sfx.play("big_boom", -7.0, 0.6, true)
+
+
 func _check_frenzy() -> void:
 	if frenzy_fill() < 1.0 or frenzy_left > 0.0 or _frenzy_rest > 0.0:
 		return
@@ -489,7 +525,8 @@ func on_enemy_killed(p: Vector3, t: int) -> void:
 	combo_timer = Defs.COMBO_WINDOW
 	best_combo = maxi(best_combo, combo)
 	add_score(int(d["score"] * combo_mult()))
-	pickups.drop_gem(p, d["gem"], d["color"])
+	if d["gem"] > 0.0:
+		pickups.drop_gem(p, d["gem"], d["shine"])
 	_play_note()
 	_check_frenzy()
 	Sfx.play("kill", -10.0)
@@ -678,7 +715,7 @@ func gems_kept(how: String) -> int:
 
 func _run_stats(kept: int, how: String) -> Dictionary:
 	return {"runs": 1, "cubes": cubes, "kills": kills, "banked": kept, "band": band, "combo": best_combo, "geodes": geodes,
-		"frenzies": frenzies, "relics": relics, "evolutions": evolutions, "bosses": bosses.killed, "seams": seams, "lifts": 1 if how == "lift" else 0, "hearts": 1 if how == "heart" else 0}
+		"frenzies": frenzies, "relics": relics, "evolutions": evolutions, "bosses": bosses.killed, "seams": seams, "crushed": crushed, "lifts": 1 if how == "lift" else 0, "hearts": 1 if how == "heart" else 0}
 
 
 ## Goals are only paid out at the end, but you hear about them the moment you earn them.
@@ -891,7 +928,7 @@ func _place_camera() -> void:
 
 func _notification(what: int) -> void:
 	# Android back button: toggle the pause menu instead of quitting the app.
-	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST and ready_to_play:
 		_toggle_pause()
 
 

@@ -91,12 +91,16 @@ void fragment() {
 """
 const FOG_WINDOW := 256  # the fog map on the GPU only covers this many cubes around you
 const FOG_SNAP := 16
+const FALL := 120.0  # rubble starts this many metres up per second squared left, so it drops past the camera
 const HIDDEN := Transform3D(Basis(Vector3.ZERO, Vector3.ZERO, Vector3.ZERO), Vector3.ZERO)
 const STEP := 10  # one cube of distance in the fog map, straight; a diagonal costs 14, about the true distance
 const DIAGONAL := 14
 const AROUND: Array[int] = [-1, 1, -SIZE, SIZE, -SIZE - 1, -SIZE + 1, SIZE - 1, SIZE + 1]
 
+signal progress(share: float, what: String)
+
 var run: Run
+var instant := false  # generate in one go, for tests
 var nests: Array = []  # [center, radius] of each pocket that holds sleeping enemies
 var heart_pos := Vector3.ZERO
 var heart_left := 1.0  # share of health left in the Heart's weakest cube
@@ -117,6 +121,9 @@ var _hp_of: Array[float] = []
 var _q_time := PackedFloat32Array()
 var _q_cell := PackedInt32Array()
 var _q_dmg := PackedFloat32Array()
+var _fall_c := PackedInt32Array()  # rubble on its way down
+var _fall_t := PackedFloat32Array()
+var _breath := 0
 var _known := PackedByteArray()  # how far a cell is from anything you know, in STEPs; 0 = known
 var _shown := PackedByteArray()  # the same as drawn, moving toward _known
 var _fresh := PackedInt32Array()  # newly known cells whose surroundings aren't updated yet
@@ -230,6 +237,15 @@ func _build_fog() -> void:
 	_fog.visible = Options.fog
 
 
+## Lets a frame through now and then, so the loading screen moves and the browser stays awake.
+func _breathe(share: float, what: String) -> void:
+	if instant or Time.get_ticks_msec() - _breath < 40:
+		return
+	progress.emit(share, what)
+	await get_tree().process_frame
+	_breath = Time.get_ticks_msec()
+
+
 func generate(rng: RandomNumberGenerator) -> void:
 	var warp := _noise(rng, 0.03)
 	var grain := _noise(rng, 0.13)
@@ -243,22 +259,30 @@ func generate(rng: RandomNumberGenerator) -> void:
 			kind[c] = k
 			hp[c] = _hp_of[k]
 			_heat[c] = 0.0
+		await _breathe(0.75 * z / SIZE, "Packing the rock")
 	_hot.clear()
 	_q_time.clear()
 	_q_cell.clear()
 	_q_dmg.clear()
+	await _breathe(0.76, "Hiding the treasure")
 	_scatter_crystals(rng)
 	_scatter_gas(rng)
 	_dig_nests(rng)
 	_scatter_geodes(rng)
+	await _breathe(0.8, "Burying the Heart")
 	_open_lifts(rng)
 	_place_heart(rng)
 	_dig_rooms(rng)
 	_lay_veins(rng)
+	await _breathe(0.84, "Laying the fuel")
 	_lay_seams(rng)
+	_loosen_rock(rng)
 	forget()
+	await _breathe(0.88, "Cracking the rock")
 	for c in SIZE * SIZE:
 		hp[c] *= 0.75 + 0.5 * fmod(c * 0.7548776662, 1.0)  # so one swing doesn't pop a whole flat front
+		if c % 40000 == 0:
+			await _breathe(0.88 + 0.12 * c / (SIZE * SIZE), "Cracking the rock")
 
 
 func _noise(rng: RandomNumberGenerator, frequency: float) -> FastNoiseLite:
@@ -400,6 +424,12 @@ func _lay_seams(rng: RandomNumberGenerator) -> void:
 			_lace(p, 1, Defs.FUEL))
 
 
+## Pale patches that give way when you break them, see Traps.
+func _loosen_rock(rng: RandomNumberGenerator) -> void:
+	for k in Defs.RUN["cave_blobs"]:
+		_lace(_spot(rng, Defs.THREATS["safe_start"] * 0.6, SIZE * CELL * 0.47), rng.randi_range(1, 2), Defs.LOOSE)
+
+
 ## Walks a crooked line, calling `paint` every cube with the position and the share of the way done.
 func _wander(rng: RandomNumberGenerator, from: Vector3, angle: float, length: float, paint: Callable) -> void:
 	var p := from
@@ -479,6 +509,29 @@ func _stamp(center: Vector3, cells: int, k: int) -> void:
 				var c := x + z * SIZE
 				kind[c] = k
 				hp[c] = _hp_of[k]
+
+
+## Rubble comes down on all open ground in the circle, but not around `spare` or on a lift. Returns
+## how many cubes fell.
+func collapse(center: Vector3, r: float, spare: Vector3, spare_r: float) -> int:
+	var count := 0
+	var pad: float = Defs.RUN["lift_pad"] + CELL
+	for z in range(maxi(cell_of(center.z - r), 2), mini(cell_of(center.z + r), SIZE - 3) + 1):
+		var wz := _world(z)
+		for x in range(maxi(cell_of(center.x - r), 2), mini(cell_of(center.x + r), SIZE - 3) + 1):
+			var c := x + z * SIZE
+			var at := Vector3(_world(x), 0, wz)
+			if kind[c] != 0 or Vector2(at.x - center.x, at.z - center.z).length() > r or Vector2(at.x - spare.x, at.z - spare.z).length() < spare_r:
+				continue
+			if lifts.any(func(l: Vector3) -> bool: return Vector2(l.x - at.x, l.z - at.z).length() < pad):
+				continue
+			kind[c] = Defs.RUBBLE
+			hp[c] = _hp_of[Defs.RUBBLE]
+			_fall_c.append(c)
+			_fall_t.append(randf_range(0.1, 0.4))
+			_draw_fall(c, 0.4)
+			count += 1
+	return count
 
 
 ## Removes rock without it counting as your digging, for things that tunnel.
@@ -651,6 +704,8 @@ func kind_at(p: Vector3) -> int:
 func _tint(c: int) -> Color:
 	var base: Color = Defs.CUBES[kind[c]].get("color", Color.BLACK)
 	var j := fmod(c * 0.61803398875, 1.0)
+	if kind[c] == Defs.LOOSE and j < 0.4:  # cracks, so it doesn't pass for sandstone
+		return base.darkened(0.6)
 	return base.lightened(j * 0.14) if j > 0.5 else base.darkened(j * 0.16)
 
 
@@ -694,6 +749,20 @@ func update(delta: float) -> void:
 		_q_cell.resize(last)
 		_q_dmg.resize(last)
 		_apply(c, dmg)
+	for i in range(_fall_c.size() - 1, -1, -1):
+		var c := _fall_c[i]
+		_fall_t[i] -= delta
+		if _fall_t[i] > 0.0 and kind[c] != 0:
+			_draw_fall(c, _fall_t[i])
+			continue
+		if kind[c] != 0:
+			_draw_cube(c)
+			run.debris.spray(pos_of(c), _tint(c), 1, pos_of(c), 0.5)
+		var last := _fall_c.size() - 1
+		_fall_c[i] = _fall_c[last]
+		_fall_t[i] = _fall_t[last]
+		_fall_c.resize(last)
+		_fall_t.resize(last)
 	for i in range(_hot.size() - 1, -1, -1):
 		var c := _hot[i]
 		_heat[c] -= delta
@@ -704,6 +773,19 @@ func update(delta: float) -> void:
 			_draw_cube(c)
 			continue
 		_draw_hot(c)
+
+
+func _draw_fall(c: int, left: float) -> void:
+	var x := c % SIZE
+	var z := c / SIZE
+	var mm := _mm[x / CHUNK + (z / CHUNK) * CHUNKS]
+	if mm == null:
+		return
+	var i := (x % CHUNK) + (z % CHUNK) * CHUNK
+	var form := _rest(x, z)
+	form.origin.y += FALL * left * left
+	mm.set_instance_transform(i, form)
+	mm.set_instance_color(i, _worn(c))
 
 
 ## Flashes white and rattles while the hit wears off.
