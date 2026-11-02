@@ -161,6 +161,12 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-02, loading screen, darker enemies, cave-ins** (owner, after testing: levelling feels good so far, more testing to come; rule checks, bots and screenshots, the owner has not played it, and the browser version has not been tried)
+- **Loading screen.** A bar with the stage it is on ("Packing the rock", "Burying the Heart") while the mine generates. The work now stops for a frame every 40 ms, so the bar moves and the browser tab doesn't look frozen.
+- **Darker enemies.** Crawlers, brutes, runners and burrowers have dark bodies, so they are not confused with gems; their red eyes stayed. The gems they drop keep the old bright colours. Hit flashes stay white. Bosses stayed bright, as the owner said most enemies.
+- **Cave-ins.** 500 pale patches of cracked loose rock. Break one and the ground in 5 m shakes for 0.8 s under a dark shadow with dust coming down, then rubble drops from above the camera onto all open ground there. It crushes what stands there, and bosses only take a hit. You take 12 if you stayed, but always keep a 1.4 m pocket, so you are never buried. Rubble breaks in a hit or two, gives no XP, and lifts stay clear. A patch is one cave-in, and fire or blasts can set one off too.
+- **Differs from the proposal:** 500 patches, not the first guess of 180, because a bot met almost none. Enemies that dig go through rubble quickly, so crushing them is what counts, not blocking them. A new goal pays 250 gems for crushing 50 enemies.
+
 **2026-11-02, 10-minute runs on a much bigger map** (owner: slower progression, runs of about 10 minutes, a much bigger map, soft clues instead of the Heart arrow, a reset button, a boss or two, new tools, dearer meta progression, fuel seams; rule checks, bots and screenshots, the owner has not played it, and the browser version has not been tried)
 - **Map.** 960 cubes wide instead of 320 (480 m, nine times the area). Rock bands are 33 m wide instead of 13, the Heart is 190 m out, 15 lifts up to 215 m out. Generating it takes about 1.6 s on the owner's PC. Cube chunks are only built once you come near, nests only fill within 50 m of you and empty again when you leave, and the fog map on the GPU only covers 128 m around you. About 150 fps at 1080p.
 - **Slower progression.** Gems give 35% of their worth as XP, the level curve is 24 + 10 per level (20 per level after 15), and a level-up blast is 3.5 m instead of 5.5 m, which ends the chain of blast, ore, level. Bots are at level 3-7 after 2 minutes. The unkillable bot that finished on this curve was level 18 at 8:36. Rare ore is also further away, since the bands are wider.
@@ -448,7 +454,6 @@ entries are the first ones in sections 8 and 9.
 **Owner, 2026-11-01, plans for the digging game (a first version is built, see section 8; the rest of these stay open)**
 - Unlockables, as in VS, where you unlock characters that give items or abilities you didn't have before. Not decided yet whether there will be several characters or just tools. Test first, then iterate.
 - Theme still undecided, not picked for now. Some mechanics could come from choosing it.
-- Cave-ins (suggested, not built): owner's question, 2026-11-02: how would this work with no ceiling in this world? Explained in chat, owner decides whether to include it. Fuel seams are built, see section 8.
 
 **Owner, 2026-10-31, the refocus (the prototype is built, see section 8; these are still open)**
 - After playing: the late game of the car prototype is pretty satisfying, so the VS formula is probably better. The raccoon's theme
