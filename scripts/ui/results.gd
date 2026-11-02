@@ -7,9 +7,14 @@ signal again_pressed
 signal menu_pressed
 
 const BARS := 3
+const MARGIN := 48.0  # kept free around the panel
+const MIN_LIST := 120.0
 
+var _panel: PanelContainer
 var _box: VBoxContainer
 var _gems: Label
+var _scroll: ScrollContainer
+var _list: VBoxContainer
 
 
 func _ready() -> void:
@@ -24,12 +29,31 @@ func _ready() -> void:
 	var center := CenterContainer.new()
 	Ui.full_rect(center)
 	add_child(center)
-	var panel := PanelContainer.new()
-	center.add_child(panel)
+	_panel = PanelContainer.new()
+	center.add_child(_panel)
 	_box = VBoxContainer.new()
 	_box.add_theme_constant_override("separation", 10)
 	_box.custom_minimum_size = Vector2(640, 0)
-	panel.add_child(_box)
+	_panel.add_child(_box)
+	_scroll = ScrollContainer.new()
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.focus_mode = Control.FOCUS_NONE
+	_list = VBoxContainer.new()
+	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_list.add_theme_constant_override("separation", 10)
+	_scroll.add_child(_list)
+	resized.connect(_fit)
+
+
+func _process(delta: float) -> void:
+	if visible:
+		_scroll.scroll_vertical += roundi(Input.get_axis("ui_up", "ui_down") * Menu.SCROLL_SPEED * delta)
+
+
+## The list takes what the rest leaves, so the buttons stay on screen however many goals a run finishes.
+func _fit() -> void:
+	var rest := _panel.get_combined_minimum_size().y - _scroll.custom_minimum_size.y
+	_scroll.custom_minimum_size.y = minf(_list.get_combined_minimum_size().y, maxf(size.y - rest - MARGIN, MIN_LIST))
 
 
 ## `r` keys: title, color, lines, carried, kept, share, before (stats at the start of the run), news
@@ -43,6 +67,7 @@ func open(r: Dictionary) -> void:
 	_box.add_child(_gems)
 	var note := "all %d carried" % r["carried"] if r["share"] >= 1.0 else "%d%% of %d carried" % [roundi(r["share"] * 100.0), r["carried"]]
 	_box.add_child(_center(Ui.label("%s  ·  %d in the bank" % [note, r["bank"]], 20, Color(0.8, 0.8, 0.8))))
+	_box.add_child(_scroll)
 	var delay := 0.3
 	var tw := create_tween()
 	tw.tween_interval(delay)
@@ -53,6 +78,7 @@ func open(r: Dictionary) -> void:
 	for g in Profile.closest_goals(BARS):
 		delay = _add_bar(g, r["before"], delay)
 	_add_buttons()
+	_fit.call_deferred()
 
 
 func _count(t: float, total: int) -> void:
@@ -80,9 +106,10 @@ func _add_bar(g: Dictionary, before: Dictionary, delay: float) -> float:
 	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	bar.value = minf(int(before.get(g["stat"], 0)) / need, 1.0)
 	row.add_child(bar)
-	_box.add_child(row)
+	_list.add_child(row)
 	var tw := create_tween()
 	tw.tween_interval(delay)
+	tw.tween_callback(_scroll.ensure_control_visible.bind(row))
 	tw.tween_property(bar, "value", minf(now / need, 1.0), 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	return delay + 0.25
 
@@ -91,10 +118,12 @@ func _add_bar(g: Dictionary, before: Dictionary, delay: float) -> float:
 func _add_news(g: Dictionary, delay: float) -> float:
 	var l := _center(Ui.label("%s  >  %s" % [g["text"], Defs.reward_text(g)], 24, Color(1.0, 0.85, 0.3)))
 	l.modulate.a = 0.0
-	_box.add_child(l)
+	_list.add_child(l)
 	var tw := create_tween()
 	tw.tween_interval(delay)
-	tw.tween_callback(func(): Sfx.play("reward", -5.0, 1.0, true))
+	tw.tween_callback(func():
+		Sfx.play("reward", -5.0, 1.0, true)
+		_scroll.ensure_control_visible(l))
 	tw.tween_property(l, "modulate:a", 1.0, 0.2)
 	return delay + 0.45
 

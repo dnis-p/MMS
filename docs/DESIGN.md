@@ -161,6 +161,10 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-02, results screen fits** (owner: "the end game screen cuts at the bottom"; rule checks and a 1280x720 window with all 16 goals, the owner has not played it)
+- **Cause.** The panel grew with every goal a run finished, and the Dig again and Camp buttons sat below them, so a run with many goals pushed the buttons off screen.
+- **Fix.** The title, gems and buttons stay put, and goals and progress bars go in a list between them, which scrolls when it doesn't fit. It follows each goal as it lands, ending on the bars. Mouse wheel, up and down (keys, left stick, d-pad) scroll it by hand. A short list has no scrollbar and looks as it did.
+
 **2026-11-02, gamepad support** (owner: "can you add controller support to the game?"; rule checks and a windowed run fed with simulated gamepad input, no real controller has been tried, and the owner has not played it)
 - **Controls.** Left stick or d-pad moves, at full speed in any direction past a small dead zone. Right stick aims, with a target ring 7 m out on the rock. A confirms, B goes back, Start pauses. Menus and cards move with the left stick or d-pad, one step per push.
 - **Aiming without the right stick.** The aim stays 0.6 s after you let go of the stick, then tools point the way you walk, so the game plays with one stick. The Rig, which has no aiming, ignores the right stick as it ignores the mouse.

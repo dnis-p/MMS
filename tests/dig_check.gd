@@ -6,6 +6,7 @@ var _main: Node
 var _failed := false
 var _step := "rules"
 var _wait := 0.0
+var _results: Results
 var _at := Vector3.ZERO
 var _peak := 0.0
 
@@ -117,6 +118,18 @@ func _process(delta: float) -> void:
 				_check("the results open at full speed during a hitstop", Engine.time_scale == r.base_time_scale)
 				r._finish("dead")
 				_check("a run banks its gems once", Profile.gems == 10 and Profile.stat("runs") == 1)
+				_results = Results.new()
+				add_child(_results)
+				_results.size = Vector2(1280, 720)
+				_results.open({"title": "TEST", "color": Color.WHITE, "lines": ["a line"], "carried": 9, "kept": 9, "share": 1.0, "before": {}, "news": Defs.GOALS, "bank": 9})
+				_wait = 0.1
+				_step = "results"
+		"results":
+			if _wait <= 0.0:
+				var buttons := _results._box.get_child(-1)
+				_check("every goal at once leaves the results buttons on a small screen", _results._panel.get_global_rect().end.y <= 720.0 and buttons.get_global_rect().end.y <= 720.0 and _results._panel.position.y >= 0.0)
+				_check("the goals that don't fit scroll", _results._list.size.y > _results._scroll.size.y)
+				_check("focus sits on Dig again", buttons.get_child(0).has_focus())
 				print("DIG CHECK %s" % ("FAILED" if _failed else "PASSED"))
 				get_tree().quit(1 if _failed else 0)
 
