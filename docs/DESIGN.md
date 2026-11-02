@@ -161,6 +161,9 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-03, mechanics reference** (owner: a doc with the technical side of the game, to share with other models)
+- `docs/MECHANICS.md` describes how the game works now: rules, formulas, scaling, features, what to edit for a tweak, and what is measured. Its tables were generated from `defs.gd` and its quoted values checked against it. It is kept up by hand, by a rule in `CLAUDE.md`, so `defs.gd` wins if they ever differ.
+
 **2026-11-02, results screen fits** (owner: "the end game screen cuts at the bottom"; rule checks and a 1280x720 window with all 16 goals, the owner has not played it)
 - **Cause.** The panel grew with every goal a run finished, and the Dig again and Camp buttons sat below them, so a run with many goals pushed the buttons off screen.
 - **Fix.** The title, gems and buttons stay put, and goals and progress bars go in a list between them, which scrolls when it doesn't fit. It follows each goal as it lands, ending on the bars. Mouse wheel, up and down (keys, left stick, d-pad) scroll it by hand. A short list has no scrollbar and looks as it did.

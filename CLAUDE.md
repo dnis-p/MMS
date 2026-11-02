@@ -3,7 +3,8 @@
 Top-down 3D digging prototype in Godot 4.7, GDScript only, placeholder art and sound. It started from the car game (MMS),
 which stays unchanged on the default branch `claude/sleepy-davinci-fxgwnn`: don't change that game from this branch.
 See README.md for controls and layout. **Ideas and decisions are in docs/DESIGN.md: read the branch note at its top, and add any
-new idea or decision the owner gives you there (mark owner's words vs your suggestions).**
+new idea or decision the owner gives you there (mark owner's words vs your suggestions).** How the game works right now (rules,
+formulas, scaling, what to edit for a tweak) is in docs/MECHANICS.md.
 
 ## Design goals (from the owner, keep these in mind for every change)
 - It should feel like popping bubble wrap, with Vampire Survivors rewards: juicy visuals and sound come first.
@@ -53,6 +54,8 @@ docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 
    relevant section for decisions), marked as the owner's. Claude's own suggestions are marked "(suggested)".
    Anything marked "Decided" stays unless the owner says otherwise.
 6. Update README.md and CLAUDE.md when something they describe changes (controls, content, commands, gaps).
+   Update docs/MECHANICS.md in the same commit whenever a rule, formula or balance number it states changes: it is what
+   other models and people get to work from, and it describes how things are now, not their history.
 7. Keep entries concise, dated, in the style of the rest of the file.
 8. Git: small, clearly named commits. Run `git pull` before starting work (the owner may edit on GitHub).
    Don't push unless asked (owner pushes about daily). Ask before force-pushing/rewriting history.
