@@ -643,7 +643,7 @@ func on_evolved(title: String) -> void:
 func use_shrine(id: String) -> void:
 	var d: Dictionary = Defs.SHRINES[id]
 	_modal_open = true
-	get_tree().paused = true
+	_freeze()
 	levelup_ui.open([{"kind": "shrine", "id": id, "title": d["name"], "desc": d["desc"], "hint": "", "level_text": "", "color": d["color"]},
 		{"kind": "leave", "id": "", "title": "Walk away", "desc": "Leave it be.", "hint": "", "level_text": "", "color": Color(0.6, 0.6, 0.6)}], 0, func(o: Dictionary):
 		if o["kind"] == "shrine":
@@ -740,7 +740,7 @@ func _finish(how: String) -> void:
 	if banked:
 		return
 	banked = true
-	get_tree().paused = true
+	_freeze()
 	var before := Profile.stats.duplicate()
 	var kept := gems_kept(how)
 	Profile.gems += kept
@@ -817,11 +817,18 @@ func shuffle(a: Array) -> void:
 
 # --- modals ----------------------------------------------------------------------------
 
+## A hitstop ends in _process, which a paused tree skips: left running, menus would play at its slow time.
+func _freeze() -> void:
+	_hitstop_left = 0.0
+	Engine.time_scale = base_time_scale
+	get_tree().paused = true
+
+
 func _try_open_modal() -> void:
 	if _modal_open or _paused_by_menu or dead or pending_levelups <= 0:
 		return
 	_modal_open = true
-	get_tree().paused = true
+	_freeze()
 	levelup_ui.open(tools.level_up_options(3), level - pending_levelups + 1, func(o: Dictionary):
 		tools.apply(o)
 		pending_levelups -= 1
@@ -839,7 +846,7 @@ func _open_pause() -> void:
 	if _modal_open or _paused_by_menu or dead:
 		return
 	_paused_by_menu = true
-	get_tree().paused = true
+	_freeze()
 	_show_pause()
 
 

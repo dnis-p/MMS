@@ -102,7 +102,9 @@ func _process(delta: float) -> void:
 				r.player_hit(50.0)
 				_check("running out of health ends the run", r.dead)
 				r.loot = 21.0
+				_start_hitstop(r)
 				r._finish("dead")
+				_check("the results open at full speed during a hitstop", Engine.time_scale == r.base_time_scale)
 				r._finish("dead")
 				_check("a run banks its gems once", Profile.gems == 10 and Profile.stat("runs") == 1)
 				print("DIG CHECK %s" % ("FAILED" if _failed else "PASSED"))
@@ -874,6 +876,29 @@ func _check_pause(r: Run) -> void:
 	_check("the pause menu opens with the fog switch", r._paused_by_menu and r.overlay._panel_root.visible)
 	r.overlay.hide_panel()
 	r._resume()
+	_start_hitstop(r)
+	r.pending_levelups = 1
+	r._try_open_modal()
+	_check("level-up cards open at full speed during a hitstop", r._modal_open and Engine.time_scale == r.base_time_scale)
+	r.levelup_ui.visible = false
+	r.pending_levelups = 0
+	r._close_modal()
+	_start_hitstop(r)
+	r.use_shrine("blood")
+	_check("a shrine opens at full speed during a hitstop", r._modal_open and Engine.time_scale == r.base_time_scale)
+	r.levelup_ui.visible = false
+	r._close_modal()
+	_start_hitstop(r)
+	r._open_pause()
+	_check("the pause menu opens at full speed during a hitstop", Engine.time_scale == r.base_time_scale)
+	r.overlay.hide_panel()
+	r._resume()
+
+
+func _start_hitstop(r: Run) -> void:
+	r._hitstop(0.12)
+	r._update_time_scale()
+	_check("a hitstop slows the game", Engine.time_scale < r.base_time_scale)
 
 
 func _check_pulse(r: Run) -> void:

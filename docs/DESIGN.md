@@ -161,6 +161,10 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-02, slow upgrade cards fixed** (owner: the cards sometimes took 5-6 seconds to appear; rule checks and bots, the owner has not played it)
+- **Cause.** A level-up that came during a hitstop (the short freeze on a big kill or a burst of pops) paused the game before the hitstop could end, so the cards played at 1/20 speed: a 0.3 s fade took 6 s. The same could happen to shrines, the pause menu and the results screen.
+- **Fix.** Pausing now always ends the hitstop first, in one place. The rule check fails without the fix and covers all four screens.
+
 **2026-11-02, loading screen, darker enemies, cave-ins** (owner, after testing: levelling feels good so far, more testing to come; rule checks, bots and screenshots, and a short browser start, the owner has not played it)
 - **Loading screen.** A bar with the stage it is on ("Packing the rock", "Burying the Heart") while the mine generates. The work now stops for a frame every 120 ms, so the bar moves and the browser tab doesn't look frozen. It started and ran in the browser with no console errors; loading took about 25 s there in a hidden, throttled pane before this interval went up from 40 ms, and the real time in a normal tab is not measured.
 - **Darker enemies.** Crawlers, brutes, runners and burrowers have dark bodies, so they are not confused with gems; their red eyes stayed. The gems they drop keep the old bright colours. Hit flashes stay white. Bosses stayed bright, as the owner said most enemies.
