@@ -239,7 +239,7 @@ func _build_fog() -> void:
 
 ## Lets a frame through now and then, so the loading screen moves and the browser stays awake.
 func _breathe(share: float, what: String) -> void:
-	if instant or Time.get_ticks_msec() - _breath < 40:
+	if instant or Time.get_ticks_msec() - _breath < 120:
 		return
 	progress.emit(share, what)
 	await get_tree().process_frame
