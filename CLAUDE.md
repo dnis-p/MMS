@@ -39,7 +39,7 @@ Parse errors that mention `Sfx` only occur when scripts are checked standalone (
 - Feel and sound are unproven until the owner plays: nobody has listened to the sounds.
 - Progression (Heart, lifts, gem bank, shop, goals, characters, rooms, bosses, evolutions) is a first version for testing. Prices, goals and difficulty are first guesses.
 - A run lasts about 10 minutes because the Heart is sealed until both bosses are dead, not because of the walk: bots cross the map in 90 s.
-- Mouse aiming is untested with a real mouse.
+- Mouse aiming is untested with a real mouse. Gamepad play, including rumble, is tested only with simulated input, not a real controller.
 
 ## How we work (agreed with the owner)
 docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 = done list** (since v1.0).

@@ -161,6 +161,13 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-02, gamepad support** (owner: "can you add controller support to the game?"; rule checks and a windowed run fed with simulated gamepad input, no real controller has been tried, and the owner has not played it)
+- **Controls.** Left stick or d-pad moves, at full speed in any direction past a small dead zone. Right stick aims, with a target ring 7 m out on the rock. A confirms, B goes back, Start pauses. Menus and cards move with the left stick or d-pad, one step per push.
+- **Aiming without the right stick.** The aim stays 0.6 s after you let go of the stick, then tools point the way you walk, so the game plays with one stick. The Rig, which has no aiming, ignores the right stick as it ignores the mouse.
+- **Swapping.** Whichever you used last counts: a gamepad hides the mouse pointer and turns the start hint into stick controls, and moving the mouse more than 3 pixels brings it back. Any gamepad works, in any slot.
+- **Also changed for keyboard and mouse:** the move input now has a dead zone, as it had none and a drifting stick would have walked at full speed. Esc and P now resume from the pause menu, as they could only open it before. In the shop the cursor stays on the row you just bought. Up and down scroll the Goals list.
+- **(suggested) Added, not asked for:** rumble on any screen shake of 0.1 or more, 0.16 s long, only while using a gamepad. Not felt by anyone yet. Numbers are in `Defs.PAD`.
+
 **2026-11-02, slow upgrade cards fixed** (owner: the cards sometimes took 5-6 seconds to appear; rule checks and bots, the owner has not played it)
 - **Cause.** A level-up that came during a hitstop (the short freeze on a big kill or a burst of pops) paused the game before the hitstop could end, so the cards played at 1/20 speed: a 0.3 s fade took 6 s. The same could happen to shrines, the pause menu and the results screen.
 - **Fix.** Pausing now always ends the hitstop first, in one place. The rule check fails without the fix and covers all four screens.

@@ -5,17 +5,19 @@ one thing: breaking cubes should feel like popping bubble wrap. There is now a f
 
 This is the `prototype/dig` branch. The car game (MMS) is on the default branch, unchanged.
 
-Play it in a browser: https://dnis-p.github.io/MMS/dig/ (mouse and keyboard). Each push to this branch updates it.
+Play it in a browser: https://dnis-p.github.io/MMS/dig/ (mouse and keyboard, or a gamepad). Each push to this branch updates it.
 
 ## How it plays
 PC only for now.
 
 | Action | Control |
 | --- | --- |
-| Move | WASD or arrows |
-| Aim | Mouse |
-| Menus and upgrades | Mouse, or arrows and Enter |
-| Pause | Esc or P |
+| Move | WASD or arrows, or left stick or d-pad |
+| Aim | Mouse, or right stick |
+| Menus and upgrades | Mouse, or arrows and Enter, or left stick or d-pad and A (B goes back) |
+| Pause | Esc or P, or Start |
+
+The game follows whichever you used last, so you can swap between gamepad and mouse at any time. Without aiming, tools point the way you walk.
 
 Fog of war is on by default: it thickens in rings around what you have mined or seen, your path stays clear behind you, and you can dig up to 7 cubes into it, except Mining Beam and Shock Pulse, which go through it. Switch it on the main menu or pause menu.
 
