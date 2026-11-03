@@ -105,6 +105,8 @@ var _last_real_us := 0
 var aim_point := Vector3.ZERO  # the spot on the rock under the pointer
 var _mouse_seen := false  # until the mouse moves, tools point the way you walk
 var _stick_left := 0.0  # how long the right stick still points the tools after it was let go
+var _map_down := -1  # when the map button went down, in ms, or -1
+var _map_was_open := false
 var _aim_mark: MeshInstance3D  # the right stick's target: a mouse has its own pointer
 
 
@@ -299,6 +301,7 @@ func _process(delta: float) -> void:
 	_update_depth()
 	_update_chains(delta)
 	_update_camera(delta)
+	mine.map.update(at, run_time)
 	hud.refresh(self)
 	_announce_goals(delta)
 	if not dead and not left:
@@ -865,6 +868,7 @@ func shuffle(a: Array) -> void:
 
 ## A hitstop ends in _process, which a paused tree skips: left running, menus would play at its slow time.
 func _freeze() -> void:
+	close_map()
 	_hitstop_left = 0.0
 	Engine.time_scale = base_time_scale
 	get_tree().paused = true
@@ -897,13 +901,18 @@ func _open_pause() -> void:
 
 
 func _show_pause() -> void:
-	overlay.show_panel("PAUSED", ["%d cubes  ·  best combo x%d" % [cubes, best_combo]], [["Resume", _resume], [Options.fog_text(), _toggle_fog], ["Give up (keep %d%% of your gems)" % roundi(keep_share("quit") * 100.0), _give_up]])
+	overlay.show_panel("PAUSED", ["%d cubes  ·  best combo x%d" % [cubes, best_combo]], [["Resume", _resume], [Options.fog_text(), _toggle_fog], [Options.map_text(), _next_map_opacity], ["Give up (keep %d%% of your gems)" % roundi(keep_share("quit") * 100.0), _give_up]])
 
 
 func _toggle_fog() -> void:
 	Options.toggle_fog()
 	apply_fog()
 	_update_light(0.0)
+	_show_pause()
+
+
+func _next_map_opacity() -> void:
+	Options.next_map_opacity()
 	_show_pause()
 
 
@@ -1002,6 +1011,25 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
 		get_viewport().set_input_as_handled()
 		_toggle_pause()
+	elif event.is_action_pressed("map"):
+		_map_down = Time.get_ticks_msec()
+		_map_was_open = hud.map_full.visible
+		hud.map_full.visible = true
+	elif event.is_action_released("map") and _map_down >= 0:
+		# A tap leaves it open, or closes it if it was open; holding it only peeks.
+		var held := Time.get_ticks_msec() - _map_down > Defs.MAP["hold"] * 1000.0
+		hud.map_full.visible = not held and not _map_was_open
+		_map_down = -1
+	elif hud.map_full.visible and event.is_action_pressed("map_zoom_in"):
+		hud.map_full.zoom_by(1)
+	elif hud.map_full.visible and event.is_action_pressed("map_zoom_out"):
+		hud.map_full.zoom_by(-1)
+
+
+## Menus and level-ups close it, since the button's release can't reach a paused run.
+func close_map() -> void:
+	hud.map_full.visible = false
+	_map_down = -1
 
 
 ## Screen-relative move direction, in 8 directions.

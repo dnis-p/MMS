@@ -24,6 +24,8 @@ var _boss_bar: ProgressBar
 var _boss_label: Label
 var _gold: ColorRect
 var _frenzy_bar: ProgressBar
+var map_full: MapView  # over the whole screen while the map button says so
+var minimap: MapView
 var _run: Node
 var _last_combo := 0
 var _icon_key := ""
@@ -45,6 +47,21 @@ func _ready() -> void:
 	_gold.color = Color(1.0, 0.75, 0.15, 0.0)
 	_gold.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_gold)
+
+	map_full = MapView.new()
+	map_full.full = true
+	Ui.full_rect(map_full)
+	map_full.visible = false
+	add_child(map_full)
+
+	var mini: float = Defs.MAP["mini_size"]
+	minimap = MapView.new()
+	minimap.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	minimap.offset_left = -18.0 - mini
+	minimap.offset_right = -18.0
+	minimap.offset_top = -18.0 - mini
+	minimap.offset_bottom = -18.0
+	add_child(minimap)
 
 	_xp_bar = Ui.bar(Color(0.3, 0.65, 1.0), 16)
 	_xp_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
@@ -181,11 +198,13 @@ func _ready() -> void:
 
 	_hint = Ui.label("", 28)
 	_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_hint.offset_left = -500
-	_hint.offset_right = 500
-	_hint.offset_top = -70
+	_hint.offset_left = -400  # clear of the minimap on the narrowest screen
+	_hint.offset_right = 400
+	_hint.offset_top = -120
 	_hint.offset_bottom = -20
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hint.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_hint)
 
 
@@ -238,6 +257,9 @@ func _arrow(to: Vector3, color: Color, text: String, r: float) -> void:
 
 func refresh(run: Node) -> void:
 	_run = run
+	map_full.run = run
+	minimap.run = run
+	minimap.visible = not map_full.visible
 	_compass.queue_redraw()
 	_lift_bar.visible = run.sites.lift_t > 0.0
 	_lift_bar.value = run.sites.lift_t / float(Defs.RUN["lift_hold"])

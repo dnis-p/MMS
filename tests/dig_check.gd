@@ -14,6 +14,7 @@ var _peak := 0.0
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	Options.fog = false  # set directly, so the player's saved choice stays as it is
+	Options.saving = false
 	Profile.saving = false
 	Profile.reset()
 	_main = load("res://scenes/main.tscn").instantiate()
@@ -54,6 +55,7 @@ func _process(delta: float) -> void:
 			_check_seams(r)
 			_check_timers()
 			_check_help()
+			_check_map(r)
 			_check_bosses(r)
 			_check_new_tools(r)
 			_check_caves(r)
@@ -620,6 +622,57 @@ func _check_clues(r: Run) -> void:
 	_check("it beats faster the closer you get (%.2f, then %.2f)" % [slow, r._beat_left], r._beat_left < slow)
 
 
+## The map shows what you know and nothing more; its button opens it with a tap and peeks with a hold.
+func _check_map(r: Run) -> void:
+	var m := r.mine
+	var map := m.map
+	var was := Options.fog
+	Options.fog = true
+	var at := r.player.global_position
+	m.carve(at, 1.0)
+	m.scan_light(at)
+	var c := m.cell_of(at.x) + m.cell_of(at.z) * Mine.SIZE
+	_check("the map shows open ground you have seen", m.known_at(c) == 0 and map.color_of(c) != MineMap.CLEAR)
+	var far := c + 400
+	while far < c + 600 and m.kind[far] == 0:
+		far += 1
+	_check("and nothing you haven't (%d)" % m.known_at(far), map.color_of(far) == MineMap.CLEAR)
+	Options.fog = false
+	_check("without fog it shows the whole mine", map.color_of(far) != MineMap.CLEAR)
+	Options.fog = true
+	map.mark(c)
+	map.update(at, 1e9)
+	var tile := (c % Mine.SIZE) / MineMap.TILE + (c / Mine.SIZE / MineMap.TILE) * MineMap.TILES
+	_check("the piece you stand on is drawn", map.textures[tile] != null)
+	Options.fog = was
+	var press := InputEventAction.new()
+	press.action = "map"
+	press.pressed = true
+	var release := InputEventAction.new()
+	release.action = "map"
+	r.close_map()
+	r._unhandled_input(press)
+	r._unhandled_input(release)
+	_check("a tap opens the full map", r.hud.map_full.visible)
+	r._unhandled_input(press)
+	r._unhandled_input(release)
+	_check("another tap closes it", not r.hud.map_full.visible)
+	r._unhandled_input(press)
+	r._map_down -= 1000
+	var peek := r.hud.map_full.visible
+	r._unhandled_input(release)
+	_check("holding it shows it until you let go", peek and not r.hud.map_full.visible)
+	r._unhandled_input(press)
+	r._unhandled_input(release)
+	r._freeze()
+	get_tree().paused = false
+	_check("a menu closes it", not r.hud.map_full.visible)
+	var o := Options.map_opacity
+	Options.next_map_opacity()
+	_check("map opacity steps through its settings (%s)" % Options.map_text(), Options.map_opacity != o)
+	Options.map_opacity = o
+
+
 ## The How to play page fills its numbers from Defs, so a broken format would show here.
 func _check_help() -> void:
 	var parts := Help.sections()
@@ -634,7 +687,7 @@ func _check_help() -> void:
 	_check("the How to play page scrolls, with Back below", menu._scroll != null and menu._root.get_child(menu._root.get_child_count() - 1) is Button)
 	# A wide window doesn't make the screen taller than 720, so every page has to fit that without scrolling.
 	var screen := float(ProjectSettings.get_setting("display/window/size/viewport_height"))
-	for page in ["_show_main", "_show_characters", "_show_shop", "_show_goals", "_show_help", "_show_reset"]:
+	for page in ["_show_main", "_show_characters", "_show_shop", "_show_goals", "_show_help", "_show_options", "_show_reset"]:
 		menu.call(page)
 		var need := menu._root.get_combined_minimum_size().y
 		_check("menu page %s fits the screen (%.0f of %.0f)" % [page.trim_prefix("_show_"), need, screen], need <= screen - 30.0)

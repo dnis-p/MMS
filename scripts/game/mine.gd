@@ -135,6 +135,7 @@ var _window_at := Vector2i(-1, -1)
 var _fog_texture: ImageTexture
 var _fog: MeshInstance3D
 var _fog_mat: ShaderMaterial
+var map: MineMap
 
 
 func _ready() -> void:
@@ -162,6 +163,7 @@ func _ready() -> void:
 	plane.mesh = floor_mesh
 	plane.material_override = floor_mat
 	add_child(plane)
+	map = MineMap.new(self)
 	_build_fog()
 
 
@@ -527,6 +529,7 @@ func collapse(center: Vector3, r: float, spare: Vector3, spare_r: float) -> int:
 				continue
 			kind[c] = Defs.RUBBLE
 			hp[c] = _hp_of[Defs.RUBBLE]
+			map.mark(c)
 			_fall_c.append(c)
 			_fall_t.append(randf_range(0.1, 0.4))
 			_draw_fall(c, 0.4)
@@ -546,6 +549,7 @@ func carve(p: Vector3, r: float) -> void:
 				var color := _tint(c)
 				kind[c] = 0
 				_draw_cube(c)
+				map.mark(c)
 				run.debris.spray(pos_of(c), color, 1, pos_of(c), 0.6)
 
 
@@ -556,6 +560,8 @@ func band_at(dist: float) -> int:
 # --- fog of war ----------------------------------------------------------------------
 
 func set_fog(on: bool) -> void:
+	if _fog.visible != on:
+		map.mark_all()  # the map shows everything without fog
 	_fog.visible = on
 
 
@@ -565,6 +571,7 @@ func forget() -> void:
 	_shown.fill(_farthest)
 	_fresh.clear()
 	_moving.clear()
+	map.mark_all(true)
 
 
 ## Near enough to what you know to see and dig.
@@ -579,6 +586,11 @@ func can_see_at(p: Vector3) -> bool:
 
 
 ## Whether this spot itself has been opened or seen, not just lies near something that has.
+## How far a cell is from anything you know, in STEPs; 0 = opened or seen.
+func known_at(c: int) -> int:
+	return _known[c]
+
+
 func has_seen_at(p: Vector3) -> bool:
 	var x := cell_of(p.x)
 	var z := cell_of(p.z)
@@ -596,6 +608,7 @@ func _learn(c: int) -> void:
 		_moving.append(c)
 	_known[c] = 0
 	_fresh.append(c)
+	map.mark(c)
 
 
 ## Spreads what was just learned through the fog map, over rock and unseen caves alike. Cells only ever
@@ -618,6 +631,7 @@ func _spread_known() -> void:
 					_moving.append(n)
 				_known[n] = nd
 				_fresh.append(n)
+				map.mark(n)
 	_fresh.clear()
 
 

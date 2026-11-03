@@ -80,17 +80,34 @@ func _show_main() -> void:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)
-	var fog := _button(Options.fog_text(), func(): pass, 48.0, 194.0)
-	fog.add_theme_font_size_override("font_size", 20)
-	fog.pressed.connect(func():
-		Options.toggle_fog()
-		fog.text = Options.fog_text())
-	row.add_child(fog)
+	var options := _button("Options", _show_options, 48.0, 194.0)
+	options.add_theme_font_size_override("font_size", 20)
+	row.add_child(options)
 	var reset := _button("Reset progress", _show_reset, 48.0, 194.0)
 	reset.add_theme_font_size_override("font_size", 20)
 	row.add_child(reset)
 	_root.add_child(row)
 	_focus.call_deferred(start)
+
+
+func _show_options() -> void:
+	_clear()
+	_heading("OPTIONS", 56, Color(1.0, 0.85, 0.3))
+	var fog := _button(Options.fog_text(), func(): pass)
+	fog.pressed.connect(func():
+		Options.toggle_fog()
+		fog.text = Options.fog_text())
+	_root.add_child(fog)
+	var opacity := _button(Options.map_text(), func(): pass)
+	opacity.pressed.connect(func():
+		Options.next_map_opacity()
+		opacity.text = Options.map_text())
+	_root.add_child(opacity)
+	_heading("Map: M or Tab, or Back on a gamepad. Tap it to keep the map open, hold it to peek.", 20, Color(0.8, 0.75, 0.7))
+	_heading("Zoom it with the mouse wheel, + and -, or the shoulder buttons.", 20, Color(0.8, 0.75, 0.7))
+	var back := _button("Back", _show_main)
+	_root.add_child(back)
+	_focus.call_deferred(fog)
 
 
 func _show_reset() -> void:

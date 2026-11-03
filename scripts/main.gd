@@ -6,6 +6,7 @@ extends Node
 ##   --seed=<n>           use this random seed for the run
 ##   --give=<a,b>         with --autotest, start with these tools at max level; "all" also maxes boosts
 ##   --shots=<dir>        with --autotest, save screenshots into <dir>
+##   --map                with --autotest, keep the full map open, for screenshots of it
 ##   --goal=<heart|lift>  with --autotest, go for the Heart, or leave by lift after a while
 ##   --char=<id>          with --autotest, dig as this character
 ##   --unlocked           with --autotest, everything is unlocked
@@ -105,6 +106,8 @@ func _process(delta: float) -> void:
 	if not _args.has("autotest"):
 		return
 	_elapsed += delta / maxf(Engine.time_scale, 0.01)
+	if _args.has("map") and _current is Run and _current.hud:
+		_current.hud.map_full.visible = true
 	if _args.has("shots"):
 		_shot_timer -= delta / maxf(Engine.time_scale, 0.01)
 		if _shot_timer <= 0.0:
@@ -148,6 +151,9 @@ func _setup_input() -> void:
 		"move_up": [KEY_W, KEY_UP],
 		"move_down": [KEY_S, KEY_DOWN],
 		"pause": [KEY_ESCAPE, KEY_P],
+		"map": [KEY_M, KEY_TAB],
+		"map_zoom_in": [KEY_EQUAL, KEY_KP_ADD],
+		"map_zoom_out": [KEY_MINUS, KEY_KP_SUBTRACT],
 		"aim_left": [],
 		"aim_right": [],
 		"aim_up": [],
@@ -164,6 +170,9 @@ func _setup_input() -> void:
 		"ui_accept": JOY_BUTTON_A,
 		"ui_cancel": JOY_BUTTON_B,
 		"pause": JOY_BUTTON_START,
+		"map": JOY_BUTTON_BACK,
+		"map_zoom_in": JOY_BUTTON_RIGHT_SHOULDER,
+		"map_zoom_out": JOY_BUTTON_LEFT_SHOULDER,
 		"move_left": JOY_BUTTON_DPAD_LEFT,
 		"move_right": JOY_BUTTON_DPAD_RIGHT,
 		"move_up": JOY_BUTTON_DPAD_UP,
@@ -173,6 +182,11 @@ func _setup_input() -> void:
 		var ev := InputEventJoypadButton.new()
 		ev.button_index = buttons[action]
 		ev.device = -1  # any gamepad, whichever slot it landed in
+		InputMap.action_add_event(action, ev)
+	var wheel := {"map_zoom_in": MOUSE_BUTTON_WHEEL_UP, "map_zoom_out": MOUSE_BUTTON_WHEEL_DOWN}
+	for action in wheel:
+		var ev := InputEventMouseButton.new()
+		ev.button_index = wheel[action]
 		InputMap.action_add_event(action, ev)
 	var sticks := {
 		"move_left": [JOY_AXIS_LEFT_X, -1.0],

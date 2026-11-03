@@ -16,6 +16,16 @@ const CAMERA := {"back": 7.0, "up": 19.0, "lead": 0.12, "aim_lead": 0.18, "aim_l
 ## the smallest screen shake felt in the hands, for rumble_time seconds.
 const PAD := {"deadzone": 0.25, "aim_hold": 0.6, "aim_reach": 7.0, "stick_wake": 0.5, "mouse_wake": 3.0,
 	"rumble_from": 0.1, "rumble_time": 0.16}
+## The map. wall: how many cubes of rock it shows past what you have opened or seen. floor: open ground
+## you know; rock is its own colour darkened by rock_dim. mini_size: the minimap's side in pixels,
+## covering mini_range metres each way. zooms: pixels per cube on the full map, starting at zoom.
+## hold: seconds on the map button that count as holding it (it closes on release) rather than a tap
+## (it stays open). opacities: the full map's settings, opacity the first one; shade darkens the game
+## under the full map by that share of its opacity, so the map reads over a busy screen. budget:
+## milliseconds a frame may spend redrawing it; every: seconds before the same piece is redrawn again.
+const MAP := {"wall": 2.0, "floor": Color(0.86, 0.81, 0.71), "rock_dim": 0.5, "mini_size": 200.0, "mini_range": 36.0,
+	"zooms": [1.0, 2.0, 4.0, 8.0], "zoom": 2, "shade": 0.5, "hold": 0.3, "opacities": [0.35, 0.5, 0.65, 0.8, 1.0], "opacity": 0.65,
+	"budget": 0.6, "every": 0.1}
 
 ## regen: health per second once nothing has hurt you for regen_after seconds.
 const DIGGER := {"speed": 7.5, "pickup": 3.5, "hp": 100.0, "invuln": 0.8, "level_heal": 30.0, "regen": 3.0, "regen_after": 4.0, "color": Color(0.2, 0.75, 0.8)}

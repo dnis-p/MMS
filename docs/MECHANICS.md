@@ -332,6 +332,12 @@ Rubble has 6 health and gives no XP. Enemies that dig go through it, so its use 
 - Treasure sparkles through fog and rock within `RUN.glint_range` = 20 m.
 - Awake enemies in the dark show only their eyes.
 
+**Map** (`Defs.MAP`, `scripts/game/mine_map.gd`, `scripts/ui/map_view.gd`). With fog on, it shows open ground you have opened or seen, and rock up to `MAP.wall` = 2 cubes from it. With fog off it shows the whole mine. Lifts show once seen, the current boss always, and your digger as an arrow.
+- **Minimap:** bottom right, `MAP.mini_size` = 200 px wide, `MAP.mini_range` = 36 m each way, always solid.
+- **Full map:** the `map` action (M, Tab, gamepad Back). A tap under `MAP.hold` = 0.3 s keeps it open until the next tap; holding shows it until you let go. It is drawn over the game, centred so the digger on the map sits on the digger on screen, at `MAP.zooms` = 1, 2, 4 or 8 px per cube, starting at 4. The game under it is darkened by `MAP.shade` = 0.5 times its opacity. Any pause or level-up closes it.
+- **Opacity:** `Options.map_opacity`, saved in `user://options.cfg`, steps through `MAP.opacities` = 35, 50, 65, 80 and 100%, starting at 65%.
+- **Cost:** the mine is cut into 900 tiles of 32 by 32 cubes, one texture each. A changed cell marks its tile, and marked tiles are redrawn nearest first within `MAP.budget` = 0.6 ms a frame, each at most every `MAP.every` = 0.1 s. One tile takes about 0.4 ms. With fog off the whole mine is drawn this way, nearest first, which takes several seconds.
+
 ## 13. Between runs
 The main menu's How to play page (`scripts/ui/help.gd`) explains this to players in plain words. Its numbers are read from `Defs`, but its sentences are written by hand, so update them when a rule they describe changes.
 
@@ -382,6 +388,7 @@ Beam has no goal: it comes from the Strange Lens relic. Stats add up across runs
 | Run length | `Defs.BOSSES` `at`, `RUN.boss_gap`, boss `hp`, `RUN.heart_hit` |
 | Map size or the walk | `RUN.heart_dist`, `WORLD.band_width`. `Mine.SIZE` must be a multiple of `Mine.CHUNK` |
 | Feature density | `RUN.seams`, `RUN.cave_blobs`, `RUN.geodes`, `THREATS.nests`, `THREATS.spike_patches`, `THREATS.gas_blobs` |
+| Map look and reach | `Defs.MAP` |
 | New tool | `Defs.TOOLS`, plus its firing in `scripts/game/tools.gd` |
 | New enemy | `Defs.ENEMIES`, `Defs.ENEMY_ORDER`, plus a mesh and constant in `scripts/game/enemies.gd` |
 

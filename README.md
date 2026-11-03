@@ -16,12 +16,15 @@ PC only for now.
 | Aim | Mouse, or right stick |
 | Menus and upgrades | Mouse, or arrows and Enter, or left stick or d-pad and A (B goes back) |
 | Pause | Esc or P, or Start |
+| Map | M or Tab, or Back: tap to keep it open over the game, hold to peek. Mouse wheel, + and -, or the shoulder buttons zoom it |
 
 The game follows whichever you used last, so you can swap between gamepad and mouse at any time. Without aiming, tools point the way you walk.
 
 New players and testers: **How to play** on the main menu explains the goal, ways out, dangers and what to look for. Its text is in `scripts/ui/help.gd`, with numbers read from `defs.gd`.
 
-Fog of war is on by default: it thickens in rings around what you have mined or seen, your path stays clear behind you, and you can dig up to 7 cubes into it, except Mining Beam and Shock Pulse, which go through it. Switch it on the main menu or pause menu.
+Fog of war is on by default: it thickens in rings around what you have mined or seen, your path stays clear behind you, and you can dig up to 7 cubes into it, except Mining Beam and Shock Pulse, which go through it. Switch it in Options on the main menu, or in the pause menu.
+
+The minimap in the bottom right and the full map show only what you have opened or seen, plus the rock at its edge. The full map lies over the game with your digger on the map right on top of your digger; its opacity is in Options and the pause menu.
 
 Movement is instant, like a 2D game, and separate from aiming. Tools dig by themselves where you aim. Cubes give a little XP, ore drops shiny gems worth more,
 and each level-up lets you pick 1 of 3 tools or boosts and blasts the rock around you. Crystal goes off as a chain reaction.

@@ -17,6 +17,7 @@ static func sections() -> Array:
 			"Move: WASD or arrows. Gamepad: left stick or d-pad.",
 			"Aim: mouse. Gamepad: right stick. Without aiming, your tools point the way you walk.",
 			"Pause: Esc or P. Gamepad: Start.",
+			"Map: M or Tab. Gamepad: Back. Tap it to keep the map over the game, hold it to peek while you keep moving. Zoom with the mouse wheel, + and -, or the shoulder buttons. Its opacity is in Options.",
 			"Menus and upgrades: mouse, or arrows and Enter. Gamepad: A picks, B goes back.",
 		]],
 		["A run", [
