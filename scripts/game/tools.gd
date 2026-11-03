@@ -5,7 +5,7 @@ extends Node3D
 
 const MAX_BOMBS := 6
 const MAX_MOLES := 6
-## The drill's strip: an outline of the cells it bites, with chevrons running forward.
+## The drill's strip over the cells it bites: chevrons running forward, fading out towards its sides and tip.
 const DRILL_SHADER := """
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never, shadows_disabled;
@@ -15,14 +15,12 @@ uniform float len = 4.0;
 uniform float wide = 1.5;
 uniform float scroll = 0.0;
 void fragment() {
-	vec2 m = vec2(abs(UV.x - 0.5) * wide, (0.5 - abs(UV.y - 0.5)) * len);  // metres from the centre line, and to the nearest end
-	float edge = max(step(wide * 0.5 - 0.08, m.x), step(m.y, 0.08));
-	float chevron = fract(UV.y * len / 0.8 + m.x * 0.6 - scroll);  // tips point away from you, the way they run
-	float dash = smoothstep(0.0, 0.1, chevron) * smoothstep(0.35, 0.25, chevron) * (1.0 - edge);
-	float fade = 1.0 - 0.5 * UV.y;
-	float light = max(edge, dash);  // outline and chevrons are pale, so they show on orange rock and white flashes
-	ALBEDO = mix(tint.rgb * (1.0 - 0.6 * (1.0 - light)), vec3(1.0, 0.95, 0.85), light * (0.5 + 0.3 * glow));
-	ALPHA = clamp(tint.a * (0.35 * fade + edge + 0.7 * dash * fade) * (0.7 + 0.3 * glow), 0.0, 1.0);
+	float x = abs(UV.x - 0.5) * 2.0;  // 0 on the centre line, 1 at the sides
+	float soft = (1.0 - x * x) * smoothstep(0.0, 0.3, UV.y * len) * smoothstep(0.0, len * 0.35, (1.0 - UV.y) * len);  // no hard edge
+	float chevron = fract(UV.y * len / 0.8 + x * wide * 0.3 - scroll);  // tips point away from you, the way they run
+	float dash = smoothstep(0.0, 0.1, chevron) * smoothstep(0.35, 0.25, chevron);
+	ALBEDO = mix(tint.rgb * (1.0 - 0.6 * (1.0 - dash)), vec3(1.0, 0.95, 0.85), dash * (0.5 + 0.3 * glow));  // pale chevrons show on orange rock
+	ALPHA = clamp(tint.a * soft * (0.4 + 1.0 * dash) * (0.7 + 0.3 * glow), 0.0, 1.0);
 }
 """
 
