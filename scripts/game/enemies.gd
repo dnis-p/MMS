@@ -196,12 +196,12 @@ func update(delta: float, at: Vector3, player_radius: float) -> void:
 	_wake_left -= delta
 	var look := _wake_left <= 0.0
 	if look:
-		_wake_left = t["wake_every"]
+		_wake_left = Defs.restart(_wake_left, t["wake_every"], delta)
 		fill_near(at)
 	_carve_left -= delta
 	var carve := _carve_left <= 0.0
 	if carve:
-		_carve_left = t["carve_every"]
+		_carve_left = Defs.restart(_carve_left, t["carve_every"], delta)
 	var up := 0
 	for i in used:
 		if alive[i] == 0:

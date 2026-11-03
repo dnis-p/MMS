@@ -91,6 +91,8 @@ Tools fire by themselves. You start with one (see characters) and can own all of
 
 Tools max at level 6 (`Defs.MAX_TOOL_LEVEL`), boosts at 5 (`Defs.MAX_BOOST_LEVEL`).
 
+**Countdowns and frame rate.** Every repeating countdown (tool cooldowns, boss attacks, enemy spawns, enemy wake and dig checks, the heartbeat, fog scans, goal checks) restarts with `Defs.restart(left, every, delta)`. It keeps the part of the frame that went past zero, at most one frame's worth, so things fire equally often at any frame rate. Each still fires on a frame, so a single hit can land up to one frame late, and nothing fires more than once per frame: below `1 / cooldown` fps a tool slows down. A tool that waited for something to hit (shovel, bombs) starts a fresh countdown.
+
 | Tool | Unlock | Dmg | Size | Cooldown | Cooldown per level | Size per level | Extra |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | shovel | start | 9 | 2.4 | 0.3 | x0.95 | +12% | arc 1.15 |
@@ -105,7 +107,7 @@ Tools max at level 6 (`Defs.MAX_TOOL_LEVEL`), boosts at 5 (`Defs.MAX_BOOST_LEVEL
 | Tool | How it behaves | Reaches through fog? |
 | --- | --- | --- |
 | shovel | Fan in front of you, half-angle `arc` in radians. Swings only when something is in reach | No |
-| drill | Straight strip ahead, half-width 0.5. Hits every cooldown without pausing, and its timer keeps the leftover part of a frame, so its rate is the same at any frame rate | No |
+| drill | Straight strip ahead, half-width 0.5. Hits every cooldown without pausing | No |
 | saws | `min(2 + level / 2, 6)` blades orbit you, each cutting a circle of radius `cut` | No |
 | bombs | Thrown at your aim, or at random seen rock within `throw` m. Up to 6 in the air | No, the target must be seen |
 | pulse | Ring bursting out from you | Yes |

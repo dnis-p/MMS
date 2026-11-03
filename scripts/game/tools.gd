@@ -248,23 +248,21 @@ func update(delta: float) -> void:
 		match id:
 			"shovel":
 				if _swing(mine, p, at):
-					w["timer"] = cooldown(id)
+					w["timer"] = Defs.restart(w["timer"], cooldown(id), delta)
 			"drill":
-				# Keeps what is left of the frame: its cooldown is a few frames long, so a plain reset
-				# would make it hit more often at higher frame rates.
-				w["timer"] = maxf(w["timer"] + cooldown(id), 0.0)
+				w["timer"] = Defs.restart(w["timer"], cooldown(id), delta)
 				_drill(mine, p, at)
 			"bombs":
 				if _throw_bomb(at):
-					w["timer"] = cooldown(id)
+					w["timer"] = Defs.restart(w["timer"], cooldown(id), delta)
 			"pulse":
-				w["timer"] = cooldown(id)
+				w["timer"] = Defs.restart(w["timer"], cooldown(id), delta)
 				_pulse(mine, at)
 			"beam":
-				w["timer"] = cooldown(id)
+				w["timer"] = Defs.restart(w["timer"], cooldown(id), delta)
 				_beam(mine, p, at)
 			"spark":
-				w["timer"] = cooldown(id) if _spark(mine, p, at) else 0.2
+				w["timer"] = Defs.restart(w["timer"], cooldown(id) if _spark(mine, p, at) else 0.2, delta)
 	_update_saws(delta, mine, at)
 	_update_moles(delta, mine, at)
 	_update_bombs(delta, mine, at)
@@ -315,7 +313,7 @@ func _update_saws(delta: float, mine: Mine, at: Vector3) -> void:
 	var tick := false
 	if lvl > 0:
 		if owned["saws"]["timer"] <= 0.0:
-			owned["saws"]["timer"] = cooldown("saws")
+			owned["saws"]["timer"] = Defs.restart(owned["saws"]["timer"], cooldown("saws"), delta)
 			tick = true
 	for k in _saws.size():
 		var m := _saws[k]
@@ -429,7 +427,7 @@ func _update_moles(delta: float, mine: Mine, at: Vector3) -> void:
 	if lvl > 0:
 		count = mini(1 + lvl / 2 + (Defs.EVOLUTIONS["moles"]["extra"] if evolved.has("moles") else 0), MAX_MOLES)
 		if owned["moles"]["timer"] <= 0.0:
-			owned["moles"]["timer"] = cooldown("moles")
+			owned["moles"]["timer"] = Defs.restart(owned["moles"]["timer"], cooldown("moles"), delta)
 			tick = true
 	var t: Dictionary = Defs.TOOLS["moles"]
 	var roam := size("moles")

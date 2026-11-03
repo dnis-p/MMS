@@ -43,7 +43,7 @@ func update(delta: float, at: Vector3) -> void:
 	if Defs.BOSSES[killed]["enemy"] == "borer":
 		_borer(delta, to)
 	elif _timer <= 0.0:
-		_brood(at)
+		_brood(at, delta)
 
 
 func _arrive(at: Vector3) -> void:
@@ -77,19 +77,19 @@ func _borer(delta: float, to: Vector3) -> void:
 		"chase":
 			if _timer <= 0.0:
 				_state = "aim"
-				_timer = b["aim"]
+				_timer = Defs.restart(_timer, b["aim"], delta)
 				_dir = to.normalized()
 				e.speed[current] = 0.0
 				Sfx.play("warn", -8.0, 1.4, true)
 		"aim":
 			_flicker -= delta
 			if _flicker <= 0.0:
-				_flicker = 0.1
+				_flicker = Defs.restart(_flicker, 0.1, delta)
 				var from: Vector3 = e.pos[current] + Vector3(0, 0.8, 0)
 				run.fx.bolt(from, from + _dir * float(b["charge"]) * float(b["charge_time"]), Color(1.0, 0.25, 0.1))
 			if _timer <= 0.0:
 				_state = "charge"
-				_timer = b["charge_time"]
+				_timer = Defs.restart(_timer, b["charge_time"], delta)
 				Sfx.play("boom", -6.0, 0.7)
 		"charge":
 			e.pos[current] = run.mine.clamp_inside(e.pos[current] + _dir * float(b["charge"]) * delta)
@@ -97,15 +97,15 @@ func _borer(delta: float, to: Vector3) -> void:
 			run.fx.shake(0.15)
 			if _timer <= 0.0:
 				_state = "chase"
-				_timer = b["every"]
+				_timer = Defs.restart(_timer, b["every"], delta)
 				e.speed[current] = _speed
 
 
 ## Throws gas bombs at you, and drops crawlers around itself.
-func _brood(at: Vector3) -> void:
+func _brood(at: Vector3, delta: float) -> void:
 	var b: Dictionary = Defs.BOSSES[1]
 	var e := run.enemies
-	_timer = b["every"]
+	_timer = Defs.restart(_timer, b["every"], delta)
 	for k in b["lob"]:
 		var a := run.rng.randf() * TAU
 		run.traps.light_gas(at + Vector3(cos(a), 0, sin(a)) * (0.0 if k == 0 else run.rng.randf_range(3.0, 7.0)))

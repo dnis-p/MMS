@@ -52,6 +52,7 @@ func _process(delta: float) -> void:
 			_check_evolutions(r)
 			_check_clues(r)
 			_check_seams(r)
+			_check_timers()
 			_check_bosses(r)
 			_check_new_tools(r)
 			_check_caves(r)
@@ -609,13 +610,29 @@ func _check_clues(r: Run) -> void:
 	r._beat_left = 0.0
 	r.heart_woken = false
 	r._update_heartbeat(0.016, Vector3(9999, 0, 0))
-	_check("you can't hear it from far off", r._beat_left == 0.5)
+	_check("you can't hear it from far off", is_equal_approx(r._beat_left, 0.5 - 0.016))
 	r._beat_left = 0.0
 	r._update_heartbeat(0.016, m.heart_pos + Vector3(100, 0, 0))
 	var slow := r._beat_left
 	r._beat_left = 0.0
 	r._update_heartbeat(0.016, m.heart_pos + Vector3(10, 0, 0))
 	_check("it beats faster the closer you get (%.2f, then %.2f)" % [slow, r._beat_left], r._beat_left < slow)
+
+
+## Countdowns keep the part of a frame past zero, so things fire as often at any frame rate.
+func _check_timers() -> void:
+	var counts: Array[int] = []
+	for fps in [30, 60, 144, 165, 240]:
+		var left := 0.0
+		var fired := 0
+		for f in fps * 10:
+			left -= 1.0 / fps
+			if left <= 0.0:
+				left = Defs.restart(left, 0.065, 1.0 / fps)
+				fired += 1
+		counts.append(fired)
+	_check("a 0.065 s cooldown fires the same at 30 to 240 fps (%s)" % [counts], counts.max() - counts.min() <= 1 and absi(counts[0] - 154) <= 1)
+	_check("a tool that waited starts a fresh countdown", is_equal_approx(Defs.restart(-5.0, 0.3, 0.016), 0.3 - 0.016))
 
 
 func _check_seams(r: Run) -> void:

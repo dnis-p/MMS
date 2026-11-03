@@ -304,5 +304,12 @@ static func goal_for(key: String) -> String:
 	return "find it in the rock"
 
 
+## Restarts a countdown that has run out. It keeps the part of this frame that went past zero, so how often
+## something fires doesn't depend on the frame rate, but never more than one frame, so a tool that waited
+## for something to hit starts a fresh countdown.
+static func restart(left: float, every: float, delta: float) -> float:
+	return every + maxf(left, -delta)
+
+
 static func xp_to_next(level: int) -> int:
 	return 24 + (level - 1) * 10 + maxi(0, level - 15) * 10

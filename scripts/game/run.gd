@@ -254,7 +254,7 @@ func _update_light(delta: float) -> void:
 	_lamp.light_energy = 1.6 + sin(run_time * 11.0) * 0.06  # a living flame, barely
 	_scan_timer -= delta
 	if _scan_timer <= 0.0:
-		_scan_timer = Defs.WORLD["scan_every"]
+		_scan_timer = Defs.restart(_scan_timer, Defs.WORLD["scan_every"], delta)
 		mine.scan_light(at)
 
 
@@ -356,7 +356,7 @@ func _update_burrowers(delta: float) -> void:
 	_burrow_timer -= delta
 	if _burrow_timer > 0.0:
 		return
-	_burrow_timer = maxf(t["burrow_min"], t["burrow_every"] - band * 2.0)
+	_burrow_timer = Defs.restart(_burrow_timer, maxf(t["burrow_min"], t["burrow_every"] - band * 2.0), delta)
 	for k in 1 + band / 2:
 		var a := rng.randf() * TAU
 		var p := mine.clamp_inside(player.global_position + Vector3(cos(a), 0, sin(a)) * t["burrow_range"])
@@ -388,7 +388,7 @@ func _update_swarm(delta: float) -> void:
 	_update_power()
 	_swarm_timer -= delta
 	if _swarm_timer <= 0.0:
-		_swarm_timer = t["swarm_every"]
+		_swarm_timer = Defs.restart(_swarm_timer, t["swarm_every"], delta)
 		var limit: float = minf((t["swarm_alive"] + t["swarm_alive_ramp"] * run_time) * crowd, t["swarm_max"])
 		if enemies.awake_count < limit:
 			var a := rng.randf() * TAU
@@ -396,7 +396,7 @@ func _update_swarm(delta: float) -> void:
 				_swarm_in(a + rng.randf_range(-0.5, 0.5), t["swarm_range"])
 	_horde_timer -= delta
 	if _horde_timer <= 0.0:
-		_horde_timer = Defs.RUN["heart_horde"] if heart_woken else t["horde_every"] / sqrt(crowd)
+		_horde_timer = Defs.restart(_horde_timer, Defs.RUN["heart_horde"] if heart_woken else t["horde_every"] / sqrt(crowd), delta)
 		spawn_horde()
 
 
@@ -616,10 +616,9 @@ func _update_heartbeat(delta: float, at: Vector3) -> void:
 	if heart_woken or _beat_left > 0.0:
 		return
 	var near: float = 1.0 - at.distance_to(mine.heart_pos) / float(Defs.RUN["heart_hear"])
-	_beat_left = 0.5
+	_beat_left = Defs.restart(_beat_left, 0.5 if near <= 0.0 else lerpf(2.0, 0.55, near), delta)
 	if near <= 0.0:
 		return
-	_beat_left = lerpf(2.0, 0.55, near)
 	Sfx.play("thud", lerpf(-24.0, -5.0, near), 0.5, true)
 	hud.heart_pulse(near)
 
@@ -770,7 +769,7 @@ func _announce_goals(delta: float) -> void:
 	_goal_timer -= delta
 	if _goal_timer > 0.0:
 		return
-	_goal_timer = 1.0
+	_goal_timer = Defs.restart(_goal_timer, 1.0, delta)
 	if autotest and int(run_time) % 60 == 0:
 		print("t=%d level=%d gems=%d band=%d hp=%d awake=%d kills=%d" % [run_time, level, int(loot), band, player.hp, enemies.awake_count, kills])
 	var now := _run_stats(int(loot * keep_share("quit")), "")

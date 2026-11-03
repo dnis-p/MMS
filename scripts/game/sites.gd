@@ -82,7 +82,7 @@ func update(delta: float, at: Vector3) -> void:
 	lift_t += delta
 	_ring_t -= delta
 	if _ring_t <= 0.0:
-		_ring_t = 0.4
+		_ring_t = Defs.restart(_ring_t, 0.4, delta)
 		run.fx.ring(nearest_lift, pad, Color(0.3, 1.0, 0.85, 0.9), 0.35)
 	if lift_t >= float(Defs.RUN["lift_hold"]):
 		run.leave_by_lift()
