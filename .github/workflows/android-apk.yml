@@ -3,6 +3,13 @@ name: Builds
 on:
   push:
   workflow_dispatch:
+    inputs:
+      # The digging prototype's branch sets this when it asks for the site to be rebuilt: this game hasn't
+      # changed, so its smoke test and APK are skipped. Its web build still runs, as the site is published whole.
+      dig_only:
+        description: "Only republish the digging prototype (skip this game's smoke test and APK)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -53,15 +60,18 @@ jobs:
         run: timeout 300 godot --headless --path . --import || true
 
       - name: Smoke test
+        if: ${{ !inputs.dig_only }}
         run: |
           timeout 180 godot --headless --path . -- --autotest --quit-after-sec=30 2>&1 | tee smoke.log
           grep -q "AUTOTEST DONE" smoke.log
           ! grep -q "SCRIPT ERROR" smoke.log
 
       - name: Build APK
+        if: ${{ !inputs.dig_only }}
         run: tools/android/build_apk.sh
 
       - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.dig_only }}
         with:
           name: mms-prototype-apk
           path: build/mms-prototype.apk
