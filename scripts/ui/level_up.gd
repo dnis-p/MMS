@@ -6,6 +6,7 @@ const INPUT_GRACE := 0.35  # ignore taps right after opening so steering can't m
 
 var _cards: HBoxContainer
 var _title: Label
+var _note: Label
 var _callback: Callable
 var _opened_at := 0
 var auto_pick := false
@@ -32,12 +33,17 @@ func _ready() -> void:
 	_cards.alignment = BoxContainer.ALIGNMENT_CENTER
 	_cards.add_theme_constant_override("separation", 24)
 	v.add_child(_cards)
+	_note = Ui.label("", 24, Color(0.8, 0.8, 0.85))
+	_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(_note)
 
 
-func open(options: Array, level: int, callback: Callable, title := "") -> void:
+## `note` is a line under the cards, such as how many slots are free.
+func open(options: Array, level: int, callback: Callable, title := "", note := "") -> void:
 	_callback = callback
 	_opened_at = Time.get_ticks_msec()
 	_title.text = title if title != "" else "LEVEL %d!" % level
+	_note.text = note
 	for c in _cards.get_children():
 		c.queue_free()
 	visible = true

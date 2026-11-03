@@ -24,6 +24,8 @@ static func sections() -> Array:
 			"Your tools hit whenever they are ready. The shovel only swings when there is something in front of you.",
 			"Ore and gems leave shiny bits: walk close to collect them. They give you XP and gems to carry.",
 			"Each level-up pauses the game and offers 3 cards: a new tool, a tool level or a boost. Picking one also blasts the rock around you and heals you.",
+			"You can hold %d different tools and %d boosts, your first tool included. Empty boxes at the top left show free slots. Once they are full, cards only level up what you hold. The Tool Belt in the Shop adds more, up to %d of each." % [
+				int(Defs.SLOTS["tools"]), int(Defs.SLOTS["boosts"]), int(Defs.SLOTS["tools"] + Defs.SHOP["slots"]["max"] * Defs.SHOP["slots"]["value"])],
 			"A tool at max level evolves into a stronger form once you also have %d levels of the boost that goes with it. Evolutions show up first among the cards." % Defs.EVOLVE_BOOST,
 			"Fog hides what you haven't seen. Your lamp lights what is near, and you can only dig a few cubes into the dark.",
 			"The further you go from the start, the harder the rock, the richer the ore and the tougher the enemies. The top of the screen shows the layer, how far out you are and the time.",

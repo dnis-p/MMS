@@ -196,6 +196,18 @@ func cooldown(id: String) -> float:
 
 # --- acquiring ---------------------------------------------------------------------
 
+func tool_slots() -> int:
+	return Defs.SLOTS["tools"] + int(Profile.bonus("slots"))
+
+
+func boost_slots() -> int:
+	return Defs.SLOTS["boosts"] + int(Profile.bonus("slots"))
+
+
+## "Tools 2/4 · Boosts 1/4", for the level-up screen.
+func slots_text() -> String:
+	return "Tools %d/%d  ·  Boosts %d/%d" % [order.size(), tool_slots(), boost_order.size(), boost_slots()]
+
 func add_tool(id: String) -> void:
 	if owned.has(id):
 		owned[id]["level"] = mini(Defs.MAX_TOOL_LEVEL, level(id) + 1)
@@ -229,13 +241,15 @@ func apply(option: Dictionary) -> void:
 
 func level_up_options(n: int) -> Array:
 	var pool: Array = []
+	var tool_room := order.size() < tool_slots()
+	var boost_room := boost_order.size() < boost_slots()
 	for id in Defs.TOOLS:
-		if level(id) < Defs.MAX_TOOL_LEVEL and Profile.has_tool(id):
+		if level(id) < Defs.MAX_TOOL_LEVEL and Profile.has_tool(id) and (owned.has(id) or tool_room):
 			pool.append(_tool_option(id))
 			if owned.has(id):
 				pool.append(_tool_option(id))  # favour what you already have
 	for id in Defs.BOOSTS:
-		if boost(id) < Defs.MAX_BOOST_LEVEL:
+		if boost(id) < Defs.MAX_BOOST_LEVEL and (boosts.has(id) or boost_room):
 			pool.append(_boost_option(id))
 	run.shuffle(pool)
 	var picked: Array = _evolution_options()
@@ -268,13 +282,13 @@ func _tool_option(id: String) -> Dictionary:
 	var t: Dictionary = Defs.TOOLS[id]
 	var lvl := level(id)
 	return {"kind": "tool", "id": id, "title": t["name"], "desc": t["desc"] if lvl == 0 else "+%d%% damage, +%d%% size" % [roundi(t["dmg_up"] * 100.0), roundi(t["size_up"] * 100.0)],
-		"hint": "", "level_text": "NEW" if lvl == 0 else "Lv %d > %d" % [lvl, lvl + 1], "color": t["color"]}
+		"hint": "Last tool slot" if lvl == 0 and order.size() == tool_slots() - 1 else "", "level_text": "NEW" if lvl == 0 else "Lv %d > %d" % [lvl, lvl + 1], "color": t["color"]}
 
 
 func _boost_option(id: String) -> Dictionary:
 	var b: Dictionary = Defs.BOOSTS[id]
 	var lvl := boost(id)
-	return {"kind": "boost", "id": id, "title": b["name"], "desc": b["desc"], "hint": "",
+	return {"kind": "boost", "id": id, "title": b["name"], "desc": b["desc"], "hint": "Last boost slot" if lvl == 0 and boost_order.size() == boost_slots() - 1 else "",
 		"level_text": "NEW" if lvl == 0 else "Lv %d > %d" % [lvl, lvl + 1], "color": b["color"]}
 
 

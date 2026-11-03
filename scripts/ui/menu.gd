@@ -159,8 +159,9 @@ func _show_shop(bought := "") -> void:
 		var b := _button("%s  ·  %s  ·  level %d/%d  ·  %s" % [d["name"], d["desc"], lvl, d["max"], price], func():
 			if Profile.buy(id):
 				Sfx.play("reward", -5.0, 1.1, true)
-				_show_shop(id), 54.0, 900.0)
+				_show_shop(id), 48.0, 900.0)
 		b.disabled = full or Profile.gems < Profile.price(id)
+		b.add_theme_font_size_override("font_size", 21)  # 7 rows have to fit the 720 high screen
 		_root.add_child(b)
 		if id == bought and not b.disabled:
 			keep = b

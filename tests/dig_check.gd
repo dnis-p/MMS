@@ -46,6 +46,7 @@ func _process(delta: float) -> void:
 			_check_fog(r)
 			_check_pause(r)
 			_check_tools(r)
+			_check_slots(r)
 			_check_goal(r)
 			_check_rewards(r)
 			_check_meta(r)
@@ -882,6 +883,50 @@ func _check_bosses(r: Run) -> void:
 	r.mine.update(1.0)
 	r.player.invuln = 0.0
 	r.player.hp = r.player.max_hp
+
+
+## Full slots stop new tools and boosts; the Tool Belt adds one of each per level.
+func _check_slots(r: Run) -> void:
+	var t := r.tools
+	var saved := [t.owned.duplicate(true), t.order.duplicate(), t.boosts.duplicate(), t.boost_order.duplicate(), Profile.shop.duplicate(), Profile.unlocked.duplicate()]
+	Profile.shop.erase("slots")
+	Profile.unlocked["tool:bombs"] = true
+	t.owned.clear()
+	t.order.clear()
+	t.boosts.clear()
+	t.boost_order.clear()
+	_check("a new profile has %d tool and %d boost slots" % [Defs.SLOTS["tools"], Defs.SLOTS["boosts"]], t.tool_slots() == 4 and t.boost_slots() == 4)
+	for id in ["shovel", "drill", "saws"]:
+		t.add_tool(id)
+	var last := false
+	for k in 100:
+		for o in t.level_up_options(3):
+			last = last or o["hint"] == "Last tool slot"
+	_check("a new tool for the fourth slot says it is the last", last)
+	t.add_tool("bombs")
+	for id in ["haste", "reach", "power", "magnet"]:
+		t.add_boost(id)
+	var fresh := 0
+	for k in 200:
+		for o in t.level_up_options(3):
+			if o["kind"] in ["tool", "boost"] and o["level_text"] == "NEW":
+				fresh += 1
+	_check("with every slot full, cards only level up what you hold (%d new)" % fresh, fresh == 0)
+	Profile.shop["slots"] = Defs.SHOP["slots"]["max"]
+	var boosts := 0
+	for k in 200:
+		for o in t.level_up_options(3):
+			if o["kind"] == "boost" and o["level_text"] == "NEW":
+				boosts += 1
+	_check("a full Tool Belt makes 6 of each, so new boosts come back", t.tool_slots() == 6 and t.boost_slots() == 6 and boosts > 0)
+	_check("the level-up screen says what is free", t.slots_text() == "Tools 4/6  ·  Boosts 4/6")
+	t.owned = saved[0]
+	t.order = saved[1]
+	t.boosts = saved[2]
+	t.boost_order = saved[3]
+	Profile.shop = saved[4]
+	Profile.unlocked = saved[5]
+	r.apply_boosts()
 
 
 func _check_new_tools(r: Run) -> void:

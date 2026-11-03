@@ -160,7 +160,11 @@ const SHOP := {
 	"magnet": {"name": "Long Reach", "desc": "+12% pickup range", "value": 0.12, "max": 5, "cost": 150, "grow": 2.0},
 	"greed": {"name": "Deep Pockets", "desc": "+8% gems found", "value": 0.08, "max": 5, "cost": 300, "grow": 2.0},
 	"cover": {"name": "Insurance", "desc": "+6% gems kept if you don't get out", "value": 0.06, "max": 5, "cost": 260, "grow": 2.0},
+	"slots": {"name": "Tool Belt", "desc": "+1 tool slot and +1 boost slot", "value": 1.0, "max": 2, "cost": 500, "grow": 3.0},
 }
+## How many different tools and boosts a run can hold, the starting tool included, before the Tool Belt.
+## Once a kind is full, cards only offer levels of what you hold (owner: start with 4, up to 6).
+const SLOTS := {"tools": 4, "boosts": 4}
 
 ## Who digs: a starting tool and one rule. hp, speed and gems multiply the base numbers. no_aim: tools
 ## point where you drive and the mouse does nothing. Locked ones open through Defs.GOALS.

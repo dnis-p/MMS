@@ -60,6 +60,8 @@ Goals are checked and paid only here, at the end of a run, and their gems are no
 
 **Cards:** eligible evolutions always come first, then random picks. Each unlocked tool or boost below max is in the draw, and owned tools count twice, so you tend to get what you already have. If nothing is left you get +500 score (`Defs.FILLER_SCORE`).
 
+**Slots:** a run holds at most `SLOTS.tools` = 4 different tools and `SLOTS.boosts` = 4 boosts, the starting tool included, plus 1 of each per Tool Belt level (up to 6 and 6). When a kind is full, new ones of that kind leave the draw and only levels of what you hold are offered. Evolutions don't need a slot. A NEW card for the last free slot carries the hint "Last tool slot" or "Last boost slot". The HUD shows free slots as dim empty boxes, and the level-up screen shows `Tools n/max · Boosts n/max`. Bots' `--give` ignores slots.
+
 ## 5. The digger
 
 | Stat | Formula |
@@ -352,8 +354,9 @@ Saved in `user://profile.cfg`: gems, shop levels, unlocks, finished goals, relic
 | magnet | Long Reach | +12% pickup range | 5 | 150, 300, 600, 1200, 2400 |
 | greed | Deep Pockets | +8% gems found | 5 | 300, 600, 1200, 2400, 4800 |
 | cover | Insurance | +6% gems kept if you don't get out | 5 | 260, 520, 1040, 2080, 4160 |
+| slots | Tool Belt | +1 tool slot and +1 boost slot | 2 | 500, 1500 |
 
-Every price doubles per level, and the whole shop costs 41,850 gems. The owner's rule is to keep it reachable in hours, not days.
+Every price doubles per level, except the Tool Belt, which triples. The whole shop costs 43,850 gems. The owner's rule is to keep it reachable in hours, not days.
 
 | Id | Goal | Stat | Need | Reward |
 | --- | --- | --- | --- | --- |
@@ -390,6 +393,7 @@ Beam has no goal: it comes from the Strange Lens relic. Stats add up across runs
 | Map size or the walk | `RUN.heart_dist`, `WORLD.band_width`. `Mine.SIZE` must be a multiple of `Mine.CHUNK` |
 | Feature density | `RUN.seams`, `RUN.cave_blobs`, `RUN.geodes`, `THREATS.nests`, `THREATS.spike_patches`, `THREATS.gas_blobs` |
 | Map look and reach | `Defs.MAP` |
+| Upgrade slots | `Defs.SLOTS`, the Tool Belt in `Defs.SHOP` |
 | New tool | `Defs.TOOLS`, plus its firing in `scripts/game/tools.gd` |
 | New enemy | `Defs.ENEMIES`, `Defs.ENEMY_ORDER`, plus a mesh and constant in `scripts/game/enemies.gd` |
 

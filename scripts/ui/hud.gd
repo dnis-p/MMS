@@ -305,6 +305,7 @@ func _refresh_icons(w: Tools) -> void:
 		key += "%s%d," % [id, w.level(id)]
 	for id in w.boost_order:
 		key += "%s%d," % [id, w.boost(id)]
+	key += "%d/%d" % [w.tool_slots(), w.boost_slots()]
 	if key == _icon_key:
 		return
 	_icon_key = key
@@ -316,6 +317,17 @@ func _refresh_icons(w: Tools) -> void:
 		_icons.add_child(Ui.icon(Defs.TOOLS[id]["color"], str(w.level(id)), 34))
 	for id in w.boost_order:
 		_boost_icons.add_child(Ui.icon(Defs.BOOSTS[id]["color"], str(w.boost(id)), 34))
+	# Free slots show as empty boxes, so you can see how much room is left.
+	for k in w.tool_slots() - w.order.size():
+		_icons.add_child(_empty_slot())
+	for k in w.boost_slots() - w.boost_order.size():
+		_boost_icons.add_child(_empty_slot())
+
+
+func _empty_slot() -> Panel:
+	var p := Ui.icon(Color(0.45, 0.45, 0.5), "", 34)
+	p.modulate.a = 0.45
+	return p
 
 
 func _format(n: int) -> String:

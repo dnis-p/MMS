@@ -30,7 +30,7 @@ Movement is instant, like a 2D game, and separate from aiming. Tools dig by them
 and each level-up lets you pick 1 of 3 tools or boosts and blasts the rock around you. Crystal goes off as a chain reaction.
 
 A run ends when you break the Heart, leave by lift (green arrow, stand on it, from 30 s on), die or give up. Lifts and the Heart keep all your gems, the others half. Nothing points at the Heart: you hear it beat from 120 m away, and pink veins in the rock get thicker toward it. It is sealed until two bosses are dead, who come for you at 3:30 and 7:00.
-Banked gems buy upgrades in the shop, and goals unlock characters and tools. Geodes burst into gems, vaults hold ore, shrines offer a trade and relics are yours for good: they all sparkle through the fog. Orange fuel seams burn along their whole length once lit, and cracked pale rock brings rubble down on the tunnels around it, crushing what stands there. A long combo starts a Frenzy. "Reset progress" on the main menu erases your save.
+Each run holds 4 different tools and 4 boosts; the Tool Belt in the shop raises that to 6. Banked gems buy upgrades in the shop, and goals unlock characters and tools. Geodes burst into gems, vaults hold ore, shrines offer a trade and relics are yours for good: they all sparkle through the fog. Orange fuel seams burn along their whole length once lit, and cracked pale rock brings rubble down on the tunnels around it, crushing what stands there. A long combo starts a Frenzy. "Reset progress" on the main menu erases your save.
 
 ## Commands
 Run from the repo root after importing once (`godot --headless --path . --import`):

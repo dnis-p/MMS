@@ -883,7 +883,7 @@ func _try_open_modal() -> void:
 		tools.apply(o)
 		pending_levelups -= 1
 		_close_modal()
-		level_blast())
+		level_blast(), "", tools.slots_text())
 
 
 func _close_modal() -> void:

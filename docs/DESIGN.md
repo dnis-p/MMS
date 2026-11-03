@@ -161,6 +161,15 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-03, upgrade slots: 4 of each, up to 6** (owner: "the powerups should have a count limit ... after you have all of the slots full you cant get any new ones"; then "new game starts with 4 and as you meta progress you can get up to 6 slots for now", accepting that leaderboards then favour players with more progress)
+- A run holds at most 4 different tools and 4 different boosts, the starting tool included (`Defs.SLOTS`). Tools and boosts have separate slots, so every tool slot can still have the boost that evolves it (suggested, built that way). Once a kind is full, cards offer only levels of what you hold, as in Vampire Survivors; evolutions are not affected.
+- The meta progression is a new shop row, **Tool Belt** (suggested: the owner didn't say how it unlocks): each of its 2 levels adds one tool slot and one boost slot, so 4+4, then 5+5, then 6+6. Prices are first guesses, 500 and 1,500 gems, meant to be reached in an hour or two (the owner's run that died at level 16 carried 505 gems and kept half).
+- You can see it: free slots show as dim empty boxes next to your tool and boost icons at the top left, the level-up screen says "Tools 2/4 · Boosts 1/4" under the cards, and a NEW card for the last free slot says "Last tool slot" or "Last boost slot". How to play explains it.
+- At 6 boost slots every boost fits, as there are 6, so a full Tool Belt only limits tools (6 of 8).
+- Room is plenty for a run: 4 tools to level 6 and 4 boosts to level 5 are 44 picks plus evolutions. A bot that can't die, with nothing bought, reached level 19 in 10 minutes holding 4 tools; with the Tool Belt full, level 32 holding 6. Level-ups never ran out of cards.
+- The shop page now has 7 rows, so its rows use a smaller font to fit the 720 high screen without scrolling.
+- `--give` (for bots) ignores the slots, so `--give=all` still tests the late game with everything.
+
 **2026-11-03, the drill shows its reach** (owner: "add a visual effect to the drill that can somewhat show the hitbox or range of it")
 - A flat strip lies over the cells the drill bites, turning with you: a faint orange fill and pale chevrons running forward, fading out towards the sides and the tip. While it is hitting, the chevrons run twice as fast and the strip brightens; it fades back in about 0.2 s. The strip is sized to the hit area, checked in the rule check: 3 cubes wide (7 with the Tunnel Borer) and as long as the drill reaches, so it grows with levels and Long Handle.
 - At first the chevrons ran forward but pointed back at you, which the owner said looked "like a conveyor belt that leads debris to you"; they now point away, the way they move and the drill bores.
@@ -519,10 +528,7 @@ entries are the first ones in sections 8 and 9.
   in that boss fight. The bot never dashes or switches rings, so this is not a measure of real balance.
 
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
-**Owner, 2026-11-03, a limit on how many upgrades you hold** ("the powerups should have a count limit ... after you have all of the slots full you cant get any new ones", like Vampire Survivors). Number not chosen yet.
-- (suggested) 4 tool slots and 4 boost slots, starting tool included. Once a kind is full, cards offer only levels of what you hold, as in VS. Today there are 8 tools and 6 boosts with no limit, so everything can be collected.
-- Owner, same day: the number should work with evolutions; 4 feels too few and 6 would copy VS, so start with 4 and let meta progression raise it to 6. Leaderboards will then favour players with more progress, which the owner accepts ("this happens in other games too").
-- (suggested) Keep tool and boost slots separate. Each evolution takes one tool and its boost, so any equal pair (4+4, 5+5, 6+6) leaves nothing over; odd numbers only waste a slot in one shared pool. A shop upgrade with 2 levels, each adding one tool slot and one boost slot (4+4, then 5+5, then 6+6), priced early so new players get there in hours. At 6 boost slots every boost fits (there are 6), so the limit then bites only on tools (6 of 8) unless more boosts are added.
+**Owner, 2026-11-03, Frenzy feels too easy to set off** ("i kinda feel like its set off too easily"). Not changed yet: the owner asked when it starts, options are in the chat of that day.
 
 **Owner, 2026-11-01, plans for the digging game (a first version is built, see section 8; the rest of these stay open)**
 - Unlockables, as in VS, where you unlock characters that give items or abilities you didn't have before. Not decided yet whether there will be several characters or just tools. Test first, then iterate.
