@@ -513,6 +513,9 @@ entries are the first ones in sections 8 and 9.
   in that boss fight. The bot never dashes or switches rings, so this is not a measure of real balance.
 
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
+**Owner, 2026-11-03, a limit on how many upgrades you hold** ("the powerups should have a count limit ... after you have all of the slots full you cant get any new ones", like Vampire Survivors). Number not chosen yet.
+- (suggested) 4 tool slots and 4 boost slots, starting tool included. Once a kind is full, cards offer only levels of what you hold, as in VS. Today there are 8 tools and 6 boosts with no limit, so everything can be collected.
+
 **Owner, 2026-11-01, plans for the digging game (a first version is built, see section 8; the rest of these stay open)**
 - Unlockables, as in VS, where you unlock characters that give items or abilities you didn't have before. Not decided yet whether there will be several characters or just tools. Test first, then iterate.
 - Theme still undecided, not picked for now. Some mechanics could come from choosing it.
