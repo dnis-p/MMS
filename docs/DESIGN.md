@@ -528,6 +528,9 @@ entries are the first ones in sections 8 and 9.
   in that boss fight. The bot never dashes or switches rings, so this is not a measure of real balance.
 
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
+**Owner, 2026-11-03, thinking about changing how you aim** ("theres no point in having a free cursor when the character's attack doesnt depend on range/position of the cursor but on direction/angle"). Not decided. Today the cursor's distance matters in two places only: Bombs land on the rock under it (up to 8 m away), and the camera leans toward it.
+- (suggested) Keep the mouse for the angle, but hide the system cursor in a run and draw the aim as a marker on a ring around the digger. Keep the mouse inside the window. Bombs then go to the nearest rock along the aim line instead of the exact spot, and the camera leans by a fixed amount. The aiming goal "the mouse aims" stays as decided. The other option, turning the aim with mouse movement while the pointer is locked, as shooters do, feels the same at any distance but takes some getting used to.
+
 **Owner, 2026-11-03, Frenzy feels too easy to set off** ("i kinda feel like its set off too easily"). Not changed yet: the owner asked when it starts, options are in the chat of that day.
 
 **Owner, 2026-11-01, plans for the digging game (a first version is built, see section 8; the rest of these stay open)**
