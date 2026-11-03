@@ -257,11 +257,13 @@ const BANDS := [
 ## Tools work by themselves. dmg, size and cd are level 1; *_up is what each level adds (cd_up
 ## multiplies). size means: shovel reach, drill length, saw orbit, blast radius, beam length, how far
 ## sparks reach, how far moles roam.
+## The drill also shows its strip: strip is its opacity, strip_speed how many chevrons pass a point each second.
 const TOOLS := {
 	"shovel": {"name": "Shovel", "desc": "Swings at everything in front of you.", "color": Color(0.8, 0.82, 0.86),
 		"dmg": 9.0, "dmg_up": 0.4, "size": 2.4, "size_up": 0.12, "cd": 0.3, "cd_up": 0.95, "arc": 1.15},
 	"drill": {"name": "Drill", "desc": "Bores straight ahead, nonstop.", "color": Color(1.0, 0.6, 0.2),
-		"dmg": 3.0, "dmg_up": 0.4, "size": 4.0, "size_up": 0.15, "cd": 0.065, "cd_up": 0.95},
+		"dmg": 3.0, "dmg_up": 0.4, "size": 4.0, "size_up": 0.15, "cd": 0.065, "cd_up": 0.95,
+		"strip": 0.75, "strip_speed": 2.5},
 	"saws": {"name": "Saw Blades", "desc": "Blades circle you and cut what they touch.", "color": Color(0.9, 0.9, 0.95),
 		"dmg": 8.0, "dmg_up": 0.4, "size": 3.0, "size_up": 0.1, "cd": 0.09, "cd_up": 1.0, "spin": 5.0, "cut": 0.7},
 	"bombs": {"name": "Bombs", "desc": "Thrown into nearby rock. Boom.", "color": Color(1.0, 0.3, 0.2), "locked": true,

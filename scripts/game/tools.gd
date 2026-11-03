@@ -5,6 +5,26 @@ extends Node3D
 
 const MAX_BOMBS := 6
 const MAX_MOLES := 6
+## The drill's strip: an outline of the cells it bites, with chevrons running forward.
+const DRILL_SHADER := """
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_never, shadows_disabled;
+uniform vec4 tint : source_color;
+uniform float glow = 0.0;
+uniform float len = 4.0;
+uniform float wide = 1.5;
+uniform float scroll = 0.0;
+void fragment() {
+	vec2 m = vec2(abs(UV.x - 0.5) * wide, (0.5 - abs(UV.y - 0.5)) * len);  // metres from the centre line, and to the nearest end
+	float edge = max(step(wide * 0.5 - 0.08, m.x), step(m.y, 0.08));
+	float chevron = fract(UV.y * len / 0.8 - m.x * 0.6 - scroll);
+	float dash = smoothstep(0.0, 0.1, chevron) * smoothstep(0.35, 0.25, chevron) * (1.0 - edge);
+	float fade = 1.0 - 0.5 * UV.y;
+	float light = max(edge, dash);  // outline and chevrons are pale, so they show on orange rock and white flashes
+	ALBEDO = mix(tint.rgb * (1.0 - 0.6 * (1.0 - light)), vec3(1.0, 0.95, 0.85), light * (0.5 + 0.3 * glow));
+	ALPHA = clamp(tint.a * (0.35 * fade + edge + 0.7 * dash * fade) * (0.7 + 0.3 * glow), 0.0, 1.0);
+}
+"""
 
 var run: Run
 ## tool id -> {"level": int, "timer": float}
@@ -18,6 +38,10 @@ var evolved := {}  # tool id -> true
 var _slash: MeshInstance3D
 var _slash_mat: StandardMaterial3D
 var _slash_left := 0.0
+var _strip: MeshInstance3D
+var _strip_mat: ShaderMaterial
+var _strip_glow := 0.0
+var _strip_scroll := 0.0
 var _saws: Array[MeshInstance3D] = []
 var _saw_angle := 0.0
 var _bombs: Array[MeshInstance3D] = []
@@ -30,6 +54,7 @@ var _mole_to: Array[Vector3] = []
 
 func _ready() -> void:
 	_build_slash()
+	_build_strip()
 	var disc := CylinderMesh.new()
 	disc.top_radius = 0.5
 	disc.bottom_radius = 0.5
@@ -111,6 +136,28 @@ func _build_slash() -> void:
 	_slash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_slash.visible = false
 	add_child(_slash)
+
+
+## A flat rectangle one metre wide and long, from the origin along -Z.
+func _build_strip() -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for v in [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 0), Vector2(1, 1), Vector2(0, 1)]:
+		st.set_uv(v)
+		st.add_vertex(Vector3(v.x - 0.5, 0, -v.y))
+	_strip = MeshInstance3D.new()
+	_strip.mesh = st.commit()
+	var shader := Shader.new()
+	shader.code = DRILL_SHADER
+	_strip_mat = ShaderMaterial.new()
+	_strip_mat.shader = shader
+	_strip_mat.render_priority = 2  # over the fog, which shares its height
+	var c: Color = Defs.TOOLS["drill"]["color"]
+	_strip_mat.set_shader_parameter("tint", Color(c, Defs.TOOLS["drill"]["strip"]))
+	_strip.material_override = _strip_mat
+	_strip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_strip.visible = false
+	add_child(_strip)
 
 
 # --- stats -------------------------------------------------------------------------
@@ -267,6 +314,7 @@ func update(delta: float) -> void:
 	_update_moles(delta, mine, at)
 	_update_bombs(delta, mine, at)
 	_update_slash(delta, p)
+	_update_strip(delta, p)
 
 
 ## The shovel fans out in front of you and only swings when there is something to hit.
@@ -299,9 +347,35 @@ func _update_slash(delta: float, p: Player) -> void:
 
 func _drill(mine: Mine, p: Player, at: Vector3) -> void:
 	var from := at + p.heading * 0.5
-	var width: float = Defs.EVOLUTIONS["drill"]["width"] if evolved.has("drill") else 0.5
+	var width := _drill_width()
 	if mine.hit_line(from, p.heading, size("drill"), width, dmg("drill"), 200.0) + run.enemies.hit_line(from, p.heading, size("drill"), width, dmg("drill")) > 0:
 		run.fx.shake(0.015)
+		_strip_glow = 1.0
+
+
+## Half the width of the drill's strip, from the centre line to the last cubes it samples.
+func _drill_width() -> float:
+	return Defs.EVOLUTIONS["drill"]["width"] if evolved.has("drill") else 0.5
+
+
+## Lays the strip over the cells the drill bites: hit_line samples every cell along its length and
+## ceil(half width / cell) cells to each side, so the strip is half a cell wider on each side and starts half a cell back.
+func _update_strip(delta: float, p: Player) -> void:
+	_strip.visible = owned.has("drill")
+	if not _strip.visible:
+		return
+	var steps := int(size("drill") / Mine.CELL)
+	var wide := (2.0 * ceilf(_drill_width() / Mine.CELL) + 1.0) * Mine.CELL
+	var long := steps * Mine.CELL
+	_strip_glow = maxf(_strip_glow - delta * 6.0, 0.0)
+	_strip_scroll += delta * float(Defs.TOOLS["drill"]["strip_speed"]) * (1.0 + _strip_glow)
+	_strip.global_position = p.global_position * Vector3(1, 0, 1) + p.heading * (0.5 - Mine.CELL * 0.5) + Vector3(0, Mine.HEIGHT + 0.04, 0)
+	_strip.global_rotation = Vector3(0, atan2(-p.heading.x, -p.heading.z), 0)
+	_strip.scale = Vector3(wide, 1, long)
+	_strip_mat.set_shader_parameter("glow", _strip_glow)
+	_strip_mat.set_shader_parameter("len", long)
+	_strip_mat.set_shader_parameter("wide", wide)
+	_strip_mat.set_shader_parameter("scroll", _strip_scroll)
 
 
 func _update_saws(delta: float, mine: Mine, at: Vector3) -> void:

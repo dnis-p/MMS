@@ -603,12 +603,16 @@ func _check_evolutions(r: Run) -> void:
 	var first: Dictionary = t.level_up_options(3)[0]
 	_check("the evolution is always offered", first["kind"] == "evolve")
 	t.evolved.clear()
+	t.update(0.016)
+	var long := int(t.size("drill") / Mine.CELL) * Mine.CELL
+	_check("the drill's strip covers the 3 cubes across it bites", t._strip.visible and is_equal_approx(t._strip.scale.x, 1.5) and is_equal_approx(t._strip.scale.z, long))
 	t.apply({"kind": "evolve", "id": "drill"})
 	_check("evolving makes it stronger", t.dmg("drill") > dmg * 1.4 and t.power_of("drill") == power and r.evolutions == 1)
 	_check("and it can't evolve twice", not _offers(t, "drill"))
 	t.apply({"kind": "evolve", "id": "shovel"})
 	_check("the Great Scoop swings all around", t._shovel_arc() == PI)
 	t.update(0.016)
+	_check("and widens with the Tunnel Borer, to 7 cubes", is_equal_approx(t._strip.scale.x, 3.5))
 	t.evolved.clear()
 	t._build_slash()
 	r.evolutions = 0

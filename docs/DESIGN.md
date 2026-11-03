@@ -161,6 +161,10 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-03, the drill shows its reach** (owner: "add a visual effect to the drill that can somewhat show the hitbox or range of it")
+- A flat strip lies over the cells the drill bites, turning with you: a pale outline, a faint orange fill and chevrons running forward. While it is hitting, the chevrons run twice as fast and the strip brightens; it fades back in about 0.2 s. It matches the hit area exactly, checked in the rule check: 3 cubes wide (7 with the Tunnel Borer) and as long as the drill reaches, so it grows with levels and Long Handle.
+- The first try in the drill's orange vanished on orange rock and white hit flashes, so the outline and chevrons are pale and fairly opaque (`strip` = 0.75). It is drawn over the fog, as the shovel's swing is. Not yet seen by the owner in play: it may need to be fainter if it clutters.
+
 **2026-11-03, enemies kept dropping gems in strong runs** (owner: with drill, pulse, spark, Quick Hands and Long Handle, at level 26 around 6 to 7 minutes, "the enemies were not dropping gems anymore")
 - **Cause.** At most 1,500 gems can lie on the floor. When full, a new gem was added to a random gem anywhere in the mine, so drops vanished from where they fell. Shock Pulse breaks ore and crystal out of sight, which fills the floor: a bot with drill, Shock Pulse and Spark Coil hit 1,500 by 2:00 and stayed there.
 - **Fix.** A new gem now always lands where it fell. To make room, the two farthest of 8 random idle gems merge into one worth both. No value is lost, and it costs a few checks per drop instead of raising the cap, which would slow every frame.

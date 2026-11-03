@@ -108,7 +108,7 @@ Tools max at level 6 (`Defs.MAX_TOOL_LEVEL`), boosts at 5 (`Defs.MAX_BOOST_LEVEL
 | Tool | How it behaves | Reaches through fog? |
 | --- | --- | --- |
 | shovel | Fan in front of you, half-angle `arc` in radians. Swings only when something is in reach | No |
-| drill | Straight strip ahead, half-width 0.5. Hits every cooldown without pausing | No |
+| drill | Straight strip ahead, half-width 0.5 (3 cubes across, 7 when evolved), `size` long. Hits every cooldown without pausing. A pale outline with chevrons running forward shows exactly the cells it bites, brighter while it hits (`strip` opacity, `strip_speed`) | No |
 | saws | `min(2 + level / 2, 6)` blades orbit you, each cutting a circle of radius `cut` | No |
 | bombs | Thrown at your aim, or at random seen rock within `throw` m. Up to 6 in the air | No, the target must be seen |
 | pulse | Ring bursting out from you | Yes |
