@@ -19,6 +19,8 @@ PC only for now.
 
 The game follows whichever you used last, so you can swap between gamepad and mouse at any time. Without aiming, tools point the way you walk.
 
+New players and testers: **How to play** on the main menu explains the goal, ways out, dangers and what to look for. Its text is in `scripts/ui/help.gd`, with numbers read from `defs.gd`.
+
 Fog of war is on by default: it thickens in rings around what you have mined or seen, your path stays clear behind you, and you can dig up to 7 cubes into it, except Mining Beam and Shock Pulse, which go through it. Switch it on the main menu or pause menu.
 
 Movement is instant, like a 2D game, and separate from aiming. Tools dig by themselves where you aim. Cubes give a little XP, ore drops shiny gems worth more,

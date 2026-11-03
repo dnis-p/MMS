@@ -53,6 +53,7 @@ func _process(delta: float) -> void:
 			_check_clues(r)
 			_check_seams(r)
 			_check_timers()
+			_check_help()
 			_check_bosses(r)
 			_check_new_tools(r)
 			_check_caves(r)
@@ -617,6 +618,21 @@ func _check_clues(r: Run) -> void:
 	r._beat_left = 0.0
 	r._update_heartbeat(0.016, m.heart_pos + Vector3(10, 0, 0))
 	_check("it beats faster the closer you get (%.2f, then %.2f)" % [slow, r._beat_left], r._beat_left < slow)
+
+
+## The How to play page fills its numbers from Defs, so a broken format would show here.
+func _check_help() -> void:
+	var parts := Help.sections()
+	var lines := 0
+	for part in parts:
+		for line in part[1]:
+			lines += 1 if String(line).length() > 20 else 0
+	_check("the How to play page has %d sections and %d lines" % [parts.size(), lines], parts.size() >= 8 and lines > 25)
+	var menu := Menu.new()
+	add_child(menu)
+	menu._show_help()
+	_check("the How to play page scrolls, with Back below", menu._scroll != null and menu._root.get_child(menu._root.get_child_count() - 1) is Button)
+	menu.free()  # at once, so its deferred focus grab never lands on later steps
 
 
 ## Countdowns keep the part of a frame past zero, so things fire as often at any frame rate.

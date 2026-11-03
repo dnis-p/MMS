@@ -161,6 +161,12 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-03, How to play page** (owner: "an explanation on how the game works and what are the main objectives right now ... for testers. I mean only in writing not like a proper tutorial. In game")
+- **What it is.** A How to play button on the main menu, under Start digging, opens a scrolling page of short bullet points: the idea, controls, a run, the goal (finding and breaking the Heart), other ways out, enemies and dangers, things worth finding, between runs, and a note for testers asking for feedback. Back, Esc or B returns to the menu; the mouse wheel, arrows or stick scroll it.
+- **Keeping it true.** Times and numbers in it (Heart distance, boss times, lift time, gems kept on death, Frenzy, evolutions) are read from `defs.gd`, so balance changes show up by themselves. The sentences are by hand in `scripts/ui/help.gd`, so a changed rule needs its line changed too; `MECHANICS.md` says so. Each line was checked against the code.
+- **Not done.** It is not in the pause menu, and nothing points new players to it beyond the button. Checked at 1280x720 in screenshots; the owner has not seen it yet.
+- **Small fix found on the way.** Menu pages grab focus a frame late. If the page was swapped before then, the engine logged an error; it now checks the button is still there.
+
 **2026-11-03, all countdowns keep the leftover frame** (owner: "do the same fix for all tools/weapons or systems that depend on that type of counting")
 - **Change.** The drill's timer fix is now one shared helper, `Defs.restart`, used by every repeating countdown: all eight tools, both bosses' attacks, enemy spawns (swarms, hordes, burrowers), enemy wake and dig checks, the heartbeat, fog scans, goal checks and the lift ring. Each keeps the part of a frame that went past zero, so it fires equally often at any frame rate.
 - **What changes in play.** Fast tools used to lose hits depending on how their cooldown divided into frames. Simulated from the cooldowns, not measured in play: level 1 saws hit about 10% less often at 60 fps and 1% less at 165 fps, moles 6% and 3%. They now hit at their full rate everywhere, so on a 60 fps screen saws and moles are a bit stronger than before. Slow timers (spawns, bosses, a 3 s pulse) lost at most one frame per cycle, under 1%, so they barely change. Enemy toughness follows tool levels, not hits, so it is not affected.
