@@ -515,6 +515,8 @@ entries are the first ones in sections 8 and 9.
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
 **Owner, 2026-11-03, a limit on how many upgrades you hold** ("the powerups should have a count limit ... after you have all of the slots full you cant get any new ones", like Vampire Survivors). Number not chosen yet.
 - (suggested) 4 tool slots and 4 boost slots, starting tool included. Once a kind is full, cards offer only levels of what you hold, as in VS. Today there are 8 tools and 6 boosts with no limit, so everything can be collected.
+- Owner, same day: the number should work with evolutions; 4 feels too few and 6 would copy VS, so start with 4 and let meta progression raise it to 6. Leaderboards will then favour players with more progress, which the owner accepts ("this happens in other games too").
+- (suggested) Keep tool and boost slots separate. Each evolution takes one tool and its boost, so any equal pair (4+4, 5+5, 6+6) leaves nothing over; odd numbers only waste a slot in one shared pool. A shop upgrade with 2 levels, each adding one tool slot and one boost slot (4+4, then 5+5, then 6+6), priced early so new players get there in hours. At 6 boost slots every boost fits (there are 6), so the limit then bites only on tools (6 of 8) unless more boosts are added.
 
 **Owner, 2026-11-01, plans for the digging game (a first version is built, see section 8; the rest of these stay open)**
 - Unlockables, as in VS, where you unlock characters that give items or abilities you didn't have before. Not decided yet whether there will be several characters or just tools. Test first, then iterate.
