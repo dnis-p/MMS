@@ -234,7 +234,7 @@ func _exit_tree() -> void:
 
 func _make_aim_mark() -> void:
 	var ring: float = Defs.AIM["ring"]
-	_aim_mark = _flat_mark(Ui.aim_arrow(Color(1, 1, 1)), Defs.AIM["arrow"])
+	_aim_mark = _flat_mark(Ui.aim_arrow(Color(1, 1, 1, Defs.AIM["arrow_alpha"])), Defs.AIM["arrow"])
 	_aim_ring = _flat_mark(Ui.aim_ring(Color(1, 1, 1, Defs.AIM["ring_alpha"])), ring * 2.0 + 0.2)
 
 

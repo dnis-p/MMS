@@ -134,7 +134,7 @@ static func option_card_content(o: Dictionary, compact := false) -> VBoxContaine
 
 
 ## The in-game pointer: a ring with a cross, big enough to find on a busy screen.
-## A solid triangle pointing up the picture, outlined in black so it reads on any rock.
+## A solid triangle pointing up the picture, with a soft edge and no outline.
 static func aim_arrow(color: Color) -> ImageTexture:
 	var img := Image.create(48, 48, false, Image.FORMAT_RGBA8)
 	var tri := PackedVector2Array([Vector2(24, 6), Vector2(40, 38), Vector2(24, 31), Vector2(8, 38)])
@@ -144,10 +144,9 @@ static func aim_arrow(color: Color) -> ImageTexture:
 			var d := INF
 			for k in tri.size():
 				d = minf(d, _to_segment(q, tri[k], tri[(k + 1) % tri.size()]))
-			if Geometry2D.is_point_in_polygon(q, tri) and d > 1.5:
-				img.set_pixel(x, y, color)
-			elif d < 3.0 or Geometry2D.is_point_in_polygon(q, tri):
-				img.set_pixel(x, y, Color(0, 0, 0, 0.8))
+			var inside := d if Geometry2D.is_point_in_polygon(q, tri) else -d
+			if inside > -1.0:
+				img.set_pixel(x, y, Color(color, color.a * clampf((inside + 1.0) * 0.5, 0.0, 1.0)))
 	return ImageTexture.create_from_image(img)
 
 

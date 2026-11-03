@@ -11,8 +11,8 @@ const FILLER_SCORE := 500
 const CAMERA := {"back": 7.0, "up": 19.0, "lead": 0.12, "aim_lean": 1.5, "fov": 60.0}
 ## Aiming. reach: pixels of mouse travel from the digger to the ring; the hidden pointer stays within
 ## it, so a push outward keeps the aim steady and a push across turns it around. ring: metres from the
-## digger to the arrow, which is arrow metres wide; ring_alpha: how faint the ring is.
-const AIM := {"reach": 160.0, "ring": 2.6, "arrow": 1.2, "ring_alpha": 0.22}
+## digger to the arrow, which is arrow metres wide; arrow_alpha and ring_alpha: how opaque each is.
+const AIM := {"reach": 160.0, "ring": 2.6, "arrow": 1.2, "arrow_alpha": 0.6, "ring_alpha": 0.14}
 ## Gamepad. deadzone: how far a stick must lean to count, so a worn one doesn't drift. aim_hold: seconds
 ## the tools keep pointing after you let go of the right stick.
 ## stick_wake and mouse_wake: how far a push, or how many pixels of mouse, swaps the two. rumble_from:
