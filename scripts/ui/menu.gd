@@ -83,6 +83,9 @@ func _show_main() -> void:
 	var options := _button("Options", _show_options, 48.0, 194.0)
 	options.add_theme_font_size_override("font_size", 20)
 	row.add_child(options)
+	var controls := _button("Controls", _show_controls, 48.0, 194.0)
+	controls.add_theme_font_size_override("font_size", 20)
+	row.add_child(controls)
 	var reset := _button("Reset progress", _show_reset, 48.0, 194.0)
 	reset.add_theme_font_size_override("font_size", 20)
 	row.add_child(reset)
@@ -183,6 +186,19 @@ func _scroll_list(separation: int) -> VBoxContainer:
 	_root.add_child(scroll)
 	_scroll = scroll
 	return list
+
+
+func _show_controls() -> void:
+	_clear()
+	_heading("CONTROLS", 56, Color(1.0, 0.85, 0.3))
+	var table := Help.controls_table()
+	table.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_root.add_child(table)
+	for note in Help.CONTROL_NOTES:
+		_heading(note, 20, Color(0.8, 0.75, 0.7))
+	var back := _button("Back", _show_main)
+	_root.add_child(back)
+	_focus.call_deferred(back)
 
 
 func _show_help() -> void:

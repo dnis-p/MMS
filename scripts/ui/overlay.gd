@@ -90,6 +90,9 @@ func show_panel(title: String, lines: Array, buttons: Array, title_color := Colo
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_panel_box.add_child(t)
 	for line in lines:
+		if line is Control:
+			_panel_box.add_child(line)
+			continue
 		var l := Ui.label(String(line), 26, Color(0.9, 0.9, 0.9))
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_panel_box.add_child(l)

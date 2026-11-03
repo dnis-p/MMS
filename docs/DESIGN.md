@@ -161,6 +161,13 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-03, a Controls page in the main menu and in the game** (owner: "add the tab for the map to the controls explanation and also maybe a controls section both in main menu and in game")
+- How to play already listed "Map: M or Tab", but nothing in a run did. Now a **Controls** page opens from the main menu (in the small row with Options and Reset progress, so the page still fits the screen) and from the pause menu. It is a table: action, keyboard and mouse, gamepad, with the map's keys (M or Tab, Back), zoom, aim, pause and menus, and two notes (no attack button; the game follows whichever input you used last).
+- One list feeds the Controls pages and the Controls section of How to play, so they can't disagree (`Help.controls()`).
+- In the pause menu, Back, Esc or B on the Controls page go back to the pause menu rather than into the game.
+- The hint at the start of a run now ends with "M or Tab for the map" ("Back for the map" on a gamepad).
+- Checked in the rule check (the pause page shows the table, Esc goes back, the map keys are listed, the menu page fits 598 of 720) and in screenshots of both pages.
+
 **2026-11-03, aiming by angle, with the mouse hidden on a ring** (owner: "theres no point in having a free cursor when the character's attack doesnt depend on range/position of the cursor but on direction/angle"; then "the cursor should be hidden, and lets try the ring system", "having the cursor hidden but locked on that ring path", and Bombs "should switch to automatic and target any enemy within a specific close range ... If no enemies, they should target closest cubes. If no cubes either then i guess it shouldnt throw any bombs")
 - During a run the mouse is captured and hidden, so it can't leave the window or click outside it. Menus, level-ups and the pause menu give it back. If the capture is lost while playing (Esc in a browser takes it), the game pauses.
 - The mouse moves a hidden pointer kept within 160 pixels of mouse travel around the digger (`Defs.AIM.reach`), and only its angle aims. How the "locked on the ring" idea was built: pushing outward holds the pointer on the edge, so the aim stays steady there, but it is not held on the ring itself: a push across goes through the middle and turns you around in 320 px. **Why:** a pointer held exactly on the ring could only slide around it, so flicking the mouse to the other side of the screen would do nothing. Near the middle the aim still swings, but only while you are crossing over.

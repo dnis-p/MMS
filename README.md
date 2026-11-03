@@ -20,6 +20,8 @@ PC only for now.
 
 The game follows whichever you used last, so you can swap between gamepad and mouse at any time. Without aiming, tools point the way you walk. During a run the mouse pointer is hidden: an arrow on a ring around the digger shows where you aim, and Bombs pick their own targets.
 
+The same list is on the **Controls** page, on the main menu and in the pause menu (`Help.controls()` in `scripts/ui/help.gd`). The hint at the start of a run names the map key too.
+
 New players and testers: **How to play** on the main menu explains the goal, ways out, dangers and what to look for. Its text is in `scripts/ui/help.gd`, with numbers read from `defs.gd`.
 
 Fog of war is on by default: it thickens in rings around what you have mined or seen, your path stays clear behind you, and you can dig up to 7 cubes into it, except Mining Beam and Shock Pulse, which go through it. Switch it in Options on the main menu, or in the pause menu.

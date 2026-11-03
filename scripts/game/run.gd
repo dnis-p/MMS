@@ -74,6 +74,7 @@ var base_time_scale := 1.0
 
 var _modal_open := false
 var _paused_by_menu := false
+var _pause_page := ""  # a page opened from the pause menu, which Esc closes back to it
 var _note := 0
 var _note_timer := 0.0
 var _gem_chain := 0
@@ -214,7 +215,7 @@ func _ready() -> void:
 	apply_fog()
 	Input.set_custom_mouse_cursor(Ui.crosshair(Color(1, 1, 1)), Input.CURSOR_ARROW, Vector2(24, 24))
 	_make_aim_mark()
-	var controls := "Left stick to move  ·  right stick to aim" if Options.pad else "WASD to move  ·  aim with the mouse"
+	var controls := "Left stick to move  ·  right stick to aim  ·  Back for the map" if Options.pad else "WASD to move  ·  aim with the mouse  ·  M or Tab for the map"
 	hud.show_hint("%s  ·  your tools dig by themselves" % controls, 6.0)
 	ready_to_play = true
 	set_process(true)
@@ -932,7 +933,14 @@ func _open_pause() -> void:
 
 
 func _show_pause() -> void:
-	overlay.show_panel("PAUSED", ["%d cubes  ·  best combo x%d" % [cubes, best_combo]], [["Resume", _resume], [Options.fog_text(), _toggle_fog], [Options.map_text(), _next_map_opacity], ["Give up (keep %d%% of your gems)" % roundi(keep_share("quit") * 100.0), _give_up]])
+	_pause_page = ""
+	overlay.show_panel("PAUSED", ["%d cubes  ·  best combo x%d" % [cubes, best_combo]], [["Resume", _resume], ["Controls", _show_controls], [Options.fog_text(), _toggle_fog], [Options.map_text(), _next_map_opacity], ["Give up (keep %d%% of your gems)" % roundi(keep_share("quit") * 100.0), _give_up]])
+
+
+## Back, Esc and B return to the pause menu from here.
+func _show_controls() -> void:
+	_pause_page = "controls"
+	overlay.show_panel("CONTROLS", [Help.controls_table(920.0, 20)], [["Back", _show_pause]])
 
 
 func _toggle_fog() -> void:
@@ -1024,7 +1032,9 @@ func _notification(what: int) -> void:
 
 
 func _toggle_pause() -> void:
-	if _paused_by_menu:
+	if _paused_by_menu and _pause_page != "":
+		_show_pause()
+	elif _paused_by_menu:
 		overlay.hide_panel()
 		_resume()
 	else:

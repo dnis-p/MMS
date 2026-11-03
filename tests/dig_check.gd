@@ -715,7 +715,9 @@ func _check_help() -> void:
 	_check("the How to play page scrolls, with Back below", menu._scroll != null and menu._root.get_child(menu._root.get_child_count() - 1) is Button)
 	# A wide window doesn't make the screen taller than 720, so every page has to fit that without scrolling.
 	var screen := float(ProjectSettings.get_setting("display/window/size/viewport_height"))
-	for page in ["_show_main", "_show_characters", "_show_shop", "_show_goals", "_show_help", "_show_options", "_show_reset"]:
+	var keys := " ".join(Help.controls().map(func(c): return " ".join(c)))
+	_check("the controls name the map keys", keys.contains("M or Tab") and keys.contains("Back"))
+	for page in ["_show_main", "_show_characters", "_show_shop", "_show_goals", "_show_help", "_show_options", "_show_reset", "_show_controls"]:
 		menu.call(page)
 		var need := menu._root.get_combined_minimum_size().y
 		_check("menu page %s fits the screen (%.0f of %.0f)" % [page.trim_prefix("_show_"), need, screen], need <= screen - 30.0)
@@ -1090,6 +1092,11 @@ func _check_rewards(r: Run) -> void:
 func _check_pause(r: Run) -> void:
 	r._open_pause()
 	_check("the pause menu opens with the fog switch", r._paused_by_menu and r.overlay._panel_root.visible)
+	r._show_controls()
+	var grid := r.overlay._panel_box.get_children().filter(func(c): return c is GridContainer and not c.is_queued_for_deletion())
+	_check("the pause menu shows the controls", grid.size() == 1 and grid[0].get_child_count() == 3 * (Help.controls().size() + 1))
+	r._toggle_pause()
+	_check("Esc on the controls goes back to the pause menu", r._paused_by_menu and r._pause_page == "" and r.overlay.panel_visible())
 	r.overlay.hide_panel()
 	r._resume()
 	_start_hitstop(r)

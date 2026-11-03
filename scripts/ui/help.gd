@@ -3,6 +3,43 @@ class_name Help
 ## Numbers are read from Defs, so the text follows balance changes.
 
 
+const CONTROL_NOTES := [
+	"Your tools dig and fight by themselves: there is no attack button. Without aiming, they point the way you walk.",
+	"The game follows whichever you used last, keyboard and mouse or gamepad. The map's opacity is in Options.",
+]
+
+
+## [action, keyboard and mouse, gamepad] rows, shown on the Controls page, in the pause menu and in How to play.
+static func controls() -> Array:
+	return [
+		["Move", "WASD or arrows", "left stick or d-pad"],
+		["Aim", "mouse. Only the direction counts: the arrow on the ring around you shows it", "right stick"],
+		["Map", "M or Tab. Tap it to keep the map open, hold it to peek while you keep moving", "Back"],
+		["Zoom the map", "mouse wheel, + and -", "shoulder buttons"],
+		["Pause", "Esc or P", "Start"],
+		["Menus and upgrades", "mouse, or arrows and Enter. Esc goes back", "left stick or d-pad, A picks, B goes back"],
+	]
+
+
+## The controls as a three-column table, for a page or a panel `width` pixels wide.
+static func controls_table(width := 980.0, size := 20) -> GridContainer:
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 24)
+	grid.add_theme_constant_override("v_separation", 10)
+	var widths := [width * 0.2, width * 0.5, width * 0.3 - 48.0]
+	var head := Color(1.0, 0.65, 0.2)
+	var rows := [["", "Keyboard and mouse", "Gamepad"]] + controls()
+	for r in rows.size():
+		for k in 3:
+			var text := String(rows[r][k])
+			var l := Ui.label(text.substr(0, 1).to_upper() + text.substr(1), size, head if r == 0 or k == 0 else Color(0.9, 0.88, 0.85))
+			l.custom_minimum_size.x = widths[k]
+			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			grid.add_child(l)
+	return grid
+
+
 ## [title, [lines]] pairs, in reading order.
 static func sections() -> Array:
 	var run := Defs.RUN
@@ -13,13 +50,7 @@ static func sections() -> Array:
 			"You are a digger in a huge mine. Your tools dig and fight by themselves: you only walk and aim.",
 			"Break rock, pick up what shines, level up, and get out alive with as many gems as you can.",
 		]],
-		["Controls", [
-			"Move: WASD or arrows. Gamepad: left stick or d-pad.",
-			"Aim: mouse. Only the direction counts: the arrow on the ring around you shows where your tools point. Gamepad: right stick. Without aiming, your tools point the way you walk.",
-			"Pause: Esc or P. Gamepad: Start.",
-			"Map: M or Tab. Gamepad: Back. Tap it to keep the map over the game, hold it to peek while you keep moving. Zoom with the mouse wheel, + and -, or the shoulder buttons. Its opacity is in Options.",
-			"Menus and upgrades: mouse, or arrows and Enter. Gamepad: A picks, B goes back.",
-		]],
+		["Controls", controls().map(func(c): return "%s: %s. Gamepad: %s." % [c[0], c[1], c[2]]) + CONTROL_NOTES],
 		["A run", [
 			"Your tools hit whenever they are ready. The shovel only swings when there is something in front of you.",
 			"Ore and gems leave shiny bits: walk close to collect them. They give you XP and gems to carry.",
