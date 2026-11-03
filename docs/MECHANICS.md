@@ -3,7 +3,7 @@
 Technical reference for the `prototype/dig` branch: the rules as they are now, not how they got there. Written so a person or a model can reason about tweaks without reading all the code.
 
 - **The code wins.** All balance numbers live in `scripts/data/defs.gd`. If this file and `defs.gd` disagree, `defs.gd` is right, and this file needs fixing.
-- **Names.** `RUN.cave_r` means key `cave_r` in the `Defs.RUN` dictionary. The same goes for `THREATS`, `WORLD`, `FRENZY`, `DIGGER`, `CAMERA` and `PAD`.
+- **Names.** `RUN.cave_r` means key `cave_r` in the `Defs.RUN` dictionary. The same goes for `THREATS`, `WORLD`, `FRENZY`, `DIGGER`, `CAMERA`, `AIM` and `PAD`.
 - **Units.** Distances are metres, times are seconds. One cube is 0.5 m wide.
 - **Status.** Numbers are first guesses for testing. Section 15 says what has been measured.
 - **History and ideas.** `docs/DESIGN.md` keeps decisions, the done list (section 8) and the to-do list (section 9).
@@ -72,6 +72,8 @@ Goals are checked and paid only here, at the end of a run, and their gems are no
 
 - `DIGGER.hp` = 100, `DIGGER.speed` = 7.5, `DIGGER.pickup` = 3.5. A Wind Shrine sets wind to 1.2 for speed and 0.75 for health.
 - Movement is instant, full speed in any direction, with no acceleration. Aim is separate. With no aim input, tools point the way you walk.
+- **Mouse aim.** During a run the mouse is captured and hidden. It moves a hidden pointer that stays within `AIM.reach` = 120 pixels of mouse travel from the digger, and only the pointer's angle aims: walking doesn't turn it, pushing the mouse outward holds it on the ring, and a push across (240 px) turns it around. A white arrow on a faint ring `AIM.ring` = 2.6 m from the digger shows the aim, for the mouse and the right stick alike. Menus, level-ups and the pause menu give the mouse back. If the capture is lost while playing (Esc in a browser), the game pauses; a click in the game asks for it again.
+- **Camera.** It looks `CAMERA.lead` = 0.12 s of travel ahead, plus `CAMERA.aim_lean` = 1.5 m the way you aim while the mouse or right stick aims.
 - After a hit you can't be hurt for `DIGGER.invuln` = 0.8 s. This caps all damage to one hit per 0.8 s, however many enemies touch you.
 - Regen: `DIGGER.regen` = 3 health per second after `DIGGER.regen_after` = 4 s without a hit.
 - Killing a boss heals you fully.
@@ -101,7 +103,7 @@ Tools max at level 6 (`Defs.MAX_TOOL_LEVEL`), boosts at 5 (`Defs.MAX_BOOST_LEVEL
 | shovel | start | 9 | 2.4 | 0.3 | x0.95 | +12% | arc 1.15 |
 | drill | start | 3 | 4 | 0.065 | x0.95 | +15% |  |
 | saws | start | 8 | 3 | 0.09 | x1 | +10% | spin 5.0, cut 0.7 |
-| bombs | Get out by lift | 60 | 3 | 2.2 | x0.93 | +12% | throw 8 |
+| bombs | Get out by lift | 60 | 3 | 2.2 | x0.93 | +12% | throw 8, pick 3, ahead 45, retry 0.2 |
 | pulse | Break 25,000 cubes | 30 | 5 | 3 | x0.93 | +12% | ring_time 0.35 |
 | beam | find it in the rock | 40 | 14 | 2.4 | x0.93 | +12% |  |
 | spark | Kill a boss | 16 | 9 | 1 | x0.93 | +10% | hops 3, bite 1.2 |
@@ -112,7 +114,7 @@ Tools max at level 6 (`Defs.MAX_TOOL_LEVEL`), boosts at 5 (`Defs.MAX_BOOST_LEVEL
 | shovel | Fan in front of you, half-angle `arc` in radians. Swings only when something is in reach | No |
 | drill | Straight strip ahead, half-width 0.5 (3 cubes across, 7 when evolved), `size` long. Hits every cooldown without pausing. Pale chevrons running forward lie over the cells it bites, fading out towards the sides and tip so the strip has no hard edge, brighter while it hits (`strip` opacity, `strip_speed`) | No |
 | saws | `min(2 + level / 2, 6)` blades orbit you, each cutting a circle of radius `cut` | No |
-| bombs | Thrown at your aim, or at random seen rock within `throw` m. Up to 6 in the air | No, the target must be seen |
+| bombs | Aim themselves, within `throw` m: at one of the `pick` closest awake enemies, at random; with none, at the nearest seen rock, rock within `ahead` degrees of your aim first; with neither, no throw, and they look again after `retry` s. Up to 6 in the air | No, the target must be seen |
 | pulse | Ring bursting out from you | Yes |
 | beam | Long line along your aim, half-width 0.6 | Yes |
 | spark | Jumps between awake enemies, `hops + level / 2` of them, biting rock under each. With no enemy in reach it bites rock ahead | No |
@@ -394,6 +396,7 @@ Beam has no goal: it comes from the Strange Lens relic. Stats add up across runs
 | Feature density | `RUN.seams`, `RUN.cave_blobs`, `RUN.geodes`, `THREATS.nests`, `THREATS.spike_patches`, `THREATS.gas_blobs` |
 | Map look and reach | `Defs.MAP` |
 | Upgrade slots | `Defs.SLOTS`, the Tool Belt in `Defs.SHOP` |
+| Aim feel and marker | `Defs.AIM`, `CAMERA.aim_lean` |
 | New tool | `Defs.TOOLS`, plus its firing in `scripts/game/tools.gd` |
 | New enemy | `Defs.ENEMIES`, `Defs.ENEMY_ORDER`, plus a mesh and constant in `scripts/game/enemies.gd` |
 

@@ -927,6 +927,35 @@ func _check_slots(r: Run) -> void:
 	Profile.shop = saved[4]
 	Profile.unlocked = saved[5]
 	r.apply_boosts()
+	_check_bomb_aim(r)
+
+
+## Bombs aim themselves: a close enemy first, else rock, rock ahead first, else nothing.
+func _check_bomb_aim(r: Run) -> void:
+	var t := r.tools
+	var e := r.enemies
+	var at := Vector3(0, 0, 0)
+	var reach: float = Defs.TOOLS["bombs"]["throw"]
+	var steps := int(reach / Mine.CELL) + 2
+	_fill(r, at, steps, 0)
+	e.clear()
+	_check("with nothing in reach, no bomb", t.bomb_target(at, Vector3.RIGHT) == Vector3.INF)
+	_fill(r, Vector3(-2, 0, 0), 0, 1)
+	_fill(r, Vector3(4, 0, 0), 0, 1)
+	var to := t.bomb_target(at, Vector3.RIGHT)
+	_check("bombs go at rock ahead before closer rock behind", to.x > 3.0)
+	to = t.bomb_target(at, Vector3.UP.cross(Vector3.RIGHT))
+	_check("and at the nearest rock when none is ahead", to.x < -1.0)
+	var picked := {}
+	for k in 4:
+		e.spawn(Enemies.CRAWLER, Vector3(0, 0, 2.0 + k), -1, true)
+	e.spawn(Enemies.CRAWLER, Vector3(0, 0, reach + 3.0), -1, true)
+	for k in 60:
+		picked[snappedf(t.bomb_target(at, Vector3.RIGHT).z, 0.5)] = true
+	_check("an enemy in reach beats rock, one of the %d closest" % int(Defs.TOOLS["bombs"]["pick"]),
+		picked.size() == int(Defs.TOOLS["bombs"]["pick"]) and picked.keys().all(func(z): return z >= 2.0 and z <= 4.0))
+	e.clear()
+	_fill(r, at, steps, 0)
 
 
 func _check_new_tools(r: Run) -> void:
@@ -1151,10 +1180,30 @@ func _check_aim(r: Run) -> void:
 	_fill(r, Vector3(1.5, 0, 0), 1, 0)
 	_fill(r, Vector3(-1.5, 0, 0), 1, 0)
 	r.player.aiming = false
-	r._mouse_seen = true
-	r.player.heading = Vector3.ZERO
+	var was_pad := Options.pad
+	Options.pad = false
+	r._mouse_seen = false
+	r.player.heading = Vector3.RIGHT
+	_mouse_nudge(0.0, -20.0)
 	r._update_aim(0.016)
-	_check("the mouse sets your aim", r.player.aiming and r.player.heading.is_normalized() and r.aim_point.y == 0.0)
+	var reach: float = Defs.AIM["reach"]
+	_check("the mouse picks up from where you face", r._aim_offset.x > reach * 0.9 and r.player.heading.x > 0.9 and r.player.aiming)
+	_mouse_nudge(0.0, 1000.0)
+	r._update_aim(0.016)
+	_check("pushing the mouse out keeps the hidden pointer on the ring", is_equal_approx(r._aim_offset.length(), reach) and r.player.heading.z > 0.9)
+	_check("the arrow sits on the ring where you aim", r._aim_mark.visible and r._aim_ring.visible
+		and is_equal_approx(Vector2(r.aim_point.x, r.aim_point.z).distance_to(Vector2(r.player.global_position.x, r.player.global_position.z)), Defs.AIM["ring"]))
+	var aimed := r.player.heading
+	r.player.global_position += Vector3(5, 0, 5)
+	r._update_aim(0.016)
+	_check("walking doesn't turn the mouse's aim", r.player.heading.is_equal_approx(aimed))
+	r.player.global_position -= Vector3(5, 0, 5)
+	_mouse_nudge(0.0, -2.0 * reach)
+	r._update_aim(0.016)
+	_check("a push across turns the aim around", r.player.heading.z < -0.9)
+	var lean: Vector3 = r._cam_targets()[1] - r.player.global_position - r.player.velocity * Defs.CAMERA["lead"]
+	_check("the camera leans a fixed amount the way you aim", lean.is_equal_approx(r.player.heading * Defs.CAMERA["aim_lean"]))
+	Options.pad = was_pad
 	r._mouse_seen = false
 	r.player.aiming = false
 	r.player.heading = Vector3.FORWARD
@@ -1188,9 +1237,9 @@ func _press_key(key: Key) -> void:
 		Input.flush_buffered_events()
 
 
-func _mouse_nudge(amount: float) -> void:
+func _mouse_nudge(amount: float, down := 0.0) -> void:
 	var ev := InputEventMouseMotion.new()
-	ev.screen_relative = Vector2(amount, 0.0)
+	ev.screen_relative = Vector2(amount, down)
 	Input.parse_input_event(ev)
 	Input.flush_buffered_events()
 

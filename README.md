@@ -13,12 +13,12 @@ PC only for now.
 | Action | Control |
 | --- | --- |
 | Move | WASD or arrows, or left stick or d-pad |
-| Aim | Mouse, or right stick |
+| Aim | Mouse (only the direction counts), or right stick |
 | Menus and upgrades | Mouse, or arrows and Enter, or left stick or d-pad and A (B goes back) |
 | Pause | Esc or P, or Start |
 | Map | M or Tab, or Back: tap to keep it open over the game, hold to peek. Mouse wheel, + and -, or the shoulder buttons zoom it |
 
-The game follows whichever you used last, so you can swap between gamepad and mouse at any time. Without aiming, tools point the way you walk.
+The game follows whichever you used last, so you can swap between gamepad and mouse at any time. Without aiming, tools point the way you walk. During a run the mouse pointer is hidden: an arrow on a ring around the digger shows where you aim, and Bombs pick their own targets.
 
 New players and testers: **How to play** on the main menu explains the goal, ways out, dangers and what to look for. Its text is in `scripts/ui/help.gd`, with numbers read from `defs.gd`.
 

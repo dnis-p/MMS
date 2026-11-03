@@ -7,14 +7,17 @@ const COMBO_WINDOW := 1.2
 const FILLER_SCORE := 500
 
 ## Camera, fixed orientation, relative to the digger: metres south, metres up, and how many
-## seconds of travel it looks ahead. aim_lead: share of the way to the pointer it leans, up to
-## aim_lead_max metres.
-const CAMERA := {"back": 7.0, "up": 19.0, "lead": 0.12, "aim_lead": 0.18, "aim_lead_max": 3.0, "fov": 60.0}
+## seconds of travel it looks ahead. aim_lean: metres it leans the way you aim.
+const CAMERA := {"back": 7.0, "up": 19.0, "lead": 0.12, "aim_lean": 1.5, "fov": 60.0}
+## Aiming. reach: pixels of mouse travel from the digger to the ring; the hidden pointer stays within
+## it, so a push outward keeps the aim steady and a push across turns it around. ring: metres from the
+## digger to the arrow, which is arrow metres wide; ring_alpha: how faint the ring is.
+const AIM := {"reach": 120.0, "ring": 2.6, "arrow": 1.2, "ring_alpha": 0.22}
 ## Gamepad. deadzone: how far a stick must lean to count, so a worn one doesn't drift. aim_hold: seconds
-## the tools keep pointing after you let go of the right stick. aim_reach: metres out the target sits.
+## the tools keep pointing after you let go of the right stick.
 ## stick_wake and mouse_wake: how far a push, or how many pixels of mouse, swaps the two. rumble_from:
 ## the smallest screen shake felt in the hands, for rumble_time seconds.
-const PAD := {"deadzone": 0.25, "aim_hold": 0.6, "aim_reach": 7.0, "stick_wake": 0.5, "mouse_wake": 3.0,
+const PAD := {"deadzone": 0.25, "aim_hold": 0.6, "stick_wake": 0.5, "mouse_wake": 3.0,
 	"rumble_from": 0.1, "rumble_time": 0.16}
 ## The map. wall: how many cubes of rock it shows past what you have opened or seen. floor: open ground
 ## you know; rock is its own colour darkened by rock_dim. mini_size: the minimap's side in pixels,
@@ -262,6 +265,8 @@ const BANDS := [
 ## multiplies). size means: shovel reach, drill length, saw orbit, blast radius, beam length, how far
 ## sparks reach, how far moles roam.
 ## The drill also shows its strip: strip is its opacity, strip_speed how many chevrons pass a point each second.
+## Bombs fly up to throw metres, at one of the pick closest awake enemies, else at the nearest rock,
+## rock within ahead degrees of your aim first. With neither in reach they look again after retry seconds.
 const TOOLS := {
 	"shovel": {"name": "Shovel", "desc": "Swings at everything in front of you.", "color": Color(0.8, 0.82, 0.86),
 		"dmg": 9.0, "dmg_up": 0.4, "size": 2.4, "size_up": 0.12, "cd": 0.3, "cd_up": 0.95, "arc": 1.15},
@@ -270,8 +275,9 @@ const TOOLS := {
 		"strip": 0.75, "strip_speed": 2.5},
 	"saws": {"name": "Saw Blades", "desc": "Blades circle you and cut what they touch.", "color": Color(0.9, 0.9, 0.95),
 		"dmg": 8.0, "dmg_up": 0.4, "size": 3.0, "size_up": 0.1, "cd": 0.09, "cd_up": 1.0, "spin": 5.0, "cut": 0.7},
-	"bombs": {"name": "Bombs", "desc": "Thrown into nearby rock. Boom.", "color": Color(1.0, 0.3, 0.2), "locked": true,
-		"dmg": 60.0, "dmg_up": 0.4, "size": 3.0, "size_up": 0.12, "cd": 2.2, "cd_up": 0.93, "throw": 8.0},
+	"bombs": {"name": "Bombs", "desc": "Thrown at a nearby enemy, or into rock. Boom.", "color": Color(1.0, 0.3, 0.2), "locked": true,
+		"dmg": 60.0, "dmg_up": 0.4, "size": 3.0, "size_up": 0.12, "cd": 2.2, "cd_up": 0.93, "throw": 8.0, "pick": 3,
+		"ahead": 45.0, "retry": 0.2},
 	"pulse": {"name": "Shock Pulse", "desc": "A ring bursts out from you.", "color": Color(0.5, 0.75, 1.0), "locked": true,
 		"dmg": 30.0, "dmg_up": 0.4, "size": 5.0, "size_up": 0.12, "cd": 3.0, "cd_up": 0.93, "ring_time": 0.35},
 	"beam": {"name": "Mining Beam", "desc": "A long line of rock pops at once.", "color": Color(0.4, 1.0, 0.7), "locked": true,

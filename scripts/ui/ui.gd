@@ -134,6 +134,38 @@ static func option_card_content(o: Dictionary, compact := false) -> VBoxContaine
 
 
 ## The in-game pointer: a ring with a cross, big enough to find on a busy screen.
+## A solid triangle pointing up the picture, outlined in black so it reads on any rock.
+static func aim_arrow(color: Color) -> ImageTexture:
+	var img := Image.create(48, 48, false, Image.FORMAT_RGBA8)
+	var tri := PackedVector2Array([Vector2(24, 6), Vector2(40, 38), Vector2(24, 31), Vector2(8, 38)])
+	for y in 48:
+		for x in 48:
+			var q := Vector2(x + 0.5, y + 0.5)
+			var d := INF
+			for k in tri.size():
+				d = minf(d, _to_segment(q, tri[k], tri[(k + 1) % tri.size()]))
+			if Geometry2D.is_point_in_polygon(q, tri) and d > 1.5:
+				img.set_pixel(x, y, color)
+			elif d < 3.0 or Geometry2D.is_point_in_polygon(q, tri):
+				img.set_pixel(x, y, Color(0, 0, 0, 0.8))
+	return ImageTexture.create_from_image(img)
+
+
+## A thin circle that fills the picture.
+static func aim_ring(color: Color) -> ImageTexture:
+	var img := Image.create(256, 256, false, Image.FORMAT_RGBA8)
+	for y in 256:
+		for x in 256:
+			var d := absf(Vector2(x - 127.5, y - 127.5).length() - 119.0)
+			if d < 2.5:
+				img.set_pixel(x, y, Color(color, color.a * clampf(2.5 - d, 0.0, 1.0)))
+	return ImageTexture.create_from_image(img)
+
+
+static func _to_segment(q: Vector2, a: Vector2, b: Vector2) -> float:
+	return q.distance_to(Geometry2D.get_closest_point_to_segment(q, a, b))
+
+
 static func crosshair(color: Color) -> ImageTexture:
 	var img := Image.create(48, 48, false, Image.FORMAT_RGBA8)
 	for y in 48:

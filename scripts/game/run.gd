@@ -102,12 +102,16 @@ var _cam_look := Vector3.ZERO
 var _kick := Vector3.ZERO
 var _hitstop_left := 0.0
 var _last_real_us := 0
-var aim_point := Vector3.ZERO  # the spot on the rock under the pointer
+var aim_point := Vector3.ZERO  # the marker's spot on the aim ring
 var _mouse_seen := false  # until the mouse moves, tools point the way you walk
+var _aim_offset := Vector2.ZERO  # the hidden pointer in pixels from the digger: only its angle aims
+var _lock_asked := false  # asked to capture the mouse since play last resumed
+var _locked := false  # the mouse was captured while playing
 var _stick_left := 0.0  # how long the right stick still points the tools after it was let go
 var _map_down := -1  # when the map button went down, in ms, or -1
 var _map_was_open := false
-var _aim_mark: MeshInstance3D  # the right stick's target: a mouse has its own pointer
+var _aim_mark: MeshInstance3D  # the arrow on the ring that shows where the tools point
+var _aim_ring: MeshInstance3D
 
 
 func _ready() -> void:
@@ -221,25 +225,34 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
+	_update_mouse(false)
 	Input.set_custom_mouse_cursor(null)
 	if get_tree():
 		get_tree().paused = false
 
 
 func _make_aim_mark() -> void:
+	var ring: float = Defs.AIM["ring"]
+	_aim_mark = _flat_mark(Ui.aim_arrow(Color(1, 1, 1)), Defs.AIM["arrow"])
+	_aim_ring = _flat_mark(Ui.aim_ring(Color(1, 1, 1, Defs.AIM["ring_alpha"])), ring * 2.0 + 0.2)
+
+
+## A picture lying on the rock, drawn over the fog and the drill strip.
+func _flat_mark(tex: Texture2D, size_m: float) -> MeshInstance3D:
 	var mesh := PlaneMesh.new()
-	mesh.size = Vector2.ONE * 1.6
+	mesh.size = Vector2.ONE * size_m
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_texture = Ui.crosshair(Color(1, 1, 1))
+	mat.albedo_texture = tex
 	mat.no_depth_test = true
-	mat.render_priority = 1
+	mat.render_priority = 3
 	mesh.material = mat
-	_aim_mark = MeshInstance3D.new()
-	_aim_mark.mesh = mesh
-	_aim_mark.visible = false
-	add_child(_aim_mark)
+	var m := MeshInstance3D.new()
+	m.mesh = mesh
+	m.visible = false
+	add_child(m)
+	return m
 
 
 func apply_fog() -> void:
@@ -272,6 +285,7 @@ func apply_boosts() -> void:
 
 func _process(delta: float) -> void:
 	_update_time_scale()
+	_update_mouse(not dead and not left)
 	if dead or left:
 		debris.update(delta)
 		fx.update(delta)
@@ -308,7 +322,9 @@ func _process(delta: float) -> void:
 		_try_open_modal()
 
 
-## Points the tools at the right stick or the mouse. Aiming stays flat, at the height of the rock's top.
+## Points the tools at the right stick or the mouse, and shows it with an arrow on a ring around you.
+## The mouse moves a hidden pointer that stays within AIM.reach pixels of the digger: only its angle
+## counts, so walking doesn't turn your aim, and pushing outward keeps it steady on the ring.
 func _update_aim(delta: float) -> void:
 	var at := player.global_position
 	if autotest:
@@ -317,26 +333,24 @@ func _update_aim(delta: float) -> void:
 		_mouse_seen = false
 		player.aiming = false
 	var free := not autotest and not character.has("no_aim")
-	_aim_mark.visible = free and _aim_stick(at, delta)
-	if _aim_mark.visible:
-		return
-	if not _mouse_seen or not free:
-		aim_point = at + player.heading * 5.0
-		return
-	var screen := get_viewport().get_mouse_position()
-	var from := camera.project_ray_origin(screen)
-	var dir := camera.project_ray_normal(screen)
-	aim_point = from + dir * (Mine.HEIGHT - from.y) / minf(dir.y, -0.01)
-	aim_point.y = 0.0
-	var to := aim_point - Vector3(at.x, 0.0, at.z)
-	if to.length_squared() > 0.01:
+	var shown := free and _aim_stick(delta)
+	if free and not shown and _mouse_seen and _aim_offset.length_squared() > 1.0:
 		player.aiming = true
-		player.heading = to.normalized()
+		player.heading = Vector3(_aim_offset.x, 0.0, _aim_offset.y).normalized()
+		shown = true
+	var ring: float = Defs.AIM["ring"]
+	aim_point = Vector3(at.x, 0.0, at.z) + player.heading * ring
+	_aim_mark.visible = shown
+	_aim_ring.visible = shown
+	if shown:
+		_aim_mark.position = Vector3(aim_point.x, Mine.HEIGHT + 0.06, aim_point.z)
+		_aim_mark.rotation = Vector3(0, atan2(-player.heading.x, -player.heading.z), 0)
+		_aim_ring.position = Vector3(at.x, Mine.HEIGHT + 0.05, at.z)
 
 
 ## Tools follow the right stick, and a moment after letting go they follow your walk again. Returns
 ## true while it is the stick that aims.
-func _aim_stick(at: Vector3, delta: float) -> bool:
+func _aim_stick(delta: float) -> bool:
 	var stick := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down", Defs.PAD["deadzone"])
 	if stick != Vector2.ZERO:
 		_mouse_seen = false
@@ -348,9 +362,25 @@ func _aim_stick(at: Vector3, delta: float) -> bool:
 	else:
 		_stick_left -= delta
 		player.aiming = _stick_left > 0.0
-	aim_point = at + player.heading * float(Defs.PAD["aim_reach"])
-	_aim_mark.position = Vector3(aim_point.x, Mine.HEIGHT + 0.05, aim_point.z)
 	return _stick_left > 0.0
+
+
+## A run captures the mouse, hidden, so a click can't land outside the window; menus give it back.
+## If something else takes it (Esc in a browser, another window), the game pauses.
+func _update_mouse(play: bool) -> void:
+	if not play or autotest or Options.pad:
+		_locked = false
+		_lock_asked = false
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			Input.mouse_mode = Input.MOUSE_MODE_HIDDEN if Options.pad else Input.MOUSE_MODE_VISIBLE
+		return
+	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		_locked = true
+	elif _locked:
+		_open_pause()
+	elif not _lock_asked:
+		_lock_asked = true
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 ## Burrowers keep coming, so no spot stays safe, and they come more often the deeper you are.
@@ -869,6 +899,7 @@ func shuffle(a: Array) -> void:
 ## A hitstop ends in _process, which a paused tree skips: left running, menus would play at its slow time.
 func _freeze() -> void:
 	close_map()
+	_update_mouse(false)
 	_hitstop_left = 0.0
 	Engine.time_scale = base_time_scale
 	get_tree().paused = true
@@ -964,9 +995,7 @@ func _cam_targets() -> Array:
 	var at := player.global_position
 	var look: Vector3 = at + player.velocity * cam["lead"]
 	if _mouse_seen or _stick_left > 0.0:
-		var ahead := aim_point - at
-		ahead.y = 0.0
-		look += (ahead * cam["aim_lead"]).limit_length(cam["aim_lead_max"])
+		look += player.heading * cam["aim_lean"]
 	return [look + Vector3(0, cam["up"], cam["back"]), look]
 
 
@@ -1004,7 +1033,12 @@ func _toggle_pause() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and not Options.pad and not character.has("no_aim"):
+		if not _mouse_seen:
+			_aim_offset = Vector2(player.heading.x, player.heading.z) * Defs.AIM["reach"]
 		_mouse_seen = true
+		_aim_offset = (_aim_offset + event.screen_relative).limit_length(Defs.AIM["reach"])
+	elif event is InputEventMouseButton and event.pressed:
+		_lock_asked = false  # a click may capture what a browser refused before
 
 
 func _unhandled_input(event: InputEvent) -> void:

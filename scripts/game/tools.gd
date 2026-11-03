@@ -314,6 +314,8 @@ func update(delta: float) -> void:
 			"bombs":
 				if _throw_bomb(at):
 					w["timer"] = Defs.restart(w["timer"], cooldown(id), delta)
+				else:
+					w["timer"] = Defs.TOOLS["bombs"]["retry"]
 			"pulse":
 				w["timer"] = Defs.restart(w["timer"], cooldown(id), delta)
 				_pulse(mine, at)
@@ -415,24 +417,67 @@ func _update_saws(delta: float, mine: Mine, at: Vector3) -> void:
 			run.enemies.hit_circle(c, t["cut"], dmg("saws"))
 
 
-## Thrown at the rock you aim at, or at rock nearby. Returns false if there is none.
+## Thrown by itself: see bomb_target. Returns false if there is nothing to throw at.
 func _throw_bomb(at: Vector3) -> bool:
-	var range_m: float = Defs.TOOLS["bombs"]["throw"]
-	for k in 9:
-		var a := run.rng.randf() * TAU
-		var to := at + Vector3(cos(a), 0, sin(a)) * run.rng.randf_range(range_m * 0.5, range_m)
-		if k == 0:
-			to = at + (run.aim_point - at).limit_length(range_m)
-		if run.mine.kind_at(to) == 0 or not run.mine.can_see_at(to):
-			continue
-		for b in MAX_BOMBS:
-			if _bomb_t[b] < 0.0:
-				_bomb_from[b] = at + Vector3(0, 1, 0)
-				_bomb_to[b] = to
-				_bomb_t[b] = 0.0
-				_bombs[b].visible = true
-				return true
+	var to := bomb_target(at, run.player.heading)
+	if to == Vector3.INF:
+		return false
+	for b in MAX_BOMBS:
+		if _bomb_t[b] < 0.0:
+			_bomb_from[b] = at + Vector3(0, 1, 0)
+			_bomb_to[b] = to
+			_bomb_t[b] = 0.0
+			_bombs[b].visible = true
+			return true
 	return false
+
+
+## One of the closest awake enemies in reach, picked at random so bombs spread over a crowd. With
+## none, the nearest rock you can see, rock in front of `ahead` first. Vector3.INF if there is neither.
+func bomb_target(at: Vector3, ahead: Vector3) -> Vector3:
+	var t: Dictionary = Defs.TOOLS["bombs"]
+	var reach: float = t["throw"]
+	var e: Enemies = run.enemies
+	var near: Array = []
+	for i in e.used:
+		if e.alive[i] == 1 and e.awake[i] == 1:
+			var d2 := Vector2(e.pos[i].x - at.x, e.pos[i].z - at.z).length_squared()
+			if d2 <= reach * reach:
+				near.append([d2, i])
+	if not near.is_empty():
+		near.sort_custom(func(a: Array, b: Array): return a[0] < b[0])
+		var q := e.pos[near[run.rng.randi() % mini(int(t["pick"]), near.size())][1]]
+		return Vector3(q.x, 0.0, q.z)
+	var m: Mine = run.mine
+	var cx := m.cell_of(at.x)
+	var cz := m.cell_of(at.z)
+	var front := cos(deg_to_rad(t["ahead"]))
+	var best := Vector3.INF
+	var best_d := INF
+	# Square rings outward: the first ring with rock in front ends the search.
+	for k in range(1, int(reach / Mine.CELL) + 1):
+		for dz in range(-k, k + 1):
+			for dx in range(-k, k + 1, 1 if absi(dz) == k else 2 * k):
+				var x := cx + dx
+				var z := cz + dz
+				if x < 0 or z < 0 or x >= Mine.SIZE or z >= Mine.SIZE:
+					continue
+				var c := x + z * Mine.SIZE
+				if m.kind[c] == 0 or m.kind[c] == Defs.BEDROCK or not m.can_see(c):
+					continue
+				var p := m.pos_of(c)
+				var to := Vector3(p.x - at.x, 0.0, p.z - at.z)
+				var d2 := to.length_squared()
+				if d2 > reach * reach:
+					continue
+				if to.normalized().dot(ahead) >= front:
+					d2 -= 1000000.0  # rock in front beats any rock elsewhere
+				if d2 < best_d:
+					best_d = d2
+					best = Vector3(p.x, 0.0, p.z)
+		if best_d < 0.0:
+			break
+	return best
 
 
 func _update_bombs(delta: float, mine: Mine, at: Vector3) -> void:
