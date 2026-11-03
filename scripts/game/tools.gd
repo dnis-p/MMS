@@ -17,7 +17,7 @@ uniform float scroll = 0.0;
 void fragment() {
 	vec2 m = vec2(abs(UV.x - 0.5) * wide, (0.5 - abs(UV.y - 0.5)) * len);  // metres from the centre line, and to the nearest end
 	float edge = max(step(wide * 0.5 - 0.08, m.x), step(m.y, 0.08));
-	float chevron = fract(UV.y * len / 0.8 - m.x * 0.6 - scroll);
+	float chevron = fract(UV.y * len / 0.8 + m.x * 0.6 - scroll);  // tips point away from you, the way they run
 	float dash = smoothstep(0.0, 0.1, chevron) * smoothstep(0.35, 0.25, chevron) * (1.0 - edge);
 	float fade = 1.0 - 0.5 * UV.y;
 	float light = max(edge, dash);  // outline and chevrons are pale, so they show on orange rock and white flashes
