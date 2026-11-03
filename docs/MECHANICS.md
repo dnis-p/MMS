@@ -94,7 +94,7 @@ Tools max at level 6 (`Defs.MAX_TOOL_LEVEL`), boosts at 5 (`Defs.MAX_BOOST_LEVEL
 | Tool | Unlock | Dmg | Size | Cooldown | Cooldown per level | Size per level | Extra |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | shovel | start | 9 | 2.4 | 0.3 | x0.95 | +12% | arc 1.15 |
-| drill | start | 3 | 4 | 0.05 | x1 | +15% |  |
+| drill | start | 3 | 4 | 0.065 | x0.95 | +15% |  |
 | saws | start | 8 | 3 | 0.09 | x1 | +10% | spin 5.0, cut 0.7 |
 | bombs | Get out by lift | 60 | 3 | 2.2 | x0.93 | +12% | throw 8 |
 | pulse | Break 25,000 cubes | 30 | 5 | 3 | x0.93 | +12% | ring_time 0.35 |
@@ -105,7 +105,7 @@ Tools max at level 6 (`Defs.MAX_TOOL_LEVEL`), boosts at 5 (`Defs.MAX_BOOST_LEVEL
 | Tool | How it behaves | Reaches through fog? |
 | --- | --- | --- |
 | shovel | Fan in front of you, half-angle `arc` in radians. Swings only when something is in reach | No |
-| drill | Straight strip ahead, half-width 0.5 | No |
+| drill | Straight strip ahead, half-width 0.5. Hits every cooldown without pausing, and its timer keeps the leftover part of a frame, so its rate is the same at any frame rate | No |
 | saws | `min(2 + level / 2, 6)` blades orbit you, each cutting a circle of radius `cut` | No |
 | bombs | Thrown at your aim, or at random seen rock within `throw` m. Up to 6 in the air | No, the target must be seen |
 | pulse | Ring bursting out from you | Yes |

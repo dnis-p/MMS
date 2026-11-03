@@ -161,6 +161,12 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-03, level 1 drill slightly weaker** (owner: "the drill is a bit too OP early game ... let's try making level1 drill just slightly less op"; measured with a scripted dig through plain rock, the owner has not played it)
+- **Change.** The drill now hits every 0.065 s at level 1 instead of 0.05 s, and each level makes that 5% shorter, so by level 6 it is back to 0.05 s. Its damage, length and damage per level are unchanged, so enemy toughness, which follows tool damage, is not affected.
+- **Timer fix.** The drill's timer used to drop the part of a frame left over when it fired, so it hit less often at some frame rates: at 165 fps about 18 times a second instead of 20. It now keeps that part, so the rate is the same everywhere.
+- **Measured** (metres walked in 2 s into plain rock, before > after). Level 1: dirt 13.9 > 13.5, clay 13.4 > 12.9, sandstone 12.3 > 10.7, stone 7.4 > 5.3. Level 2: sandstone 13.1 > 12.6, stone 11.6 > 9.6. From level 3 the difference is 4% or less. A level 1 shovel walks 5.8, 5.8, 4.0 and 2.3.
+- **Limit.** In dirt and clay the level 1 drill still breaks rock faster than you walk, so you barely notice the change there. Slowing it in topsoil would need a much bigger cut, for example about a third of today's damage times rate. A version that was also 15% shorter (sandstone 7.9, stone 4.3) was tried and not used, as it is more than "slightly". The Rig, which starts with the drill, is slowed the same way.
+
 **2026-11-03, mechanics reference** (owner: a doc with the technical side of the game, to share with other models)
 - `docs/MECHANICS.md` describes how the game works now: rules, formulas, scaling, features, what to edit for a tweak, and what is measured. Its tables were generated from `defs.gd` and its quoted values checked against it. It is kept up by hand, by a rule in `CLAUDE.md`, so `defs.gd` wins if they ever differ.
 

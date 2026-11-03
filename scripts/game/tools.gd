@@ -250,7 +250,9 @@ func update(delta: float) -> void:
 				if _swing(mine, p, at):
 					w["timer"] = cooldown(id)
 			"drill":
-				w["timer"] = cooldown(id)
+				# Keeps what is left of the frame: its cooldown is a few frames long, so a plain reset
+				# would make it hit more often at higher frame rates.
+				w["timer"] = maxf(w["timer"] + cooldown(id), 0.0)
 				_drill(mine, p, at)
 			"bombs":
 				if _throw_bomb(at):
