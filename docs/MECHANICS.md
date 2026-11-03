@@ -157,11 +157,12 @@ All of these are multiplied by the scaling in section 8. Colours are in `Defs.EN
 | Source | How they come | Through rock? |
 | --- | --- | --- |
 | Nests | `THREATS.nests` = 220 open pockets, none within `THREATS.safe_start` = 20 m of the start. They fill with sleepers when you come within `THREATS.nest_fill` = 50 m. `THREATS.nest_size` = 10 plus `THREATS.nest_band` = 2 per band, with one brute from band `THREATS.brutes_from` = 3 | No, stopped by rock |
-| Swarm | From `THREATS.swarm_range` = 15 m away, in a burst every `THREATS.swarm_every` = 1.2 s | Yes |
-| Horde | A full ring at `THREATS.horde_range` = 13 m, with a "SWARM!" banner | Yes |
-| Burrowers | `1 + band / 2` of them, `THREATS.burrow_range` = 18 m away, every `max(7, 22 - band * 2)` s | Yes |
+| Swarm | Off screen, in a burst every `THREATS.swarm_every` = 1.2 s | Yes |
+| Horde | `THREATS.horde_waves` = 3 full rings off screen, `THREATS.horde_gap` = 4 s apart, with one "SWARM!" banner. Once the Heart wakes, one ring each time | Yes |
+| Burrowers | `1 + band / 2` of them, off screen, every `max(7, 22 - band * 2)` s | Yes |
 | The Brood | Drops 12 crawlers around itself each cycle | Yes |
 
+- **Off screen:** the swarm, hordes, burrowers and bosses start `THREATS.spawn_margin` = 2.5 m past the edge of what the camera shows, plus up to `THREATS.spawn_depth` = 3 m. The edge is where the screen's corners meet the ground, at 16:9 about 16 m above the digger on the screen, 10 m below and 12 m to each side, more toward the corners, so hordes are not round: the ring is shaped like the screen. Near the mine's edge, a spot that would be pulled into view is skipped. Bosses also start at least `RUN.boss_range` = 24 m away. The Brood's crawlers are the exception: they come out of the Brood.
 - **Waking:** with fog on, a sleeper wakes when its spot has been seen. With fog off, within `THREATS.wake_range` = 12 m. Checked every `THREATS.wake_every` = 0.2 s. One waking, or being hit, wakes its whole nest.
 - **Forgetting:** anything past 70 m is removed (`Enemies.FORGET_RANGE`), bosses aside, and a nest that lost a sleeper this way can fill again.
 - **Limits:** 1,500 enemies alive (`Enemies.MAX`), 640 of them sleepers (`Enemies.SLEEPERS`), so swarms always have room.
@@ -206,16 +207,16 @@ enemy speed  = base speed * pace * random 0.9 to 1.1
 ```
 swarm burst = (swarm_size + swarm_size_ramp * t) * crowd
 awake limit = min((swarm_alive + swarm_alive_ramp * t) * crowd, swarm_max)   no burst while at the limit
-horde size  = min((horde_size + horde_ramp * t) * crowd, horde_max)
+horde size  = min((horde_size + horde_ramp * t) * crowd, horde_max)   per ring, horde_waves rings
 horde every = horde_every / sqrt(crowd), or heart_horde once the Heart wakes
 ```
 
-`THREATS.swarm_size` = 2, `THREATS.swarm_size_ramp` = 0.012, `THREATS.swarm_alive` = 25, `THREATS.swarm_alive_ramp` = 0.3, `THREATS.swarm_max` = 430, `THREATS.horde_size` = 40, `THREATS.horde_ramp` = 0.12, `THREATS.horde_max` = 320, `THREATS.horde_every` = 55, `RUN.heart_horde` = 12.
+`THREATS.swarm_size` = 2, `THREATS.swarm_size_ramp` = 0.012, `THREATS.swarm_alive` = 25, `THREATS.swarm_alive_ramp` = 0.3, `THREATS.swarm_max` = 430, `THREATS.horde_size` = 40, `THREATS.horde_ramp` = 0.12, `THREATS.horde_max` = 320, `THREATS.horde_waves` = 3, `THREATS.horde_gap` = 4, `THREATS.horde_every` = 55, `RUN.heart_horde` = 12.
 
-Build and time multiply each other. At 10 minutes with `crowd` 1.4, the awake limit is about 287 and hordes are about 156.
+Build and time multiply each other. At 10 minutes with `crowd` 1.4, the awake limit is about 287 and each horde ring is about 156, so about 470 in a horde.
 
 ## 9. Bosses and the Heart
-**Bosses** (`Defs.BOSSES`, `scripts/game/bosses.gd`) always come in order, on a timer, starting `RUN.boss_range` = 24 m away and digging towards you. Past `RUN.boss_leash` = 45 m they are pulled back to 24 m, so you can't lose them.
+**Bosses** (`Defs.BOSSES`, `scripts/game/bosses.gd`) always come in order, on a timer, starting off screen and at least `RUN.boss_range` = 24 m away, digging towards you. Past `RUN.boss_leash` = 45 m they are pulled back to the same distance, so you can't lose them.
 
 - Health is `base hp * hardness`, set when it arrives. Distance doesn't count. Damage is `base dmg * harm`.
 - **The Borer** chases for 5 s, stops for 0.9 s and shows its line, then charges along it at 16 m/s for 0.9 s, carving rock. Sidestep it and it hits nothing.
@@ -224,7 +225,7 @@ Build and time multiply each other. At 10 minutes with `crowd` 1.4, the awake li
 
 **The Heart** (`RUN.heart_dist` = 190 m from the start, in a random direction, radius `RUN.heart_r` = 5 cubes) takes no damage while a boss is left. Hitting it shows how many remain.
 
-- Once open, the first hit wakes it: a horde at once, then one every 12 s.
+- Once open, the first hit wakes it: a horde at once, then one every 12 s, each a single ring.
 - Each hit does at most `RUN.heart_hit` = 25 to a Heart cube, and a Frenzy doesn't help, so nothing skips the fight.
 - **The run ends when the first Heart cube breaks**, not the whole Heart. A cube has 6,000 health, varied per cube by 0.75 to 1.25, so 180 to 300 capped hits on the same cube.
 
@@ -390,6 +391,7 @@ Beam has no goal: it comes from the Strange Lens relic. Stats add up across runs
 | Shop and goal pace | `Defs.SHOP`, `Defs.GOALS` |
 | Enemy toughness | `THREATS.hard_power`, `tough_per`, `hp_band` |
 | Enemy numbers | `THREATS.crowd_per`, the `swarm_*` and `horde_*` values |
+| How far off enemies arrive | `THREATS.spawn_margin`, `spawn_depth` |
 | Early game pressure | `THREATS.free_upgrades`, `swarm_from`, `horde_from` |
 | Run length | `Defs.BOSSES` `at`, `RUN.boss_gap`, boss `hp`, `RUN.heart_hit` |
 | Map size or the walk | `RUN.heart_dist`, `WORLD.band_width`. `Mine.SIZE` must be a multiple of `Mine.CHUNK` |

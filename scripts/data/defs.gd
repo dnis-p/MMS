@@ -54,15 +54,17 @@ const BOSSES := [
 ]
 ## nests: pockets of sleepers, radius in metres, never within safe_start of the start. They only fill
 ## once you are within nest_fill metres, since the mine holds far more than you ever meet. Enemies get
-## tougher per rock band (hp_band, dmg_band). burrow_*: burrowers tunnel in from burrow_range metres
-## away, first after burrow_from seconds, then every burrow_every seconds, less with depth.
+## tougher per rock band (hp_band, dmg_band). Everything that arrives (burrowers, the swarm, hordes,
+## bosses) starts off screen: spawn_margin metres past the edge of what the camera shows, and up to
+## spawn_depth metres further. burrow_*: burrowers tunnel in, first after burrow_from seconds, then
+## every burrow_every seconds, less with depth.
 ## spike_cycle: seconds per up-and-down, spike_up of them dangerous, spike_warn of warning before.
 ## gas_fuse: seconds from breaking gas rock to the blast. gas_merge: metres one fuse covers.
 ## The swarm is what surrounds you, as in VS: crawlers that dig. swarm_*: from swarm_from seconds, every
-## swarm_every seconds, swarm_size (plus swarm_size_ramp per second) arrive from swarm_range metres
-## away, while fewer than swarm_alive (plus swarm_alive_ramp per second, up to swarm_max) are awake.
-## horde_*: from horde_from seconds, every horde_every, a full ring of horde_size (plus horde_ramp per
-## second, up to horde_max) closes in from horde_range metres.
+## swarm_every seconds, swarm_size (plus swarm_size_ramp per second) arrive, while fewer than
+## swarm_alive (plus swarm_alive_ramp per second, up to swarm_max) are awake.
+## horde_*: from horde_from seconds, every horde_every, horde_waves full rings of horde_size (plus
+## horde_ramp per second, up to horde_max) close in, horde_gap seconds apart.
 ## Enemies keep up with you. hard_power: their health follows your strongest tool's damage multiplier
 ## to this power, so 1.0 keeps hits-to-kill steady at any strength. Per upgrade you own past the first
 ## free_upgrades (tool and boost levels): tough_per adds to their health, crowd_per to how many come,
@@ -71,12 +73,12 @@ const BOSSES := [
 const THREATS := {
 	"safe_start": 20.0, "nests": 220, "nest_fill": 50.0, "nest_min": 2.5, "nest_max": 5.0, "nest_size": 10, "nest_band": 2, "brutes_from": 3,
 	"hp_band": 0.2, "dmg_band": 0.1, "wake_every": 0.2, "wake_range": 12.0, "knock": 8.0, "knock_max": 12.0, "knock_decay": 26.0,
-	"burrow_from": 60.0, "burrow_every": 22.0, "burrow_min": 7.0, "burrow_range": 18.0, "carve_every": 0.12,
+	"burrow_from": 60.0, "burrow_every": 22.0, "burrow_min": 7.0, "carve_every": 0.12,
 	"spike_patches": 80, "spike_cycle": 2.6, "spike_up": 0.9, "spike_warn": 0.5, "spike_dmg": 8.0,
 	"gas_blobs": 150, "gas_fuse": 0.9, "gas_radius": 3.0, "gas_merge": 3.0, "gas_dmg": 18.0, "gas_hurts_enemies": 150.0,
-	"swarm_from": 20.0, "swarm_every": 1.2, "swarm_size": 2.0, "swarm_size_ramp": 0.012, "swarm_range": 15.0,
+	"swarm_from": 20.0, "swarm_every": 1.2, "swarm_size": 2.0, "swarm_size_ramp": 0.012, "spawn_margin": 2.5, "spawn_depth": 3.0,
 	"swarm_alive": 25.0, "swarm_alive_ramp": 0.3, "swarm_max": 430.0,
-	"horde_from": 75.0, "horde_every": 55.0, "horde_size": 40.0, "horde_ramp": 0.12, "horde_max": 320.0, "horde_range": 13.0,
+	"horde_from": 75.0, "horde_every": 55.0, "horde_size": 40.0, "horde_ramp": 0.12, "horde_max": 320.0, "horde_waves": 3, "horde_gap": 4.0,
 	"hard_power": 1.0, "free_upgrades": 8, "tough_per": 0.04, "crowd_per": 0.05, "pace_per": 0.012, "pace_max": 1.45,
 	"harm_per": 0.02, "nudge_per": 0.05, "runner_per": 0.012, "runner_max": 0.45,
 }

@@ -232,6 +232,19 @@ func _check_chain(r: Run) -> void:
 	_clear_gems(r)
 
 
+## Living enemies the camera shows any part of (their feet or their top).
+func _seen_count(r: Run) -> int:
+	var e := r.enemies
+	var seen := 0
+	for k in e.used:
+		if e.is_alive(k):
+			for up in [0.0, 0.8]:
+				if r.camera.is_position_in_frustum(e.pos[k] + Vector3(0, up, 0)):
+					seen += 1
+					break
+	return seen
+
+
 func _clear_gems(r: Run) -> void:
 	for arr in [r.pickups.g_pos, r.pickups.g_val, r.pickups.g_xp, r.pickups.g_col, r.pickups.g_pull, r.pickups.g_hop]:
 		arr.clear()
@@ -296,6 +309,31 @@ func _check_threats(r: Run) -> void:
 		sides[(1 if q.x > 0.0 else 0) + (2 if q.y > 0.0 else 0)] += 1
 	_check("a horde comes from every side (%s)" % str(sides), e.alive_count >= 40 and sides.min() >= 8)
 	_check("hordes start out of reach", e.nearest_awake(Vector3.ZERO, 10.0) == -1)
+	var close := e.spawn(Enemies.CRAWLER, Vector3(0, 0, 9), -1, true)
+	_check("an enemy on screen counts as seen", _seen_count(r) == 1)
+	e.remove(close)
+	_check("hordes start off screen (%d seen)" % _seen_count(r), _seen_count(r) == 0)
+	var first := e.alive_count
+	r._swarm_timer = 999.0
+	r._horde_timer = 999.0
+	for k in int(Defs.THREATS["horde_gap"] / 0.1) + 1:
+		r._update_swarm(0.1)
+	_check("a second ring follows (%d then %d)" % [first, e.alive_count], e.alive_count >= first * 2 - 2)
+	for k in int(Defs.THREATS["horde_gap"] * Defs.THREATS["horde_waves"] / 0.1):
+		r._update_swarm(0.1)
+	var waves: int = Defs.THREATS["horde_waves"]
+	_check("a horde is %d rings, then it stops (%d)" % [waves, e.alive_count], e.alive_count >= first * waves - 4 and e.alive_count <= first * waves + 4)
+	_check("every ring starts off screen", _seen_count(r) == 0)
+	e.clear()
+	r._swarm_timer = 0.0
+	r._update_swarm(0.016)
+	r.run_time = 2000.0
+	r._burrow_timer = 0.0
+	r._update_burrowers(0.016)
+	r.run_time = 0.0
+	_check("the swarm and burrowers arrive off screen (%d)" % e.alive_count, e.alive_count > 0 and _seen_count(r) == 0)
+	r._horde_timer = Defs.THREATS["horde_from"]
+	e.clear()
 	_fill(r, Vector3(1.6, 0, 0), 2, 7)
 	var swarm := e.spawn(Enemies.CRAWLER, Vector3(1.6, 0, 0), -1, true, true)
 	for k in 3:
@@ -839,12 +877,13 @@ func _check_bosses(r: Run) -> void:
 	r.run_time += 2.0
 	b.update(0.016, Vector3.ZERO)
 	_check("a boss comes on time", e.is_alive(b.current) and e.etype[b.current] == Enemies.BORER and not b.fight().is_empty())
+	_check("a boss arrives off screen", _seen_count(r) == 0)
 	var i := b.current
 	e.pos[i] = Vector3(10, 0, 0)
-	e.update(0.016, Vector3(500, 0, 0), r.player.radius)
+	e.update(0.016, Vector3(200, 0, 0), r.player.radius)
 	_check("a boss doesn't lose you", e.is_alive(i))
-	b.update(0.016, Vector3(500, 0, 0))
-	_check("it catches up when you run", Vector2(e.pos[i].x - 500.0, e.pos[i].z).length() < float(Defs.RUN["boss_leash"]))
+	b.update(0.016, Vector3(200, 0, 0))
+	_check("it catches up when you run", Vector2(e.pos[i].x - 200.0, e.pos[i].z).length() < float(Defs.RUN["boss_leash"]))
 	e.pos[i] = Vector3(10, 0, 0)
 	b._timer = 0.0
 	b.update(0.016, Vector3.ZERO)

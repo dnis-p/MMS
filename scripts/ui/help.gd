@@ -75,7 +75,7 @@ static func sections() -> Array:
 			"Die, or give up from the pause menu: you keep %d%% of your gems, more with Insurance from the shop." % roundi(run["death_keep"] * 100.0),
 		]],
 		["Enemies and dangers", [
-			"Crawlers keep coming at you, and now and then a whole ring of them (\"SWARM!\"). Nests sleep in caves until you spot them. Burrowers and bosses dig through rock to reach you.",
+			"Crawlers keep coming at you, and now and then waves of rings of them (\"SWARM!\"). Nests sleep in caves until you spot them. Burrowers and bosses dig through rock to reach you.",
 			"Enemies hurt by touch. After a hit you can't be hurt for %s s, and you heal slowly after %d s without a hit." % [
 				str(Defs.DIGGER["invuln"]), int(Defs.DIGGER["regen_after"])],
 			"Pale, speckled loose rock starts a cave-in when broken: after a dark shadow, rubble fills the area. It crushes the enemies in it, and hurts you if you stay close, though you always keep a small pocket.",

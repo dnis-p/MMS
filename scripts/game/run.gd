@@ -97,6 +97,10 @@ var _scan_timer := 0.0
 var _burrow_timer: float = Defs.THREATS["burrow_from"]
 var _swarm_timer: float = Defs.THREATS["swarm_from"]
 var _horde_timer: float = Defs.THREATS["horde_from"]
+var _waves_left := 0  # rings still to come in this horde
+var _wave_timer := 0.0
+var _view := PackedVector2Array()  # where the screen's corners meet the ground, around the digger
+var _view_frame := -1
 var _lamp: OmniLight3D
 var _cam_pos := Vector3.ZERO
 var _cam_look := Vector3.ZERO
@@ -393,8 +397,9 @@ func _update_burrowers(delta: float) -> void:
 	_burrow_timer = Defs.restart(_burrow_timer, maxf(t["burrow_min"], t["burrow_every"] - band * 2.0), delta)
 	for k in 1 + band / 2:
 		var a := rng.randf() * TAU
-		var p := mine.clamp_inside(player.global_position + Vector3(cos(a), 0, sin(a)) * t["burrow_range"])
-		enemies.spawn(Enemies.BURROWER, p, -1, true)
+		var p := offscreen(player.global_position, a, rng.randf() * t["spawn_depth"])
+		if p != Vector3.INF:
+			enemies.spawn(Enemies.BURROWER, p, -1, true)
 
 
 ## Enemies scale from what you actually have, not from time, so a strong build meets a strong mine.
@@ -427,26 +432,77 @@ func _update_swarm(delta: float) -> void:
 		if enemies.awake_count < limit:
 			var a := rng.randf() * TAU
 			for k in int((t["swarm_size"] + t["swarm_size_ramp"] * run_time) * crowd):
-				_swarm_in(a + rng.randf_range(-0.5, 0.5), t["swarm_range"])
+				_swarm_in(a + rng.randf_range(-0.5, 0.5))
+	if _waves_left > 0:
+		_wave_timer -= delta
+		if _wave_timer <= 0.0:
+			_wave_timer = Defs.restart(_wave_timer, t["horde_gap"], delta)
+			_waves_left -= 1
+			_horde_ring()
+			Sfx.play("warn", -10.0, 1.15, true)
 	_horde_timer -= delta
 	if _horde_timer <= 0.0:
 		_horde_timer = Defs.restart(_horde_timer, Defs.RUN["heart_horde"] if heart_woken else t["horde_every"] / sqrt(crowd), delta)
-		spawn_horde()
+		spawn_horde(1 if heart_woken else t["horde_waves"])
 
 
-func spawn_horde() -> void:
-	var t := Defs.THREATS
-	var n := int(minf((t["horde_size"] + t["horde_ramp"] * run_time) * crowd, t["horde_max"]))
-	for k in n:
-		_swarm_in(TAU * k / n, t["horde_range"] + rng.randf_range(0.0, 3.0))
+## A horde is `waves` rings, horde_gap seconds apart. Once the Heart wakes they come one ring at a time,
+## as often as heart_horde.
+func spawn_horde(waves: int = Defs.THREATS["horde_waves"]) -> void:
+	_waves_left = waves - 1
+	_wave_timer = Defs.THREATS["horde_gap"]
+	_horde_ring()
 	overlay.banner("SWARM!", "", Color(1, 0.25, 0.2), 1.2)
 	Sfx.play("warn", -6.0, 1.0, true)
 	fx.shake(0.25)
 
 
-func _swarm_in(angle: float, dist: float) -> void:
-	var p := mine.clamp_inside(player.global_position + Vector3(cos(angle), 0, sin(angle)) * dist)
-	enemies.spawn(Enemies.RUNNER if rng.randf() < runners else Enemies.CRAWLER, p, -1, true, true)
+func _horde_ring() -> void:
+	var t := Defs.THREATS
+	var n := int(minf((t["horde_size"] + t["horde_ramp"] * run_time) * crowd, t["horde_max"]))
+	var turn := rng.randf() * TAU
+	for k in n:
+		_swarm_in(turn + TAU * k / n)
+
+
+func _swarm_in(angle: float) -> void:
+	var p := offscreen(player.global_position, angle, rng.randf() * Defs.THREATS["spawn_depth"])
+	if p != Vector3.INF:
+		enemies.spawn(Enemies.RUNNER if rng.randf() < runners else Enemies.CRAWLER, p, -1, true, true)
+
+
+## A spot seen from `at` in direction `angle`, just past the edge of the screen (spawn_margin, plus
+## `extra`), and at least `least` metres away. INF when the mine's edge would pull it into view.
+func offscreen(at: Vector3, angle: float, extra := 0.0, least := 0.0) -> Vector3:
+	var view := _view_ground()
+	var d := Vector2(cos(angle), sin(angle))
+	var reach := 0.0
+	for k in view.size():
+		var hit: Variant = Geometry2D.segment_intersects_segment(Vector2.ZERO, d * 200.0, view[k], view[(k + 1) % view.size()])
+		if hit != null:
+			reach = maxf(reach, (hit as Vector2).length())
+	var p := at + Vector3(d.x, 0, d.y) * maxf(least, reach + Defs.THREATS["spawn_margin"] + extra)
+	var kept := mine.clamp_inside(p)
+	if kept != p and Geometry2D.is_point_in_polygon(Vector2(kept.x - at.x, kept.z - at.z), view):
+		return Vector3.INF
+	return kept
+
+
+## The ground the camera shows, as offsets from the digger, worked out once a frame.
+func _view_ground() -> PackedVector2Array:
+	var frame := Engine.get_process_frames()
+	if frame == _view_frame and not _view.is_empty():
+		return _view
+	_view_frame = frame
+	_view.clear()
+	var size := get_viewport().get_visible_rect().size
+	var me := player.global_position
+	for c in [Vector2.ZERO, Vector2(size.x, 0.0), size, Vector2(0.0, size.y)]:
+		var o := camera.project_ray_origin(c)
+		var n := camera.project_ray_normal(c)
+		var g := o + n * (minf(-o.y / n.y, 80.0) if n.y < -0.01 else 80.0)
+		_view.append(Vector2(g.x - me.x, g.z - me.z))
+	return _view
 
 
 func _update_depth() -> void:
@@ -670,7 +726,7 @@ func on_heart_hit() -> void:
 	if autotest:
 		print("heart woke: t=%.0f level=%d awake=%d" % [run_time, level, enemies.awake_count])
 	overlay.banner("THE HEART WAKES", "", Color(1, 0.2, 0.45), 1.5)
-	spawn_horde()
+	spawn_horde(1)
 	_horde_timer = Defs.RUN["heart_horde"]
 
 

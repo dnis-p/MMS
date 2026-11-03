@@ -38,7 +38,8 @@ func update(delta: float, at: Vector3) -> void:
 	var to := at - e.pos[current]
 	to.y = 0.0
 	if to.length() > float(Defs.RUN["boss_leash"]):
-		e.pos[current] = at - to.normalized() * float(Defs.RUN["boss_range"])
+		var back := run.offscreen(at, atan2(-to.z, -to.x), 0.0, float(Defs.RUN["boss_range"]))
+		e.pos[current] = back if back != Vector3.INF else at - to.normalized() * float(Defs.RUN["boss_range"])
 	_timer -= delta
 	if Defs.BOSSES[killed]["enemy"] == "borer":
 		_borer(delta, to)
@@ -48,8 +49,13 @@ func update(delta: float, at: Vector3) -> void:
 
 func _arrive(at: Vector3) -> void:
 	var b: Dictionary = Defs.BOSSES[killed]
-	var a := run.rng.randf() * TAU
-	var p := run.mine.clamp_inside(at + Vector3(cos(a), 0, sin(a)) * float(Defs.RUN["boss_range"]))
+	var p := Vector3.INF
+	for tries in 8:
+		if p == Vector3.INF:
+			p = run.offscreen(at, run.rng.randf() * TAU, 0.0, float(Defs.RUN["boss_range"]))
+	if p == Vector3.INF:  # hemmed in by the mine's edge
+		_next_at = run.run_time + 1.0
+		return
 	current = run.enemies.spawn(Defs.ENEMY_ORDER.find(b["enemy"]), p, -1, true, true)
 	if current < 0:  # the pool is full: try again in a moment
 		_next_at = run.run_time + 1.0
