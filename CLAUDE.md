@@ -35,6 +35,9 @@ Parse errors that mention `Sfx` only occur when scripts are checked standalone (
 ## Release flow
 - Every push to this branch is built and tested by CI (.github/workflows/android-apk.yml), then published at
   https://dnis-p.github.io/MMS/dig/ by the default branch's workflow, which this branch's workflow starts. The car game stays at /MMS/.
+- Pages publishes the whole site at once, so that workflow rebuilds the car game's web build too. This branch starts it with
+  `dig_only=true` as soon as its smoke test and web build pass, before its own APK, and that skips the car game's smoke
+  test and APK. The input lives in the default branch's workflow, so it has to be there before this branch passes it.
 
 ## Known gaps / next ideas
 - Feel and sound are unproven until the owner plays: nobody has listened to the sounds.

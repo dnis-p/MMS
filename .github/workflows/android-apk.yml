@@ -13,6 +13,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write  # to start the default branch's workflow
     steps:
       - uses: actions/checkout@v4
 
@@ -58,14 +61,6 @@ jobs:
           grep -q "AUTOTEST DONE" smoke.log
           ! grep -q "SCRIPT ERROR" smoke.log
 
-      - name: Build APK
-        run: tools/android/build_apk.sh
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mms-prototype-apk
-          path: build/mms-prototype.apk
-
       - name: Build web version
         run: tools/web/build_web.sh
 
@@ -78,15 +73,19 @@ jobs:
         with:
           path: build/web/
 
-  # The site is published from the default branch, whose workflow also builds this branch into /dig/.
-  # So this only asks that workflow to run again once this branch has built.
-  publish-web:
-    needs: build
-    if: github.ref == 'refs/heads/prototype/dig'
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-    steps:
-      - run: gh workflow run android-apk.yml --repo "$GITHUB_REPOSITORY" --ref "${{ github.event.repository.default_branch }}"
+      # The site is published from the default branch, whose workflow also builds this branch into /dig/.
+      # So this only asks that workflow to run again, as soon as this branch has passed its test and built
+      # for the web: the APK below doesn't hold it up. dig_only makes it skip the car game's test and APK.
+      - name: Ask the default branch to republish the site
+        if: github.ref == 'refs/heads/prototype/dig'
+        run: gh workflow run android-apk.yml --repo "$GITHUB_REPOSITORY" --ref "${{ github.event.repository.default_branch }}" -f dig_only=true
         env:
           GH_TOKEN: ${{ github.token }}
+
+      - name: Build APK
+        run: tools/android/build_apk.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mms-prototype-apk
+          path: build/mms-prototype.apk

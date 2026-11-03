@@ -161,6 +161,12 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-03, faster web publishing** (owner asked whether the default branch rebuilding every time slows the web build; chose options 1 and 2)
+- **Why it rebuilds at all.** GitHub Pages publishes the whole site as one package, the car game at /MMS/ and this game at /MMS/dig/, so a DIG push still needs the default branch's workflow to rebuild and publish everything. Reusing its old build isn't possible without changing how the site is published (a `gh-pages` branch and a Pages setting), which was not chosen.
+- **Option 1, default branch.** Its workflow has a `dig_only` input. When this branch starts it with `dig_only=true`, the car game's 31 s smoke test and its APK are skipped; its web build (about 9 s) still runs, as the site needs it. Its own pushes and manual runs still do everything.
+- **Option 2, this branch.** The request to republish now goes out as soon as the smoke test and web build pass, before the APK, instead of from a second job after the whole build. If the APK then fails, the site is already updated and the run shows red.
+- **Expected effect.** Push to live was about 3 minutes on 2026-11-03 (84 s here, 87 s there, plus queueing). Skipping saves about 40 s and the earlier request about 15 s. Not measured until the next push.
+
 **2026-11-03, main menu fits the screen again** (owner: on the web the main menu "cuts at the bottom ... dont add a scroll bar to the main menu")
 - **Cause.** The screen is always 720 units tall; a window wider than 16:9 only adds room at the sides. The new How to play button took the main menu to 758, so the last button was cut off, on the web and in the desktop build alike.
 - **Fix.** Fog of war and Reset progress now share one row under the other buttons, in the same total width, with slightly smaller text, and the DIG title is 80 instead of 96. The menu now needs 654 of 720, with no scrolling. Checked in a screenshot at your browser's size, 1920x920.
