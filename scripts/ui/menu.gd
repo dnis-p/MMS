@@ -65,7 +65,7 @@ func _button(text: String, on_press: Callable, height := 56.0, width := 400.0) -
 
 func _show_main() -> void:
 	_clear()
-	_heading("DIG", 96, Color(1.0, 0.65, 0.2))
+	_heading("DIG", 80, Color(1.0, 0.65, 0.2))
 	_heading("working title  ·  gameplay prototype", 24, Color(0.8, 0.75, 0.7))
 	_heading("%d gems banked" % Profile.gems, 26, Color(0.4, 1.0, 0.85))
 	var start := _button("Start digging", func():
@@ -76,12 +76,20 @@ func _show_main() -> void:
 	_root.add_child(_button("Playing as: %s" % Defs.CHARACTERS[Profile.character]["name"], _show_characters))
 	_root.add_child(_button("Shop", _show_shop))
 	_root.add_child(_button("Goals  (%d/%d)" % [Profile.done.size(), Defs.GOALS.size()], _show_goals))
-	var fog := _button(Options.fog_text(), func(): pass)
+	# Settings share a row: the page has to fit the 720 high screen, which a wide window doesn't make taller.
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 12)
+	var fog := _button(Options.fog_text(), func(): pass, 48.0, 194.0)
+	fog.add_theme_font_size_override("font_size", 20)
 	fog.pressed.connect(func():
 		Options.toggle_fog()
 		fog.text = Options.fog_text())
-	_root.add_child(fog)
-	_root.add_child(_button("Reset progress", _show_reset, 44.0, 280.0))
+	row.add_child(fog)
+	var reset := _button("Reset progress", _show_reset, 48.0, 194.0)
+	reset.add_theme_font_size_override("font_size", 20)
+	row.add_child(reset)
+	_root.add_child(row)
 	_focus.call_deferred(start)
 
 

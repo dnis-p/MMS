@@ -632,6 +632,12 @@ func _check_help() -> void:
 	add_child(menu)
 	menu._show_help()
 	_check("the How to play page scrolls, with Back below", menu._scroll != null and menu._root.get_child(menu._root.get_child_count() - 1) is Button)
+	# A wide window doesn't make the screen taller than 720, so every page has to fit that without scrolling.
+	var screen := float(ProjectSettings.get_setting("display/window/size/viewport_height"))
+	for page in ["_show_main", "_show_characters", "_show_shop", "_show_goals", "_show_help", "_show_reset"]:
+		menu.call(page)
+		var need := menu._root.get_combined_minimum_size().y
+		_check("menu page %s fits the screen (%.0f of %.0f)" % [page.trim_prefix("_show_"), need, screen], need <= screen - 30.0)
 	menu.free()  # at once, so its deferred focus grab never lands on later steps
 
 

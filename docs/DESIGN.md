@@ -161,6 +161,11 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-03, main menu fits the screen again** (owner: on the web the main menu "cuts at the bottom ... dont add a scroll bar to the main menu")
+- **Cause.** The screen is always 720 units tall; a window wider than 16:9 only adds room at the sides. The new How to play button took the main menu to 758, so the last button was cut off, on the web and in the desktop build alike.
+- **Fix.** Fog of war and Reset progress now share one row under the other buttons, in the same total width, with slightly smaller text, and the DIG title is 80 instead of 96. The menu now needs 654 of 720, with no scrolling. Checked in a screenshot at your browser's size, 1920x920.
+- **Guard.** A new rule check measures every menu page against the screen height (main 654, shop 645, goals and How to play 635), so a page that grows too tall fails the tests.
+
 **2026-11-03, How to play page** (owner: "an explanation on how the game works and what are the main objectives right now ... for testers. I mean only in writing not like a proper tutorial. In game")
 - **What it is.** A How to play button on the main menu, under Start digging, opens a scrolling page of short bullet points: the idea, controls, a run, the goal (finding and breaking the Heart), other ways out, enemies and dangers, things worth finding, between runs, and a note for testers asking for feedback. Back, Esc or B returns to the menu; the mouse wheel, arrows or stick scroll it.
 - **Keeping it true.** Times and numbers in it (Heart distance, boss times, lift time, gems kept on death, Frenzy, evolutions) are read from `defs.gd`, so balance changes show up by themselves. The sentences are by hand in `scripts/ui/help.gd`, so a changed rule needs its line changed too; `MECHANICS.md` says so. Each line was checked against the code.
