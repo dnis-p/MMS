@@ -42,6 +42,7 @@ Goals are checked and paid only here, at the end of a run, and their gems are no
 - XP comes from cubes (their `xp` value, most of it small) and gems: `gem value * RUN.gem_xp`, with `RUN.gem_xp` = 0.35. Geode gems count for only `RUN.geode_xp` = 0.4 of that. Enemies give no XP directly, only through the gem they drop.
 - Gem pickups do both jobs at once: XP as above, and carried gems of `gem value * gem_rate * RUN.gem_bank`, with `RUN.gem_bank` = 0.12. So 1 gem value is 0.35 XP and 0.12 gems. `gem_rate` affects gems only, never XP.
 - `gem_rate` is `character gems * (1 + shop greed + relics)`, times 1.5 after a Greed Shrine.
+- **Gems on the floor:** at most 1,500 (`Pickups.MAX`). When full, a new gem still lands where it fell: of 8 random gems not flying to you, the two farthest from you merge into one worth both, keeping the value. Strong builds reach the cap: a bot with drill, Shock Pulse and Spark Coil filled it by 2:00, mostly with gems from rock broken out of sight.
 
 | Level | XP to next | Total XP to reach it |
 | --- | --- | --- |
@@ -392,7 +393,7 @@ Beam has no goal: it comes from the Strange Lens relic. Stats add up across runs
 | New tool | `Defs.TOOLS`, plus its firing in `scripts/game/tools.gd` |
 | New enemy | `Defs.ENEMIES`, `Defs.ENEMY_ORDER`, plus a mesh and constant in `scripts/game/enemies.gd` |
 
-**Numbers still in code, not in `defs.gd`:** level blast damage of 60 (`Run.level_blast`), the combo curve (`Run.combo_mult`), shrine effects (`Run.take_shrine`), burrower timing (`Run._update_burrowers`), saw, mole and spark counts (`scripts/game/tools.gd`), and enemy limits (`scripts/game/enemies.gd`).
+**Numbers still in code, not in `defs.gd`:** level blast damage of 60 (`Run.level_blast`), the combo curve (`Run.combo_mult`), shrine effects (`Run.take_shrine`), burrower timing (`Run._update_burrowers`), saw, mole and spark counts (`scripts/game/tools.gd`), enemy limits (`scripts/game/enemies.gd`), and the 1,500 gems on the floor (`Pickups.MAX`).
 
 ## 15. Measured results and quirks
 **Measured, 2026-11-02, by bots, not people.** Bots play at double speed and play worse than a person, so treat these as rough.

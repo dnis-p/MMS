@@ -774,7 +774,7 @@ func _announce_goals(delta: float) -> void:
 		return
 	_goal_timer = Defs.restart(_goal_timer, 1.0, delta)
 	if autotest and int(run_time) % 60 == 0:
-		print("t=%d level=%d gems=%d band=%d hp=%d awake=%d kills=%d" % [run_time, level, int(loot), band, player.hp, enemies.awake_count, kills])
+		print("t=%d level=%d gems=%d band=%d hp=%d awake=%d kills=%d floor=%d" % [run_time, level, int(loot), band, player.hp, enemies.awake_count, kills, pickups.g_pos.size()])
 	var now := _run_stats(int(loot * keep_share("quit")), "")
 	for g in Defs.GOALS:
 		if Profile.done.has(g["id"]) or _told.has(g["id"]) or Profile.with_run(g["stat"], now[g["stat"]]) < g["need"]:

@@ -6,6 +6,7 @@ extends Node3D
 
 const MAX := 1500
 const DRAW_RANGE := 45.0  # gems further away are off screen
+const SAMPLES := 8  # gems looked at to find far ones when the floor is full
 
 var run: Run
 
@@ -89,16 +90,40 @@ func _star_texture() -> ImageTexture:
 
 func drop_gem(p: Vector3, value: float, color: Color, xp_share := 1.0) -> void:
 	if g_pos.size() >= MAX:
-		# Too many on the floor: fold the value into a random existing gem.
-		var j := run.rng.randi() % g_pos.size()
-		g_val[j] += value
-		return
+		_make_room()
 	g_pos.append(Vector3(p.x + run.rng.randf_range(-0.2, 0.2), 0.9, p.z + run.rng.randf_range(-0.2, 0.2)))
 	g_val.append(value)
 	g_xp.append(xp_share)
 	g_col.append(color)
 	g_pull.append(0.0)
 	g_hop.append(run.rng.randf_range(4.0, 6.0))
+
+
+## The floor is full: the two farthest of a few random idle gems become one, worth both, so a new
+## drop still lands where it fell. Far ones are out of sight, so nobody sees them merge.
+func _make_room() -> void:
+	var at := run.player.global_position
+	var far := -1
+	var next := -1
+	for k in SAMPLES:
+		var i := run.rng.randi() % g_pos.size()
+		if g_pull[i] > 0.0 or i == far or i == next:
+			continue
+		var d := at.distance_squared_to(g_pos[i])
+		if far < 0 or d > at.distance_squared_to(g_pos[far]):
+			next = far
+			far = i
+		elif next < 0 or d > at.distance_squared_to(g_pos[next]):
+			next = i
+	if far < 0 or next < 0:
+		far = 0
+		next = 1
+	var total := g_val[far] + g_val[next]
+	if total > 0.0:
+		g_xp[next] = (g_val[far] * g_xp[far] + g_val[next] * g_xp[next]) / total
+	g_val[next] = total
+	for arr in [g_pos, g_val, g_xp, g_col, g_pull, g_hop]:
+		_swap_remove(arr, far)
 
 
 func update(delta: float) -> void:

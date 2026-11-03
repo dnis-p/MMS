@@ -56,6 +56,7 @@ func _process(delta: float) -> void:
 			_check_timers()
 			_check_help()
 			_check_map(r)
+			_check_full_floor(r)
 			_check_bosses(r)
 			_check_new_tools(r)
 			_check_caves(r)
@@ -233,6 +234,28 @@ func _check_chain(r: Run) -> void:
 func _clear_gems(r: Run) -> void:
 	for arr in [r.pickups.g_pos, r.pickups.g_val, r.pickups.g_xp, r.pickups.g_col, r.pickups.g_pull, r.pickups.g_hop]:
 		arr.clear()
+
+
+## With the floor full of gems, a new one still lands where it fell; two far ones merge to make room.
+func _check_full_floor(r: Run) -> void:
+	_clear_gems(r)
+	var pk := r.pickups
+	var at := r.player.global_position
+	for k in Pickups.MAX:
+		pk.drop_gem(at + Vector3(60.0 + k % 40, 0, float(k / 40)), 1.0, Color.WHITE)
+	var before := 0.0
+	for v in pk.g_val:
+		before += v
+	var drop := at + Vector3(2, 0, 0)
+	pk.drop_gem(drop, 5.0, Color.RED)
+	var after := 0.0
+	var landed := false
+	for i in pk.g_pos.size():
+		after += pk.g_val[i]
+		landed = landed or (pk.g_val[i] == 5.0 and Vector2(pk.g_pos[i].x - drop.x, pk.g_pos[i].z - drop.z).length() < 0.5)
+	_check("a full floor still takes a new gem where it fell", landed and pk.g_pos.size() == Pickups.MAX)
+	_check("and keeps the value of the gems it merged (%.0f, then %.0f)" % [before, after], is_equal_approx(after, before + 5.0))
+	_clear_gems(r)
 
 
 func _check_threats(r: Run) -> void:
