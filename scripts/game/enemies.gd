@@ -18,6 +18,12 @@ const DRAW_RANGE := 32.0
 const FORGET_RANGE := 70.0
 
 var run: Run
+## The dash clone: an awake enemy goes for it instead of you when it is closer than `decoy_taunt` times
+## its distance to you. Set by `Dash.update` each frame.
+var decoy_active := false
+var decoy_pos := Vector3.ZERO
+var decoy_radius := 0.5
+var decoy_taunt := 0.7
 
 var used := 0
 var alive_count := 0
@@ -223,6 +229,16 @@ func update(delta: float, at: Vector3, player_radius: float) -> void:
 			remove(i)
 			continue
 		up += 1
+		var d_you := d
+		var at_decoy := false
+		if decoy_active:
+			var to_decoy := decoy_pos - p
+			to_decoy.y = 0.0
+			var d_decoy := to_decoy.length()
+			if d_decoy * decoy_taunt < d_you:
+				at_decoy = true
+				to = to_decoy
+				d = d_decoy
 		var dir := to / d if d > 0.001 else Vector3.ZERO
 		var v := dir * speed[i] * (1.0 - clampf(knock[i].length() * 0.2, 0.0, 0.8))
 		if knock[i] != Vector3.ZERO:
@@ -238,8 +254,10 @@ func update(delta: float, at: Vector3, player_radius: float) -> void:
 		pos[i] = p
 		if d > 0.001:
 			yaw[i] = atan2(dir.x, dir.z)
-		if d < radius[i] + player_radius:
+		if d_you < radius[i] + player_radius:
 			run.player_hit(dmg[i])
+		if at_decoy and d < radius[i] + decoy_radius:
+			run.dash.hurt_clone(dmg[i])
 	awake_count = up
 	_render(at)
 
@@ -428,6 +446,23 @@ func hit_line(from: Vector3, dir: Vector3, length: float, half_width: float, amo
 			count += 1
 			hit(i, amount, from)
 	return count
+
+
+## How many awake enemies are within `r` of `center`, counted from the grid, so it is cheap.
+func awake_near(center: Vector3, r: float) -> int:
+	var n := 0
+	var r2 := r * r
+	for gz in range(floori((center.z - r) / CELL), floori((center.z + r) / CELL) + 1):
+		for gx in range(floori((center.x - r) / CELL), floori((center.x + r) / CELL) + 1):
+			var cell = _grid.get(Vector2i(gx, gz))
+			if cell == null:
+				continue
+			for j in cell:
+				var dx: float = pos[j].x - center.x
+				var dz: float = pos[j].z - center.z
+				if alive[j] == 1 and dx * dx + dz * dz <= r2:
+					n += 1
+	return n
 
 
 ## The closest enemy awake within `r` and not in `skip`, or -1.

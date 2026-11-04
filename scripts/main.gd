@@ -4,7 +4,8 @@ extends Node
 ## Command-line options (after `--`):
 ##   --autotest           play unattended (auto-picks upgrades, double speed)
 ##   --seed=<n>           use this random seed for the run
-##   --give=<a,b>         with --autotest, start with these tools at max level; "all" also maxes boosts
+##   --give=<a,b>         with --autotest, start with these tools at max level ("dash" is the Dash Drive, with every
+##                        mod); "all" is every tool, the Dash Drive and every boost
 ##   --shots=<dir>        with --autotest, save screenshots into <dir>
 ##   --map                with --autotest, keep the full map open, for screenshots of it
 ##   --goal=<heart|lift>  with --autotest, go for the Heart, or leave by lift after a while
@@ -80,6 +81,9 @@ func start_run() -> void:
 		run.bosses._next_at = float(_args["boss-at"])
 	if _args.has("give"):
 		var ids: Array = Defs.TOOLS.keys() if _args["give"] == "all" else Array(String(_args["give"]).split(","))
+		if ids.has("dash") or _args["give"] == "all":
+			run.dash.give_all()
+		ids.erase("dash")
 		for id in ids:
 			for k in Defs.MAX_TOOL_LEVEL:
 				run.tools.add_tool(id)
@@ -151,6 +155,7 @@ func _setup_input() -> void:
 		"move_up": [KEY_W, KEY_UP],
 		"move_down": [KEY_S, KEY_DOWN],
 		"pause": [KEY_ESCAPE, KEY_P],
+		"dash": [KEY_SPACE, KEY_SHIFT],
 		"map": [KEY_M, KEY_TAB],
 		"map_zoom_in": [KEY_EQUAL, KEY_KP_ADD],
 		"map_zoom_out": [KEY_MINUS, KEY_KP_SUBTRACT],
@@ -170,6 +175,7 @@ func _setup_input() -> void:
 		"ui_accept": JOY_BUTTON_A,
 		"ui_cancel": JOY_BUTTON_B,
 		"pause": JOY_BUTTON_START,
+		"dash": JOY_BUTTON_A,
 		"map": JOY_BUTTON_BACK,
 		"map_zoom_in": JOY_BUTTON_RIGHT_SHOULDER,
 		"map_zoom_out": JOY_BUTTON_LEFT_SHOULDER,

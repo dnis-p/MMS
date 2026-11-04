@@ -172,6 +172,16 @@ func _bonus(id: String) -> float:
 	return 1.0 + float(Defs.BOOSTS[id]["value"]) * boost(id)
 
 
+## Digging damage from Hard Edge and the shop, and size from Long Handle, for what isn't a tool, such as
+## the dash clone's blast.
+func damage_mult() -> float:
+	return _bonus("power") * (1.0 + Profile.bonus("power"))
+
+
+func size_mult() -> float:
+	return _bonus("reach")
+
+
 ## How much stronger this tool is than at level 1 without boosts. Enemies keep up with this, so what
 ## you bought in the shop stays an edge.
 func power_of(id: String) -> float:
@@ -204,9 +214,15 @@ func boost_slots() -> int:
 	return Defs.SLOTS["boosts"] + int(Profile.bonus("slots"))
 
 
+## Tool slots in use: the tools plus the Dash Drive, which sits in one of the same slots.
+func slots_used() -> int:
+	return order.size() + (1 if run.dash.owned else 0)
+
+
 ## "Tools 2/4 · Boosts 1/4", for the level-up screen.
 func slots_text() -> String:
-	return "Tools %d/%d  ·  Boosts %d/%d" % [order.size(), tool_slots(), boost_order.size(), boost_slots()]
+	return "Tools %d/%d  ·  Boosts %d/%d" % [slots_used(), tool_slots(), boost_order.size(), boost_slots()]
+
 
 func add_tool(id: String) -> void:
 	if owned.has(id):
@@ -231,6 +247,8 @@ func apply(option: Dictionary) -> void:
 			add_tool(option["id"])
 		"boost":
 			add_boost(option["id"])
+		"dash":
+			run.dash.apply(option)
 		"evolve":
 			evolved[option["id"]] = true
 			_build_slash()
@@ -241,13 +259,20 @@ func apply(option: Dictionary) -> void:
 
 func level_up_options(n: int) -> Array:
 	var pool: Array = []
-	var tool_room := order.size() < tool_slots()
+	var tool_room := slots_used() < tool_slots()
 	var boost_room := boost_order.size() < boost_slots()
 	for id in Defs.TOOLS:
 		if level(id) < Defs.MAX_TOOL_LEVEL and Profile.has_tool(id) and (owned.has(id) or tool_room):
 			pool.append(_tool_option(id))
 			if owned.has(id):
 				pool.append(_tool_option(id))  # favour what you already have
+	if run.dash.owned:
+		pool.append_array(run.dash.upgrade_options(2))
+	elif tool_room:
+		var card: Dictionary = run.dash.new_option()
+		if slots_used() == tool_slots() - 1:
+			card["hint"] = "Last tool slot"
+		pool.append(card)
 	for id in Defs.BOOSTS:
 		if boost(id) < Defs.MAX_BOOST_LEVEL and (boosts.has(id) or boost_room):
 			pool.append(_boost_option(id))
@@ -282,7 +307,7 @@ func _tool_option(id: String) -> Dictionary:
 	var t: Dictionary = Defs.TOOLS[id]
 	var lvl := level(id)
 	return {"kind": "tool", "id": id, "title": t["name"], "desc": t["desc"] if lvl == 0 else "+%d%% damage, +%d%% size" % [roundi(t["dmg_up"] * 100.0), roundi(t["size_up"] * 100.0)],
-		"hint": "Last tool slot" if lvl == 0 and order.size() == tool_slots() - 1 else "", "level_text": "NEW" if lvl == 0 else "Lv %d > %d" % [lvl, lvl + 1], "color": t["color"]}
+		"hint": "Last tool slot" if lvl == 0 and slots_used() == tool_slots() - 1 else "", "level_text": "NEW" if lvl == 0 else "Lv %d > %d" % [lvl, lvl + 1], "color": t["color"]}
 
 
 func _boost_option(id: String) -> Dictionary:

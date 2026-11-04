@@ -7,13 +7,23 @@ extends RefCounted
 const AIM_RANGE := 8.0
 const BACK_OFF := 2.5
 const LIFT_AFTER := 300.0
+const SWARM_RANGE := 5.0  # with the Dash Drive: dashes when this many awake enemies are this close
+const SWARM_SIZE := 2
 
 var goal := ""
 var _target := Vector3.ZERO
 var _left := 0.0
 
 
+## Walks as `_walk` says, and dashes the same way when it is crowded and the Dash Drive is ready.
 func steer(run: Run, delta: float) -> Vector2:
+	var v := _walk(run, delta)
+	if run.dash.can_dash() and v != Vector2.ZERO and run.enemies.awake_near(run.player.global_position, SWARM_RANGE) >= SWARM_SIZE:
+		run.dash.trigger(Vector3(v.x, 0.0, v.y))
+	return v
+
+
+func _walk(run: Run, delta: float) -> Vector2:
 	_left -= delta
 	var at := run.player.global_position
 	if _left <= 0.0 or at.distance_to(_target) < 2.0:

@@ -47,6 +47,7 @@ func _process(delta: float) -> void:
 			_check_pause(r)
 			_check_tools(r)
 			_check_slots(r)
+			_check_dash(r)
 			_check_goal(r)
 			_check_rewards(r)
 			_check_meta(r)
@@ -755,6 +756,7 @@ func _check_help() -> void:
 	var screen := float(ProjectSettings.get_setting("display/window/size/viewport_height"))
 	var keys := " ".join(Help.controls().map(func(c): return " ".join(c)))
 	_check("the controls name the map keys", keys.contains("M or Tab") and keys.contains("Back"))
+	_check("and the dash keys", keys.contains("Space or Shift"))
 	for page in ["_show_main", "_show_characters", "_show_shop", "_show_goals", "_show_help", "_show_options", "_show_reset", "_show_controls"]:
 		menu.call(page)
 		var need := menu._root.get_combined_minimum_size().y
@@ -969,6 +971,216 @@ func _check_slots(r: Run) -> void:
 	Profile.unlocked = saved[5]
 	r.apply_boosts()
 	_check_bomb_aim(r)
+
+
+## Steps the digger, the dash and the horde by hand, so the checks don't depend on frame timing.
+func _sim(r: Run, frames: int, input := Vector2.ZERO) -> void:
+	var dt := 1.0 / 60.0
+	for i in frames:
+		r.player.move(dt, input, r.mine)
+		r.dash.update(dt)
+		r.enemies.update(dt, r.player.global_position, r.player.radius)
+
+
+## A sturdy crawler that stays awake and in place until the check moves it.
+func _dummy(r: Run, at: Vector3) -> int:
+	var i := r.enemies.spawn(Enemies.CRAWLER, at, -1, true)
+	r.enemies.hp[i] = 1e6
+	r.enemies.full[i] = 1e6
+	return i
+
+
+## The Dash Drive: its slot, its upgrade cards, the dash itself, and the decoy clone with its blast.
+func _check_dash(r: Run) -> void:
+	var d := r.dash
+	var p := r.player
+	var e := r.enemies
+	var t := r.tools
+	var saved := [t.owned.duplicate(true), t.order.duplicate()]
+	r.god_mode = false
+	t.owned.clear()
+	t.order.clear()
+	t.add_tool("shovel")
+	_clear_around(r)
+	e.clear()
+	p.global_position = Vector3.ZERO
+	p.invuln = 0.0
+	p.hp = p.max_hp
+
+	var keys: Array = InputMap.action_get_events("dash").filter(func(ev): return ev is InputEventKey).map(func(ev): return (ev as InputEventKey).physical_keycode)
+	var pad: Array = InputMap.action_get_events("dash").filter(func(ev): return ev is InputEventJoypadButton).map(func(ev): return (ev as InputEventJoypadButton).button_index)
+	_check("Space and Shift dash, and so does the gamepad's A", keys.has(KEY_SPACE) and keys.has(KEY_SHIFT) and pad.has(JOY_BUTTON_A))
+
+	# Slot and cards.
+	t.add_tool("drill")
+	t.add_tool("saws")
+	var card := {}
+	for o in t.level_up_options(100):
+		if o["kind"] == "dash":
+			card = o
+	_check("level-ups offer the Dash Drive while a tool slot is free", card.get("id", "") == "dash")
+	_check("for the last free slot its card says so", card.get("hint", "") == "Last tool slot")
+	t.apply(card)
+	_check("taking it fills a tool slot (%s)" % t.slots_text(), d.owned and t.slots_used() == 4 and t.slots_text().begins_with("Tools 4/"))
+	var fresh := 0
+	for k in 100:
+		for o in t.level_up_options(3):
+			if o["kind"] in ["tool", "dash"] and o["level_text"] == "NEW" and o["id"] in ["bombs", "dash", "pulse"]:
+				fresh += 1
+	_check("with the tool slots full no new tool is offered", fresh == 0)
+	var avail := d.available_mods(d.mods)
+	_check("the clone's upgrades stay locked until the clone is taken", avail.has("clone") and not avail.has("clone_hp") and not avail.has("clone_boom"))
+	t.apply(d.mod_option("clone", 0))
+	avail = d.available_mods(d.mods)
+	_check("taking the clone unlocks them", not avail.has("clone") and avail.has("clone_hp") and avail.has("clone_boom"))
+	var dash_cards := 0
+	for k in 100:
+		dash_cards = maxi(dash_cards, t.level_up_options(3).filter(func(o): return o["kind"] == "dash").size())
+	_check("a level-up never fills all three cards with dash upgrades (%d)" % dash_cards, dash_cards >= 1 and dash_cards <= 2)
+
+	# The dash goes the way you steer, takes time, and nothing touches you.
+	var far := d.dash_distance()
+	var hp := p.hp
+	var near := _dummy(r, Vector3(0.5, 0, 0.9))
+	d.cooldown = 0.0
+	_check("a dash is ready", d.can_dash())
+	Input.action_press("move_right")
+	r._try_dash()
+	Input.action_release("move_right")
+	_check("the dash button goes the way you steer", p.bursting() and not d.can_dash())
+	_check("a dash leaves a clone where you stood", d.clone_alive() and d.clone_pos.length() < 0.01)
+	_check("and starts the cooldown (%.1f s)" % d.cooldown, is_equal_approx(d.cooldown, d.dash_cooldown()) and d.cooldown_total == d.cooldown)
+	var untouchable := true
+	var frames := 0
+	while p.bursting() and frames < 60:
+		_sim(r, 1)
+		untouchable = untouchable and p.invuln > 0.0
+		frames += 1
+	var end := p.global_position
+	_check("the dash covers its distance (%.2f of %.2f m)" % [end.x, far], absf(end.x - far) < 0.1 and absf(end.z) < 0.05)
+	_check("nothing hurts you during it, even an enemy beside you", untouchable and p.hp == hp)
+	_check("the grace lasts a moment after it (%.2f s)" % p.invuln, p.invuln > 0.0 and p.invuln <= float(Defs.DASH["base"]["grace"]))
+	e.remove(near)
+
+	# With no input it goes the way you last walked.
+	_sim(r, 1, Vector2.LEFT)
+	d.cooldown = 0.0
+	p.global_position = Vector3(0, 0, 8)
+	r._try_dash()
+	_sim(r, 30)
+	_check("standing still, it goes the way you last walked (%.1f m left)" % -(p.global_position.x), p.global_position.x < -far * 0.9 and absf(p.global_position.z - 8.0) < 0.05)
+
+	# Rock stops it, even at speed.
+	p.global_position = Vector3.ZERO
+	d.cooldown = 0.0
+	_fill(r, Vector3(4, 0, 0), 1, 5)
+	d.trigger(Vector3.RIGHT)
+	_sim(r, 30)
+	var edge: float = r.mine._world(r.mine.cell_of(4.0) - 1) - Mine.CELL * 0.5  # where the block of cubes begins
+	var stop := edge - p.radius
+	_check("a wall stops the dash (x %.2f, wall at %.2f)" % [p.global_position.x, edge], p.global_position.x <= stop + 0.05 and p.global_position.x > stop - 0.4)
+	_fill(r, Vector3(4, 0, 0), 1, 0)
+
+	# The clone: enemies close to it go for it, and it wears down.
+	e.clear()
+	p.global_position = Vector3.ZERO
+	p.invuln = 0.0
+	d.cooldown = 0.0
+	d.trigger(Vector3.RIGHT)
+	while p.bursting():
+		_sim(r, 1)
+	var at_clone := _dummy(r, d.clone_pos + Vector3(0, 0, 5))
+	var at_you := _dummy(r, p.global_position + Vector3(3, 0, 0))
+	p.invuln = 0.0
+	var before := e.pos[at_clone]
+	_sim(r, 1)
+	_check("an enemy nearer the clone heads for the clone", absf(e.pos[at_clone].x - before.x) < 0.01 and e.pos[at_clone].z < before.z - 0.02)
+	_check("an enemy nearer you still heads for you", e.pos[at_you].x < p.global_position.x + 3.0 - 0.02)
+	e.remove(at_you)
+	e.remove(at_clone)
+	var touching := _dummy(r, d.clone_pos + Vector3(0.6, 0, 0))
+	hp = p.hp
+	d._gate = 0.0
+	_sim(r, 1)
+	_check("touching the clone hurts it by the enemy's damage (%.1f of %.1f)" % [d.clone_hp, d.clone_max_hp], is_equal_approx(d.clone_hp, d.clone_max_hp - e.dmg[touching]))
+	var after_hit := d.clone_hp
+	_sim(r, 5)
+	_check("it takes one hit at a time, like you", d.clone_hp == after_hit)
+	_sim(r, 10)
+	_check("and the next one once the gap is over", d.clone_hp < after_hit)
+	_check("the car stays unharmed", p.hp == hp)
+	e.remove(touching)
+	var wide := d.clone_health()
+	t.apply(d.mod_option("clone_hp", 0))
+	_check("Reinforced Clone adds 50%% health (%.0f to %.0f)" % [wide, d.clone_health()], is_equal_approx(d.clone_health(), wide * 1.5))
+	d._gate = 0.0
+	d.hurt_clone(1e6)
+	_check("it falls when its health runs out", not d.clone_alive())
+	var gone := _dummy(r, d.clone_pos + Vector3(-2, 0, 0))
+	_sim(r, 2)
+	_check("then the horde turns back to you", not e.decoy_active)
+	_check("without the blast it just disappears", e.hp[gone] == 1e6)
+	e.remove(gone)
+
+	# The blast.
+	e.clear()
+	p.global_position = Vector3.ZERO
+	d.cooldown = 0.0
+	t.apply(d.mod_option("clone_boom", 0))
+	d.trigger(Vector3.RIGHT)
+	while p.bursting():
+		_sim(r, 1)
+	var victim := _dummy(r, d.clone_pos + Vector3(2, 0, 0))
+	d._gate = 0.0
+	d.hurt_clone(1e6)
+	_sim(r, 1)
+	var blast: float = e.full[victim] - e.hp[victim]
+	_check("Volatile Clone explodes when it falls (%.0f damage)" % blast, absf(blast - d.blast_damage()) < 0.5 and blast > 90.0)
+	e.remove(victim)
+	var first := d.blast_damage()
+	var radius := d.blast_radius()
+	t.apply(d.mod_option("clone_boom", 1))
+	_check("its second level hits 40% harder and wider", is_equal_approx(d.blast_damage(), first * 1.4) and d.blast_radius() > radius * 1.1)
+	d.cooldown = 0.0
+	d.trigger(Vector3.RIGHT)
+	d.clear()
+	_check("clearing a clone on purpose does not blow it up", not d.clone_alive())
+
+	# The other mods and what they cost.
+	var span := d.dash_distance()
+	var wait := d.dash_cooldown()
+	t.apply(d.mod_option("length", 0))
+	t.apply(d.mod_option("speed", 0))
+	t.apply(d.mod_option("recharge", 0))
+	_check("Long Dash and Dash Speed lengthen the dash (%.1f to %.1f m)" % [span, d.dash_distance()], is_equal_approx(d.dash_distance(), span * 1.2 * 1.15))
+	_check("Quick Recharge shortens the wait (%.2f to %.2f s)" % [wait, d.dash_cooldown()], is_equal_approx(d.dash_cooldown(), wait * 0.85))
+	r.dead = true
+	_check("a dead digger can't dash", not d.can_dash())
+	r.dead = false
+	d.give_all()
+	r._update_power()
+	var crowd := r.crowd
+	d.owned = false
+	d.mods.clear()
+	r._update_power()
+	_check("the Dash Drive and its mods count towards the enemies' scaling (crowd %.2f with, %.2f without)" % [crowd, r.crowd], crowd > r.crowd)
+	d.owned = true
+	r.hud.refresh(r)
+	_check("the HUD shows the dash bar once it is held", r.hud._dash_bar.visible)
+
+	# Back to how the other checks expect it.
+	d.clear()
+	d.owned = false
+	d.mods.clear()
+	d.cooldown = 0.0
+	e.clear()
+	p.global_position = Vector3.ZERO
+	p.invuln = 0.0
+	p.dash_left = 0.0
+	t.owned = saved[0]
+	t.order = saved[1]
+	r.god_mode = true
+	r.hud.refresh(r)
 
 
 ## Bombs aim themselves: a close enemy first, else rock, rock ahead first, else nothing.

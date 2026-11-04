@@ -16,6 +16,10 @@ var _combo_label: Label
 var _combo_sub: Label
 var _icons: HBoxContainer
 var _boost_icons: HBoxContainer
+var _dash_bar: ProgressBar  # the Dash Drive's cooldown, once you hold it
+var _dash_label: Label
+var _dash_text := ""
+var _dash_ready := false
 var _hint: Label
 var _fps_label: Label
 var _compass: Control
@@ -166,6 +170,25 @@ func _ready() -> void:
 	_fps_label.offset_bottom = -6
 	add_child(_fps_label)
 
+	_dash_bar = Ui.bar(Defs.DASH["color"], 20)
+	_dash_bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	_dash_bar.offset_left = 12
+	_dash_bar.offset_right = 172
+	_dash_bar.offset_top = -62
+	_dash_bar.offset_bottom = -42
+	_dash_bar.visible = false
+	add_child(_dash_bar)
+	_dash_label = Ui.label("", 15)
+	_dash_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	_dash_label.offset_left = 12
+	_dash_label.offset_right = 172
+	_dash_label.offset_top = -64
+	_dash_label.offset_bottom = -40
+	_dash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_dash_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_dash_label.visible = false
+	add_child(_dash_label)
+
 	_compass = Control.new()
 	Ui.full_rect(_compass)
 	_compass.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -296,13 +319,32 @@ func refresh(run: Node) -> void:
 		_combo_sub.text = ""
 	_combo_label.scale = _combo_label.scale.lerp(Vector2.ONE, 0.2)
 	_last_combo = combo
+	_refresh_dash(run.dash)
 	_refresh_icons(run.tools)
+
+
+## A bar that fills while the dash recharges, with the key to press once it is ready.
+func _refresh_dash(d: Dash) -> void:
+	_dash_bar.visible = d.owned
+	_dash_label.visible = d.owned
+	if not d.owned:
+		return
+	var usable := d.cooldown <= 0.0
+	_dash_bar.value = 1.0 if usable else 1.0 - d.cooldown / d.cooldown_total
+	var text := "DASH  [%s]" % ("A" if Options.pad else "Space") if usable else "DASH  %.1f" % d.cooldown
+	if text != _dash_text:
+		_dash_text = text
+		_dash_label.text = text
+	if usable != _dash_ready:
+		_dash_ready = usable
+		(_dash_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color = Defs.DASH["color"] if usable else Color(0.2, 0.45, 0.5)
 
 
 func _refresh_icons(w: Tools) -> void:
 	var key := ""
 	for id in w.order:
 		key += "%s%d," % [id, w.level(id)]
+	key += "dash," if w.run.dash.owned else ""
 	for id in w.boost_order:
 		key += "%s%d," % [id, w.boost(id)]
 	key += "%d/%d" % [w.tool_slots(), w.boost_slots()]
@@ -315,10 +357,12 @@ func _refresh_icons(w: Tools) -> void:
 		c.queue_free()
 	for id in w.order:
 		_icons.add_child(Ui.icon(Defs.TOOLS[id]["color"], str(w.level(id)), 34))
+	if w.run.dash.owned:
+		_icons.add_child(Ui.icon(Defs.DASH["color"], "D", 34))
 	for id in w.boost_order:
 		_boost_icons.add_child(Ui.icon(Defs.BOOSTS[id]["color"], str(w.boost(id)), 34))
 	# Free slots show as empty boxes, so you can see how much room is left.
-	for k in w.tool_slots() - w.order.size():
+	for k in w.tool_slots() - w.slots_used():
 		_icons.add_child(_empty_slot())
 	for k in w.boost_slots() - w.boost_order.size():
 		_boost_icons.add_child(_empty_slot())

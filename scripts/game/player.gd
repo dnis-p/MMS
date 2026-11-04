@@ -19,7 +19,11 @@ var aiming := false  # the mouse sets `heading`, moving doesn't
 var max_hp: float = Defs.DIGGER["hp"]
 var hp: float = Defs.DIGGER["hp"]
 var invuln := 0.0
+var dash_left := 0.0  # seconds left of the Dash Drive's burst
+var last_move := Vector3.FORWARD  # the way you last walked: where a dash goes when you stand still
 
+var _dash_dir := Vector3.FORWARD
+var _dash_speed := 0.0
 var _body: Node3D
 var _tool: Node3D
 var _swing_left := 0.0
@@ -66,12 +70,24 @@ func move(delta: float, input: Vector2, mine: Mine) -> void:
 		_mats[i].albedo_color = Color(1.0, 0.2, 0.15) if _hurt_left > 0.0 else _colors[i]
 	_body.visible = invuln <= 0.0 or fmod(_time * 20.0, 1.0) < 0.6  # blink while safe
 	velocity = Vector3.ZERO
+	var travel := delta
 	if input != Vector2.ZERO:
-		var dir := Vector3(input.x, 0.0, input.y).normalized()
-		velocity = dir * speed
+		last_move = Vector3(input.x, 0.0, input.y).normalized()
+	if dash_left > 0.0:
+		travel = minf(delta, dash_left)
+		dash_left -= travel
+		velocity = _dash_dir * _dash_speed
 		if not aiming:
-			heading = dir
-	var p := mine.resolve(global_position + velocity * delta, radius)
+			heading = _dash_dir
+	elif input != Vector2.ZERO:
+		velocity = last_move * speed
+		if not aiming:
+			heading = last_move
+	# Small steps, so a fast dash can't skip over a wall of cubes.
+	var steps := maxi(1, ceili(velocity.length() * travel / (Mine.CELL * 0.4)))
+	var p := global_position
+	for k in steps:
+		p = mine.resolve(p + velocity * travel / steps, radius)
 	global_position = p
 	look_at(p + heading, Vector3.UP)
 	_body.position.y = absf(sin(_time * 14.0)) * 0.1 if velocity != Vector3.ZERO else 0.0
@@ -94,3 +110,33 @@ func hurt(amount: float) -> bool:
 func swing() -> void:
 	_swing_left = 0.14
 	_swing_side = -_swing_side
+
+
+func bursting() -> bool:
+	return dash_left > 0.0
+
+
+## Starts the Dash Drive's burst: `dash_speed` m/s along `dir` for `time` seconds, and no hit can land
+## for `grace` seconds longer. You can't steer until it ends.
+func start_dash(dir: Vector3, dash_speed: float, time: float, grace: float) -> void:
+	_dash_dir = dir
+	_dash_speed = dash_speed
+	dash_left = time
+	invuln = maxf(invuln, time + grace)
+
+
+## Turns this body into a translucent hologram tinted `tint`, for the dash clone. Call it once the
+## body is built, that is after it has joined the tree.
+func make_ghost(tint: Color) -> void:
+	for i in _mats.size():
+		var m := _mats[i]
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_colors[i] = Color(_colors[i].lerp(tint, 0.65), 0.5)
+		m.albedo_color = _colors[i]
+
+
+## White flash for the ghost when enemies hit it (a ghost never runs `move`, which does the red flash).
+func ghost_flash(on: bool) -> void:
+	for i in _mats.size():
+		_mats[i].albedo_color = Color(1, 1, 1, 0.85) if on else _colors[i]

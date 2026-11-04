@@ -11,6 +11,7 @@ PC only for now.
 | Action | Control |
 | --- | --- |
 | Move | WASD or arrows, or left stick or d-pad |
+| Dash | Space or Shift, or A: once you hold the Dash Drive (a level-up card), a burst of speed the way you move |
 | Aim | Mouse (only the direction counts), or right stick |
 | Menus and upgrades | Mouse, or arrows and Enter, or left stick or d-pad and A (B goes back) |
 | Pause | Esc or P, or Start |
@@ -30,7 +31,7 @@ Movement is instant, like a 2D game, and separate from aiming. Tools dig by them
 and each level-up lets you pick 1 of 3 tools or boosts and blasts the rock around you. Crystal goes off as a chain reaction.
 
 A run ends when you break the Heart, leave by lift (green arrow, stand on it, from 30 s on), die or give up. Lifts and the Heart keep all your gems, the others half. Nothing points at the Heart: you hear it beat from 120 m away, and pink veins in the rock get thicker toward it. It is sealed until two bosses are dead, who come for you at 3:30 and 7:00.
-Each run holds 4 different tools and 4 boosts; the Tool Belt in the shop raises that to 6. Banked gems buy upgrades in the shop, and goals unlock characters and tools. Geodes burst into gems, vaults hold ore, shrines offer a trade and relics are yours for good: they all sparkle through the fog. Orange fuel seams burn along their whole length once lit, and cracked pale rock brings rubble down on the tunnels around it, crushing what stands there. A long combo starts a Frenzy. "Reset progress" on the main menu erases your save.
+Each run holds 4 different tools and 4 boosts; the Tool Belt in the shop raises that to 6. The Dash Drive is a card that takes a tool slot: it is the one thing you press, a short untouchable dash, with cards that lengthen it, speed it up, shorten its wait, and leave a decoy clone that enemies attack (which can gain health and explode). Banked gems buy upgrades in the shop, and goals unlock characters and tools. Geodes burst into gems, vaults hold ore, shrines offer a trade and relics are yours for good: they all sparkle through the fog. Orange fuel seams burn along their whole length once lit, and cracked pale rock brings rubble down on the tunnels around it, crushing what stands there. A long combo starts a Frenzy. "Reset progress" on the main menu erases your save.
 
 ## Commands
 Run from the repo root after importing once (`godot --headless --path . --import`):
@@ -39,13 +40,14 @@ godot --headless --path . res://tests/dig_check.tscn              # digging rule
 godot --headless --path . -- --autotest --quit-after-sec=60       # smoke test: a bot plays
 godot --path . -- --autotest --quit-after-sec=20 --shots=<dir>    # screenshots of a bot playing (needs a display)
 ```
-Options after `--`: `--autotest`, `--seed=<n>`, `--give=<tools>` (or `all`), `--goal=<heart|lift>`, `--char=<id>`, `--unlocked`, `--shop=<level>`, `--god`, `--near-heart`, `--boss-at=<s>`, `--shots=<dir>`, `--quit-after-sec=<n>`. Bots never touch your save.
+Options after `--`: `--autotest`, `--seed=<n>`, `--give=<tools>` (or `all`; `dash` is the Dash Drive with every upgrade), `--goal=<heart|lift>`, `--char=<id>`, `--unlocked`, `--shop=<level>`, `--god`, `--near-heart`, `--boss-at=<s>`, `--shots=<dir>`, `--quit-after-sec=<n>`. Bots never touch your save.
 
 ## Layout
 - `scripts/data/defs.gd`: every number: cubes, bands, tools, boosts, shop, goals, camera.
 - `scripts/data/profile.gd`: what carries over between runs, the save file.
 - `scripts/game/mine.gd`: the cube world, hits, ripples, chain reactions, collision.
 - `scripts/game/tools.gd`: tools, boosts and level-up choices.
+- `scripts/game/dash.gd`: the Dash Drive: dash, its upgrade cards and the decoy clone.
 - `scripts/game/enemies.gd`, `traps.gd`: enemies and nests, spike plates and gas rock.
 - `scripts/game/sites.gd`: lifts, shrines and relics.
 - `scripts/game/bosses.gd`: the two guardians and when they come.

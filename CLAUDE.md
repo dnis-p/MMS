@@ -12,6 +12,7 @@ formulas, scaling, what to edit for a tweak) is in docs/MECHANICS.md.
 - Top-down 3D for now. World of small cubes, smaller than Minecraft's.
 - Movement is instantly responsive, like 2D games such as VS or Enter the Gungeon, and separate from aiming: the mouse aims.
 - Even the starter shovel hits multiple cubes.
+- Tools fire by themselves, with one exception (owner, 2026-11-04): the Dash Drive, a tool-slot item you press (Space or Shift, gamepad A) for a short untouchable dash the way you move. Its upgrades come as level-up cards, including a decoy clone enemies attack and its health and explosion cards.
 - Enemies and traps exist now (owner, 2026-11-01), but digging feel still comes first. No theme yet, so no specific models.
 - Fog of war, like an ARPG dungeon: the digger's light shows what is near, and you can only dig what you can see. It has a switch in the menus.
 - The fog follows what you have opened or seen: rings thickening with distance, square and on the cube grid, over rock and unseen caves alike, and the path behind you stays clear but dims away from your lamp (owner's mockups, 2026-11-01).
@@ -26,7 +27,7 @@ formulas, scaling, what to edit for a tweak) is in docs/MECHANICS.md.
 ## Verify changes
 Run from the repo root after the project has been imported once (`godot --headless --path . --import`):
 - Rules: `godot --headless --path . res://tests/dig_check.tscn` must end with `DIG CHECK PASSED`.
-- Bots can die: check `died:` and `hits=` over several `--seed` values when changing threats. `--give=all` tests late game, `--goal=heart` and `--goal=lift` test how a run ends, `--unlocked --shop=<n> --char=<id>` test a later profile. `--god` measures a whole run, as bots rarely survive one; `--near-heart` and `--boss-at=<s>` get to those sooner.
+- Bots can die: check `died:` and `hits=` over several `--seed` values when changing threats. `--give=all` tests late game (it includes the Dash Drive; `--give=dash` is that alone), `--goal=heart` and `--goal=lift` test how a run ends, `--unlocked --shop=<n> --char=<id>` test a later profile. `--god` measures a whole run, as bots rarely survive one; `--near-heart` and `--boss-at=<s>` get to those sooner.
 - Smoke test: `godot --headless --path . -- --autotest --quit-after-sec=60`. Output ends with `level= cubes= score=`; any
   `SCRIPT ERROR` is a failure. Add `--seed=<n>` to fix the rolls.
 - Screenshots of a bot playing (needs a display): `godot --path . -- --autotest --quit-after-sec=20 --shots=<dir>`
@@ -40,6 +41,7 @@ Parse errors that mention `Sfx` only occur when scripts are checked standalone (
 
 ## Known gaps / next ideas
 - Feel and sound are unproven until the owner plays: nobody has listened to the sounds.
+- The Dash Drive (6 m dash, 3 s wait, the clone's health and blast, the gamepad's A) is checked by rule checks, bots and screenshots only. Nobody has tried it by hand.
 - Progression (Heart, lifts, gem bank, shop, goals, characters, rooms, bosses, evolutions, upgrade slots) is a first version for testing. Prices, goals and difficulty are first guesses.
 - A run lasts about 10 minutes because the Heart is sealed until both bosses are dead, not because of the walk: bots cross the map in 90 s.
 - Mouse aiming (hidden captured pointer, arrow on a ring) is untested with a real mouse, and the capture is untested in a browser. Gamepad play, including rumble, is tested only with simulated input, not a real controller.
