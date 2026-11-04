@@ -60,7 +60,7 @@ Goals are checked and paid only here, at the end of a run, and their gems are no
 
 **Cards:** eligible evolutions always come first, then random picks. Each unlocked tool or boost below max is in the draw, and owned tools count twice, so you tend to get what you already have. If nothing is left you get +500 score (`Defs.FILLER_SCORE`).
 
-**Slots:** a run holds at most `SLOTS.tools` = 4 different tools and `SLOTS.boosts` = 4 boosts, the starting tool included, plus 1 of each per Tool Belt level (up to 6 and 6). When a kind is full, new ones of that kind leave the draw and only levels of what you hold are offered. Evolutions don't need a slot. A NEW card for the last free slot carries the hint "Last tool slot" or "Last boost slot". The HUD shows free slots as dim empty boxes, and the level-up screen shows `Tools n/max · Boosts n/max`. Bots' `--give` ignores slots.
+**Slots:** a run holds at most `SLOTS.tools` = 4 different tools and `SLOTS.boosts` = 4 boosts, the starting tool included, plus 1 of each per Tool Belt level (up to 6 and 6). When a kind is full, new ones of that kind leave the draw and only levels of what you hold are offered. Evolutions don't need a slot. A NEW card for the last free slot carries the hint "Last tool slot" or "Last boost slot". The HUD shows free slots as dim empty boxes, and the level-up screen shows `Tools n/max · Boosts n/max`. Bots' `--give` ignores slots. The Dash Drive (section 6) takes one of the tool slots, and counts in all of those.
 
 ## 5. The digger
 
@@ -141,6 +141,26 @@ A tool at max level plus `Defs.EVOLVE_BOOST` = 3 levels of the named boost offer
 | spark | magnet | Storm Coil | Twice as many jumps. +50% damage. |
 | moles | tough | Mole Army | Two more moles, biting twice as hard. |
 
+### Dash Drive
+The one thing you press: Space or Shift, or the gamepad's A (`dash` action). It takes one tool slot, is a level-up card like a tool, is never locked, and has no levels or evolution. All numbers are in `Defs.DASH`, the code in `scripts/game/dash.gd` and `Player.move`.
+
+| Stat | Formula |
+| --- | --- |
+| Dash | `DASH.base.speed` = 30 m/s for `DASH.base.time` = 0.2 s, so 6 m. Speed and time are the two numbers the mods change |
+| Speed | `30 * (1 + 0.15 * Dash Speed)` |
+| Time | `0.2 * (1 + 0.2 * Long Dash)`. Distance is speed times time |
+| Untouchable | The dash's time plus `DASH.base.grace` = 0.15 s. This sets `Player.invuln`, so it also blinks you |
+| Cooldown | `3 * (1 - 0.15 * Quick Recharge)`, counted from the moment you press |
+| Direction | The way you are steering. With no input, the way you last walked (`Player.last_move`). Mouse aim and the right stick don't matter |
+
+- **While dashing** you can't steer, tools keep firing, and your facing follows your aim as always. Rock stops you, and the move is split into steps of at most 0.2 m (`Mine.CELL * 0.4`) so it can't skip a wall.
+- **Mods** (`DASH.mods`, three levels each unless said): Long Dash, Dash Speed, Quick Recharge, Decoy Clone (one level). Reinforced Clone and Volatile Clone need Decoy Clone first and don't show without it. A level-up adds at most two random Dash Drive cards to the draw, so they never fill the three.
+- **Not while** dead or leaving by lift, or in the middle of a dash.
+- **The clone.** Each dash with Decoy Clone leaves one where you stood: a translucent copy of your body with a health bar. Health is `max health * DASH.clone.hp_frac` = 1.2 `* (1 + 0.5 * Reinforced Clone)`. It lasts `DASH.clone.life` = 8 s and blinks for the last 1.5. A new dash pops a clone that still stands before it makes the next. It goes at the end of a run without a blast.
+- **Who goes for it.** Every awake enemy, bosses included, compares its distance to you with its distance to the clone: if the clone is closer than `DASH.clone.taunt` = 0.7 times the distance to you, the enemy walks to the clone and attacks that. Sleepers don't care. Enemies not near the clone still come for you. Touching it hurts it by the enemy's own damage (`Enemies.dmg`, already scaled by your build and depth), at most once per `DASH.clone.hit_gate` = 0.2 s, however many touch it.
+- **The blast** (Volatile Clone, three levels). When the clone falls, from health or time or being replaced, it breaks rock and hurts enemies in `DASH.clone.boom_radius` = 3.5 m `* (1 + 0.12 * (level - 1)) * Long Handle` for `boom_dmg` = 100 `* (1 + 0.4 * (level - 1)) * Hard Edge * shop damage`. Through fog only the rock you can see breaks, as with Bombs. Enemies hit are pushed away like any hit.
+- **Scaling.** It counts as one upgrade, plus one per mod level, in `upgrades` (section 8), so a full drive is worth 17.
+
 ## 7. Enemies
 
 | Enemy | HP | Speed | Radius | Contact dmg | Gem value | Score | Knock |
@@ -175,7 +195,7 @@ Three things scale the threat: your build, distance from the start, and run time
 **From your build.** Recomputed every frame in `Run._update_power()`:
 
 ```
-upgrades = max(0, (sum of tool levels + sum of boost levels) - 1 - free_upgrades)
+upgrades = max(0, (sum of tool levels + sum of boost levels + Dash Drive upgrades) - 1 - free_upgrades)
 best     = highest power_of among owned tools
 
 hardness = best ^ hard_power * (1 + tough_per * upgrades)   enemy health
@@ -400,6 +420,7 @@ Beam has no goal: it comes from the Strange Lens relic. Stats add up across runs
 | Upgrade slots | `Defs.SLOTS`, the Tool Belt in `Defs.SHOP` |
 | Aim feel and marker | `Defs.AIM`, `CAMERA.aim_lean` |
 | New tool | `Defs.TOOLS`, plus its firing in `scripts/game/tools.gd` |
+| The dash and its clone | `Defs.DASH`: base dash, each mod, the clone and its blast. The code is in `scripts/game/dash.gd` |
 | New enemy | `Defs.ENEMIES`, `Defs.ENEMY_ORDER`, plus a mesh and constant in `scripts/game/enemies.gd` |
 
 **Numbers still in code, not in `defs.gd`:** level blast damage of 60 (`Run.level_blast`), the combo curve (`Run.combo_mult`), shrine effects (`Run.take_shrine`), burrower timing (`Run._update_burrowers`), saw, mole and spark counts (`scripts/game/tools.gd`), enemy limits (`scripts/game/enemies.gd`), and the 1,500 gems on the floor (`Pickups.MAX`).
