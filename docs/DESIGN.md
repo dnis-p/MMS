@@ -575,6 +575,7 @@ digging entries are the first ones in sections 8 and 9.
   in that boss fight. The bot never dashes or switches rings, so this is not a measure of real balance.
 
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
+**Owner, 2026-11-04, art style: Decided, low-poly pixel 3D** ("it has to be lowpoly 100%"; picked "Pixel 3D" after Claude described the owner's Pinterest board). Low-poly models with low-res pixel-art textures, chunky toy proportions, a spooky-but-cute mood, dark bodies with one glowing accent. Textures were undecided between little and more detail, and pixel art was the owner's own option. The owner makes the models with Meshy AI. The style guide, the rules from how the game draws things, and a prompt for every model the game has are in docs/ART.md. The creature designs in those prompts are **(suggested)**, and the theme is still open. No model is in the game yet.
 **Owner, 2026-11-04, about 10 tools and 10 boosts** ("i need ideas for new tools and boosts. I want to have about 10 of each"). There are 8 tools and 6 boosts now, so this means 2 more tools and 4 more boosts. Not picked or built yet. The ideas below are all **(suggested)**, to choose from:
 - Tools (suggested):
   - **Runaway Cart:** a mine cart shoots off the way you aim and ploughs through rock, bouncing off bedrock and hard rock a few times. It crosses the whole screen.

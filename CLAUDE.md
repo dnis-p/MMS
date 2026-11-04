@@ -13,7 +13,9 @@ formulas, scaling, what to edit for a tweak) is in docs/MECHANICS.md.
 - Movement is instantly responsive, like 2D games such as VS or Enter the Gungeon, and separate from aiming: the mouse aims.
 - Even the starter shovel hits multiple cubes.
 - Tools fire by themselves, with one exception (owner, 2026-11-04): the Dash Drive, a tool-slot item you press (Space or Shift, gamepad A) for a short untouchable dash the way you move. Its upgrades come as level-up cards, including a decoy clone enemies attack and its health and explosion cards.
-- Enemies and traps exist now (owner, 2026-11-01), but digging feel still comes first. No theme yet, so no specific models.
+- Enemies and traps exist now (owner, 2026-11-01), but digging feel still comes first. No theme yet.
+- Art style is low-poly pixel 3D (owner, 2026-11-04): docs/ART.md has the style, the rules models must follow, and Meshy
+  prompts. The owner's reference images are in `art-refs/`, ignored by git and Godot: never commit them, they are other people's work.
 - Fog of war, like an ARPG dungeon: the digger's light shows what is near, and you can only dig what you can see. It has a switch in the menus.
 - The fog follows what you have opened or seen: rings thickening with distance, square and on the cube grid, over rock and unseen caves alike, and the path behind you stays clear but dims away from your lamp (owner's mockups, 2026-11-01).
 - PC only for now (owner, 2026-10-31). Keep input as actions and UI anchored.
