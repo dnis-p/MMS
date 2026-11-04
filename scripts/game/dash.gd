@@ -72,14 +72,15 @@ func new_option() -> Dictionary:
 		"level_text": "NEW", "color": d["color"]}
 
 
-## The card for mod `id` going from level `lvl` to the next.
+## The card for mod `id` going from level `lvl` to the next. Never "NEW", even for a mod's first level:
+## a mod upgrades the Dash Drive you hold and takes no slot, and NEW means a card that fills one.
 func mod_option(id: String, lvl: int) -> Dictionary:
 	var m: Dictionary = Defs.DASH["mods"][id]
 	var hint: String = Defs.DASH["name"]
 	if m["needs"] != "":
 		hint += " · " + Defs.DASH["mods"][m["needs"]]["name"]
 	return {"kind": "dash", "id": id, "title": m["name"], "desc": m["up"][lvl], "hint": hint,
-		"level_text": "NEW" if lvl == 0 else "Lv %d > %d" % [lvl, lvl + 1], "color": Defs.DASH["color"]}
+		"level_text": "Lv %d > %d" % [lvl, lvl + 1], "color": Defs.DASH["color"]}
 
 
 ## Up to `n` random mod cards. A level-up offers only a couple, so the Dash Drive competes with the

@@ -1028,6 +1028,11 @@ func _check_dash(r: Run) -> void:
 			if o["kind"] in ["tool", "dash"] and o["level_text"] == "NEW" and o["id"] in ["bombs", "dash", "pulse"]:
 				fresh += 1
 	_check("with the tool slots full no new tool is offered", fresh == 0)
+	var mod_new := 0
+	for id in Defs.DASH["mods"]:
+		if d.mod_option(id, 0)["level_text"] == "NEW":
+			mod_new += 1
+	_check("a dash upgrade's first level is not marked NEW (%s)" % d.mod_option("length", 0)["level_text"], mod_new == 0)
 	var avail := d.available_mods(d.mods)
 	_check("the clone's upgrades stay locked until the clone is taken", avail.has("clone") and not avail.has("clone_hp") and not avail.has("clone_boom"))
 	t.apply(d.mod_option("clone", 0))

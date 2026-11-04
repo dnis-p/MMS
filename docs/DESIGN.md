@@ -161,6 +161,10 @@ digging entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-04, dash upgrade cards no longer say NEW** (owner: the Dash Drive "occupies only 1 slot but when it gets upgrades, it has slightly different name (like long dash) and it still says NEW on those cards, even though its not a new card")
+- Checked: the owner was right. A mod's first level (Long Dash, Dash Speed, Quick Recharge, Decoy Clone and the two clone mods) was labelled NEW, like a card that fills a slot, though mods never take a slot. Only the Dash Drive card counts toward the tool slots.
+- Now mod cards always show their level, in the same gold as tool levels: "Lv 0 > 1" for the first, then "Lv 1 > 2" and on. The Dash Drive card itself still says NEW. Their titles stay the mod names, with "Dash Drive" in the hint line below. A rule check covers it.
+
 **2026-11-04, DIG is the whole repo now: branch `main`, repo `dnis-p/dig`** (owner: "get rid of the car game/branch and make the dig one the main branch", "rename the branch to main", "rename the repo to dig or something like that")
 - The digging branch `prototype/dig` became `main`, the default branch. The car game's branch `claude/sleepy-davinci-fxgwnn` was deleted, and its last version is kept as the tag `car-game` (the owner chose a tag over deleting it outright). The car game's older commits are still in `main`'s history, since DIG started from it.
 - The repo is renamed from MMS to `dig`, so the game is now at https://dnis-p.github.io/dig/. The old addresses (/MMS/ and /MMS/dig/) stop working.
