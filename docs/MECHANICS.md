@@ -347,7 +347,7 @@ Rubble has 6 health and gives no XP. Enemies that dig go through it, so its use 
 ## 13. Between runs
 The main menu's How to play page (`scripts/ui/help.gd`) explains this to players in plain words. Its numbers are read from `Defs`, but its sentences are written by hand, so update them when a rule they describe changes.
 
-Saved in `user://profile.cfg`: gems, shop levels, unlocks, finished goals, relics and lifetime stats. On Windows that is `%APPDATA%/MMS-Dig`. The menu has a Reset progress button.
+Saved in `user://profile.cfg`: gems, shop levels, unlocks, finished goals, relics and lifetime stats. On Windows that is `%APPDATA%/Dig`. The menu has a Reset progress button.
 
 | Id | Name | Per level | Max | Prices |
 | --- | --- | --- | --- | --- |

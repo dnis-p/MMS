@@ -2,6 +2,7 @@ name: Builds
 
 on:
   push:
+    branches: ["**"]  # not tags: they only mark old commits
   workflow_dispatch:
 
 permissions:

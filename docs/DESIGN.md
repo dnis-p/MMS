@@ -165,7 +165,9 @@ digging entries are the first ones in sections 8 and 9.
 - The digging branch `prototype/dig` became `main`, the default branch. The car game's branch `claude/sleepy-davinci-fxgwnn` was deleted, and its last version is kept as the tag `car-game` (the owner chose a tag over deleting it outright). The car game's older commits are still in `main`'s history, since DIG started from it.
 - The repo is renamed from MMS to `dig`, so the game is now at https://dnis-p.github.io/dig/. The old addresses (/MMS/ and /MMS/dig/) stop working.
 - The site used to be built by the car game's workflow, which built both games. Now DIG's own workflow publishes it on every push to `main`, after the smoke test, web build and APK. The `dig_only` shortcut is gone, as there is nothing else to skip.
-- The Android app shows as DIG and builds as `dig.apk` (was "MMS Prototype", `mms-prototype.apk`), with the same app ID, so it still updates the copy on the phone. Saves stay in `%APPDATA%/MMS-Dig`, so progress carries over.
+- The Android app shows as DIG and builds as `dig.apk` (was "MMS Prototype", `mms-prototype.apk`). Its app ID is now `com.dnisp.dig` (was `com.mmsprototype.game`): the owner has no copy on a phone yet, so nothing is lost, but it should stay fixed from now on.
+- Saves moved from `%APPDATA%/MMS-Dig` to `%APPDATA%/Dig` (owner: "could it be just Dig"). The old folder held only `options.cfg` (no dig progress: the owner plays in the browser), which was copied over. The old folder is still there.
+- Builds no longer run when only a tag is pushed.
 - The owner's local folder path was removed from CLAUDE.md, and from every old commit (owner's choice), which changed all commit IDs. The tags `fog-grid-squares` and `fog-soft-rings` were moved to the rewritten commits.
 
 **2026-11-04, enemies arrive off screen, and a swarm is three waves** (owner: "Id like for all enemies to spawn outside of the camera because right now the player can see they just appear out of nowhere", and "lets try making the swarm last at least 2/3 waves and see if its manageable")

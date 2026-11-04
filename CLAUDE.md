@@ -35,8 +35,8 @@ Parse errors that mention `Sfx` only occur when scripts are checked standalone (
 ## Release flow
 - Every push is built and tested by CI (.github/workflows/android-apk.yml): smoke test, web build, APK. A push to `main`
   then publishes the web build at https://dnis-p.github.io/dig/ (job `deploy-pages`, after the APK).
-- The Android app is called DIG and builds as `build/dig.apk`, but keeps the app ID `com.mmsprototype.game`, so it still
-  updates the copy already on the owner's phone. Changing that ID would make it a separate app.
+- The Android app is called DIG, builds as `build/dig.apk` and has the app ID `com.dnisp.dig`. Once the app is on phones or a
+  store, don't change that ID: Android would treat it as a separate app, with its own saves.
 
 ## Known gaps / next ideas
 - Feel and sound are unproven until the owner plays: nobody has listened to the sounds.
@@ -74,5 +74,5 @@ docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 
 - Android Studio is installed; the Android SDK and Java are set in the Godot editor, so APKs can be exported
   from the editor (Project > Export). `tools/android/build_apk.sh` and `tools/web/build_web.sh` call `godot`
   from PATH, so they need a `godot` alias/shim to the console exe in Git Bash (bash itself is available).
-- Saves are in `%APPDATA%/MMS-Dig`, where `profile.cfg` holds the owner's progress: don't delete it without asking, and keep `config/custom_user_dir_name` as it is, or the progress is left behind. The old car game's saves are still in `%APPDATA%/MMS`.
+- Saves are in `%APPDATA%/Dig` (`config/custom_user_dir_name`): `options.cfg`, and `profile.cfg` once a run is saved. Don't delete them without asking, and don't rename the folder without moving them. The owner plays mostly in the browser, where saves live in browser storage. `%APPDATA%/MMS-Dig` is the old folder (since 2026-11-04) and `%APPDATA%/MMS` the old car game's.
 - `icon.svg.import` shows as modified after imports (line endings); ignore it, don't commit it.
