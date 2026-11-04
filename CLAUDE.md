@@ -66,10 +66,10 @@ docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 
    anything that costs money, or anything that changes a "Decided" item.
 
 ## Local setup (owner's Windows machine)
-- Godot 4.7.2 lives in the folder `../Godot_v4.7.2-stable_win64.exe/`
+- Godot 4.7.2 lives in the folder `../Godot_v4.7.2-stable_win64.exe/`, next to the repo folder
   (the folder name ends in .exe). Binaries inside: `Godot_v4.7.2-stable_win64.exe` (GUI) and
   `Godot_v4.7.2-stable_win64_console.exe` (use this one for headless runs so output reaches the terminal).
-  It is not on PATH. In Git Bash:
+  It is not on PATH. In Git Bash, from the repo root:
   `G="../Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe"`
   then `"$G" --headless --path . --import` and `"$G" --headless --path . -- --autotest --quit-after-sec=60`.
 - Android Studio is installed; the Android SDK and Java are set in the Godot editor, so APKs can be exported
