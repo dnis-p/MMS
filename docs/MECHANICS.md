@@ -1,6 +1,6 @@
 # DIG: how the game works
 
-Technical reference for the `prototype/dig` branch: the rules as they are now, not how they got there. Written so a person or a model can reason about tweaks without reading all the code.
+Technical reference for DIG: the rules as they are now, not how they got there. Written so a person or a model can reason about tweaks without reading all the code.
 
 - **The code wins.** All balance numbers live in `scripts/data/defs.gd`. If this file and `defs.gd` disagree, `defs.gd` is right, and this file needs fixing.
 - **Names.** `RUN.cave_r` means key `cave_r` in the `Defs.RUN` dictionary. The same goes for `THREATS`, `WORLD`, `FRENZY`, `DIGGER`, `CAMERA`, `AIM` and `PAD`.

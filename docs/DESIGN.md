@@ -4,9 +4,9 @@ Living document. The owner's words and decisions come first; Claude's suggestion
 **(suggested)** and are only ideas until the owner says yes. Anything marked **Decided** should not be
 changed without asking. Add new ideas at the bottom of the right section, with the date if useful.
 
-**Branch `prototype/dig` (2026-10-31):** this branch is the digging prototype. The car game lives on, unchanged, on the default
-branch `claude/sleepy-davinci-fxgwnn`, so sections 1-5 and the older entries below describe that game, not this one. The digging
-entries are the first ones in sections 8 and 9.
+**DIG (since 2026-10-31):** this repo is the digging prototype, on branch `main`. It started from a car game (MMS), retired on
+2026-11-04 and kept only as the tag `car-game`, so sections 1-5 and the older entries below describe that game, not this one. The
+digging entries are the first ones in sections 8 and 9.
 
 ## 1. Vision (owner)
 - (owner, 2026-10-30) Update: PC is the priority, and the fixed path is replaced by open maps with free 8-direction
@@ -161,6 +161,13 @@ entries are the first ones in sections 8 and 9.
 - Which of the section 6 ideas does the owner want first?
 
 ## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+**2026-11-04, DIG is the whole repo now: branch `main`, repo `dnis-p/dig`** (owner: "get rid of the car game/branch and make the dig one the main branch", "rename the branch to main", "rename the repo to dig or something like that")
+- The digging branch `prototype/dig` became `main`, the default branch. The car game's branch `claude/sleepy-davinci-fxgwnn` was deleted, and its last version is kept as the tag `car-game` (the owner chose a tag over deleting it outright). The car game's older commits are still in `main`'s history, since DIG started from it.
+- The repo is renamed from MMS to `dig`, so the game is now at https://dnis-p.github.io/dig/. The old addresses (/MMS/ and /MMS/dig/) stop working.
+- The site used to be built by the car game's workflow, which built both games. Now DIG's own workflow publishes it on every push to `main`, after the smoke test, web build and APK. The `dig_only` shortcut is gone, as there is nothing else to skip.
+- The Android app shows as DIG and builds as `dig.apk` (was "MMS Prototype", `mms-prototype.apk`), with the same app ID, so it still updates the copy on the phone. Saves stay in `%APPDATA%/MMS-Dig`, so progress carries over.
+- The owner's local folder path was removed from CLAUDE.md, and from every old commit (owner's choice), which changed all commit IDs. The tags `fog-grid-squares` and `fog-soft-rings` were moved to the rewritten commits.
+
 **2026-11-04, enemies arrive off screen, and a swarm is three waves** (owner: "Id like for all enemies to spawn outside of the camera because right now the player can see they just appear out of nowhere", and "lets try making the swarm last at least 2/3 waves and see if its manageable")
 - Before, enemies came in at fixed distances: the swarm 15 m from the digger, horde rings 13 to 16 m, burrowers 18 m, bosses 24 m. The camera shows about 16 m above the digger, 10 m below and 12 m to each side, more toward the corners (at 16:9), so many of them appeared on screen.
 - Now the swarm, hordes, burrowers and bosses start 2.5 m past the edge of what the camera shows, plus up to 3 m more (`THREATS.spawn_margin`, `spawn_depth`). The edge comes from where the screen's corners meet the ground, so it follows the real camera and window shape. A horde ring is no longer round but shaped like the screen. Bosses still start at least 24 m away, and when one is pulled back after you outrun it, it lands off screen too. Near the mine's edge, a spot that would be pulled into view is skipped.

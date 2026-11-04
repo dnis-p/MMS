@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds a signed arm64 APK into build/mms-prototype.apk.
+# Builds a signed arm64 APK into build/dig.apk.
 #
 # Needs: Godot 4.7 on PATH as `godot` with Android export templates installed,
 # Java 17+, and python3 with the `cryptography` package.
@@ -38,10 +38,10 @@ PY
 
 mkdir -p build
 godot --headless --path . --import >/dev/null 2>&1 || true
-godot --headless --path . --export-release "Android" build/mms-unsigned.apk
+godot --headless --path . --export-release "Android" build/dig-unsigned.apk
 python3 tools/android/sign_apk_v2.py \
 	--key tools/android/debug-key/debug_key.pem \
 	--cert tools/android/debug-key/debug_cert.der \
-	build/mms-unsigned.apk build/mms-prototype.apk
-rm build/mms-unsigned.apk
-echo "Built build/mms-prototype.apk"
+	build/dig-unsigned.apk build/dig.apk
+rm build/dig-unsigned.apk
+echo "Built build/dig.apk"

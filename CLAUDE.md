@@ -1,7 +1,7 @@
-# DIG (working title), branch `prototype/dig`
+# DIG (working title)
 
-Top-down 3D digging prototype in Godot 4.7, GDScript only, placeholder art and sound. It started from the car game (MMS),
-which stays unchanged on the default branch `claude/sleepy-davinci-fxgwnn`: don't change that game from this branch.
+Top-down 3D digging prototype in Godot 4.7, GDScript only, placeholder art and sound. Repo `dnis-p/dig`, branch `main`.
+It started from a car game (MMS), which was retired on 2026-11-04: its last version is kept only as the tag `car-game`.
 See README.md for controls and layout. **Ideas and decisions are in docs/DESIGN.md: read the branch note at its top, and add any
 new idea or decision the owner gives you there (mark owner's words vs your suggestions).** How the game works right now (rules,
 formulas, scaling, what to edit for a tweak) is in docs/MECHANICS.md.
@@ -33,11 +33,10 @@ Run from the repo root after the project has been imported once (`godot --headle
 Parse errors that mention `Sfx` only occur when scripts are checked standalone (autoloads missing).
 
 ## Release flow
-- Every push to this branch is built and tested by CI (.github/workflows/android-apk.yml), then published at
-  https://dnis-p.github.io/MMS/dig/ by the default branch's workflow, which this branch's workflow starts. The car game stays at /MMS/.
-- Pages publishes the whole site at once, so that workflow rebuilds the car game's web build too. This branch starts it with
-  `dig_only=true` as soon as its smoke test and web build pass, before its own APK, and that skips the car game's smoke
-  test and APK. The input lives in the default branch's workflow, so it has to be there before this branch passes it.
+- Every push is built and tested by CI (.github/workflows/android-apk.yml): smoke test, web build, APK. A push to `main`
+  then publishes the web build at https://dnis-p.github.io/dig/ (job `deploy-pages`, after the APK).
+- The Android app is called DIG and builds as `build/dig.apk`, but keeps the app ID `com.mmsprototype.game`, so it still
+  updates the copy already on the owner's phone. Changing that ID would make it a separate app.
 
 ## Known gaps / next ideas
 - Feel and sound are unproven until the owner plays: nobody has listened to the sounds.
@@ -75,5 +74,5 @@ docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 
 - Android Studio is installed; the Android SDK and Java are set in the Godot editor, so APKs can be exported
   from the editor (Project > Export). `tools/android/build_apk.sh` and `tools/web/build_web.sh` call `godot`
   from PATH, so they need a `godot` alias/shim to the console exe in Git Bash (bash itself is available).
-- The car game's saves are in `%APPDATA%/MMS` (scores.cfg, profile.cfg). Real progress: don't delete it without asking. This branch uses `MMS-Dig`, where `profile.cfg` holds the owner's dig progress.
+- Saves are in `%APPDATA%/MMS-Dig`, where `profile.cfg` holds the owner's progress: don't delete it without asking, and keep `config/custom_user_dir_name` as it is, or the progress is left behind. The old car game's saves are still in `%APPDATA%/MMS`.
 - `icon.svg.import` shows as modified after imports (line endings); ignore it, don't commit it.

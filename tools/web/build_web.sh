@@ -13,7 +13,7 @@ rm -rf build/web build/web-packed
 mkdir -p build/web build/web-packed
 godot --headless --path . --import >/dev/null 2>&1 || true
 godot --headless --path . --export-release "Web" build/web/index.html
-(cd build/web && zip -q -r ../mms-web.zip .)
+(cd build/web && zip -q -r ../dig-web.zip .)
 
 cp build/web/index.js build/web/index.audio.worklet.js build/web/index.audio.position.worklet.js build/web-packed/
 gzip -9 -c build/web/index.wasm > build/web-packed/engine.gz.wasm
@@ -36,4 +36,4 @@ total = sum(sizes.values()) / 1048576
 page = re.sub(r'0\.0 / [\d.]+ MB', '0.0 / %.1f MB' % total, page)
 open(f'{packed}/game.html', 'w').write(page)
 PY
-echo "Built build/web (zip: build/mms-web.zip) and build/web-packed"
+echo "Built build/web (zip: build/dig-web.zip) and build/web-packed"

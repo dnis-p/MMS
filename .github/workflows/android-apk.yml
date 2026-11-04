@@ -13,9 +13,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: write  # to start the default branch's workflow
     steps:
       - uses: actions/checkout@v4
 
@@ -66,26 +63,34 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: mms-web-itch-io
+          name: dig-web-itch-io
           path: build/web/
 
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web/
 
-      # The site is published from the default branch, whose workflow also builds this branch into /dig/.
-      # So this only asks that workflow to run again, as soon as this branch has passed its test and built
-      # for the web: the APK below doesn't hold it up. dig_only makes it skip the car game's test and APK.
-      - name: Ask the default branch to republish the site
-        if: github.ref == 'refs/heads/prototype/dig'
-        run: gh workflow run android-apk.yml --repo "$GITHUB_REPOSITORY" --ref "${{ github.event.repository.default_branch }}" -f dig_only=true
-        env:
-          GH_TOKEN: ${{ github.token }}
-
       - name: Build APK
         run: tools/android/build_apk.sh
 
       - uses: actions/upload-artifact@v4
         with:
-          name: mms-prototype-apk
-          path: build/mms-prototype.apk
+          name: dig-apk
+          path: build/dig.apk
+
+  # Publishes the web build at https://<user>.github.io/<repo>/ on every push to the default branch.
+  # It waits for the whole build, APK included. One-time setup: the repo is public,
+  # Settings > Pages > Source is "GitHub Actions", and the github-pages environment allows the default branch.
+  deploy-pages:
+    needs: build
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

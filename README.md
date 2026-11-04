@@ -3,9 +3,7 @@
 Top-down 3D digging prototype in Godot 4.7, GDScript only, placeholder art and sound. The goal right now is
 one thing: breaking cubes should feel like popping bubble wrap. There is now a first loop around it: a goal, gems to bank, a shop and unlocks.
 
-This is the `prototype/dig` branch. The car game (MMS) is on the default branch, unchanged.
-
-Play it in a browser: https://dnis-p.github.io/MMS/dig/ (mouse and keyboard, or a gamepad). Each push to this branch updates it.
+Play it in a browser: https://dnis-p.github.io/dig/ (mouse and keyboard, or a gamepad). Each push to `main` updates it.
 
 ## How it plays
 PC only for now.
