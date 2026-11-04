@@ -316,10 +316,10 @@ const DASH := {
 	"levels": [
 		{"desc": "", "add": {}},
 		{"desc": "+20% dash time and -15% cooldown", "add": {"length": 1, "recharge": 1}},
-		{"desc": "Dashing leaves a clone where you stood. Enemies attack it until it falls.", "add": {"clone": 1}},
-		{"desc": "+15% dash speed, +50% clone health", "add": {"speed": 1, "clone_hp": 1}},
-		{"desc": "The clone explodes when it falls", "add": {"clone_boom": 1}},
-		{"desc": "+20% dash time, -15% cooldown, +40% blast damage and a wider blast", "add": {"length": 1, "recharge": 1, "clone_boom": 1}},
+		{"desc": "Dashing leaves a clone where you stood. Enemies attack it until it falls. +15% dash speed", "add": {"clone": 1, "speed": 1}},
+		{"desc": "+20% dash time, -15% cooldown, +50% clone health", "add": {"length": 1, "recharge": 1, "clone_hp": 1}},
+		{"desc": "The clone explodes when it falls. +15% dash speed", "add": {"clone_boom": 1, "speed": 1}},
+		{"desc": "-15% cooldown, +50% clone health, +40% blast damage and a wider blast", "add": {"recharge": 1, "clone_hp": 1, "clone_boom": 1}},
 	],
 	# The clone: health is a share of your max health, it stays life seconds, and enemies pick it over you
 	# when it is closer than taunt times their distance to you. It takes a hit at most every hit_gate

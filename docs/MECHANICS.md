@@ -160,10 +160,12 @@ The one thing you press: Space or Shift, or the gamepad's A (`dash` action). It 
 | --- | --- | --- | --- |
 | 1 | The dash | 6 m | 3 s |
 | 2 | +20% dash time, -15% cooldown | 7.2 m | 2.55 s |
-| 3 | The decoy clone | 7.2 m | 2.55 s |
-| 4 | +15% dash speed, +50% clone health | 8.3 m | 2.55 s |
-| 5 | The clone explodes when it falls | 8.3 m | 2.55 s |
-| 6 | +20% dash time, -15% cooldown, +40% blast damage, a wider blast | 9.7 m | 2.1 s |
+| 3 | The decoy clone, +15% dash speed | 8.3 m | 2.55 s |
+| 4 | +20% dash time, -15% cooldown, +50% clone health | 9.7 m | 2.1 s |
+| 5 | The clone explodes when it falls, +15% dash speed | 10.9 m | 2.1 s |
+| 6 | -15% cooldown, +50% clone health, +40% blast damage, a wider blast | 10.9 m | 1.65 s |
+
+At level 6 the clone has `1.2 * 2` = 2.4 times your max health, and the blast does 140 damage in 3.9 m (before Hard Edge, Long Handle and the shop).
 - **Not while** dead or leaving by lift, or in the middle of a dash.
 - **The clone.** From level 3 each dash leaves one where you stood: a translucent copy of your body with a health bar. Health is `max health * DASH.clone.hp_frac` = 1.2 `* (1 + 0.5 * clone_hp steps)`. It lasts `DASH.clone.life` = 8 s and blinks for the last 1.5. A new dash pops a clone that still stands before it makes the next. It goes at the end of a run without a blast.
 - **Who goes for it.** Every awake enemy, bosses included, compares its distance to you with its distance to the clone: if the clone is closer than `DASH.clone.taunt` = 0.7 times the distance to you, the enemy walks to the clone and attacks that. Sleepers don't care. Enemies not near the clone still come for you. Touching it hurts it by the enemy's own damage (`Enemies.dmg`, already scaled by your build and depth), at most once per `DASH.clone.hit_gate` = 0.2 s, however many touch it.

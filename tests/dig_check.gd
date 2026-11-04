@@ -1044,8 +1044,10 @@ func _check_dash(r: Run) -> void:
 	_check("the clone only comes at level 3", not d.level("clone"))
 	t.apply(d.option())
 	_check("level 2 makes the dash longer and quicker to recharge", d.lvl == 2 and d.level("length") == 1 and d.level("recharge") == 1 and d.level("clone") == 0)
+	var span := d.dash_distance()
 	t.apply(d.option())
 	_check("level 3 adds the clone", d.lvl == 3 and d.level("clone") == 1)
+	_check("and 15%% dash speed (%.1f to %.1f m)" % [span, d.dash_distance()], is_equal_approx(d.dash_distance(), span * 1.15))
 
 	# The dash goes the way you steer, takes time, and nothing touches you.
 	var far := d.dash_distance()
@@ -1120,10 +1122,12 @@ func _check_dash(r: Run) -> void:
 	_check("the car stays unharmed", p.hp == hp)
 	e.remove(touching)
 	var wide := d.clone_health()
-	var span := d.dash_distance()
+	span = d.dash_distance()
+	var wait := d.dash_cooldown()
 	t.apply(d.option())
 	_check("level 4 adds 50%% clone health (%.0f to %.0f)" % [wide, d.clone_health()], is_equal_approx(d.clone_health(), wide * 1.5))
-	_check("and 15%% dash speed (%.1f to %.1f m)" % [span, d.dash_distance()], is_equal_approx(d.dash_distance(), span * 1.15))
+	_check("and a longer dash (%.1f to %.1f m)" % [span, d.dash_distance()], is_equal_approx(d.dash_distance(), span * 1.4 / 1.2))
+	_check("and a shorter wait (%.2f to %.2f s)" % [wait, d.dash_cooldown()], is_equal_approx(d.dash_cooldown(), wait * 0.7 / 0.85))
 	d._gate = 0.0
 	d.hurt_clone(1e6)
 	_check("it falls when its health runs out", not d.clone_alive())
@@ -1137,7 +1141,9 @@ func _check_dash(r: Run) -> void:
 	e.clear()
 	p.global_position = Vector3.ZERO
 	d.cooldown = 0.0
+	span = d.dash_distance()
 	t.apply(d.option())
+	_check("level 5 adds 15%% dash speed again (%.1f to %.1f m)" % [span, d.dash_distance()], is_equal_approx(d.dash_distance(), span * 1.3 / 1.15))
 	d.trigger(Vector3.RIGHT)
 	while p.bursting():
 		_sim(r, 1)
@@ -1150,12 +1156,12 @@ func _check_dash(r: Run) -> void:
 	e.remove(victim)
 	var first := d.blast_damage()
 	var radius := d.blast_radius()
-	span = d.dash_distance()
-	var wait := d.dash_cooldown()
+	wide = d.clone_health()
+	wait = d.dash_cooldown()
 	t.apply(d.option())
 	_check("level 6 blasts 40% harder and wider", is_equal_approx(d.blast_damage(), first * 1.4) and d.blast_radius() > radius * 1.1)
-	_check("and the dash is longer again (%.1f to %.1f m)" % [span, d.dash_distance()], is_equal_approx(d.dash_distance(), span * 1.4 / 1.2))
-	_check("and recharges quicker again (%.2f to %.2f s)" % [wait, d.dash_cooldown()], is_equal_approx(d.dash_cooldown(), wait * 0.7 / 0.85))
+	_check("and gives the clone more health again (%.0f to %.0f)" % [wide, d.clone_health()], is_equal_approx(d.clone_health(), wide * 2.0 / 1.5))
+	_check("and recharges quicker again (%.2f to %.2f s)" % [wait, d.dash_cooldown()], is_equal_approx(d.dash_cooldown(), wait * 0.55 / 0.7))
 	_check("level 6 is the top: no more Dash Drive cards", d.lvl == Dash.max_level() and d.option().is_empty()
 		and t.level_up_options(100).filter(func(o): return o["kind"] == "dash").is_empty())
 	d.cooldown = 0.0
