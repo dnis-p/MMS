@@ -344,7 +344,7 @@ func _refresh_icons(w: Tools) -> void:
 	var key := ""
 	for id in w.order:
 		key += "%s%d," % [id, w.level(id)]
-	key += "dash," if w.run.dash.owned else ""
+	key += "dash%d," % w.run.dash.lvl
 	for id in w.boost_order:
 		key += "%s%d," % [id, w.boost(id)]
 	key += "%d/%d" % [w.tool_slots(), w.boost_slots()]
@@ -358,7 +358,7 @@ func _refresh_icons(w: Tools) -> void:
 	for id in w.order:
 		_icons.add_child(Ui.icon(Defs.TOOLS[id]["color"], str(w.level(id)), 34))
 	if w.run.dash.owned:
-		_icons.add_child(Ui.icon(Defs.DASH["color"], "D", 34))
+		_icons.add_child(Ui.icon(Defs.DASH["color"], "D%d" % w.run.dash.lvl, 34))
 	for id in w.boost_order:
 		_boost_icons.add_child(Ui.icon(Defs.BOOSTS[id]["color"], str(w.boost(id)), 34))
 	# Free slots show as empty boxes, so you can see how much room is left.

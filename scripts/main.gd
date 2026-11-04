@@ -4,8 +4,8 @@ extends Node
 ## Command-line options (after `--`):
 ##   --autotest           play unattended (auto-picks upgrades, double speed)
 ##   --seed=<n>           use this random seed for the run
-##   --give=<a,b>         with --autotest, start with these tools at max level ("dash" is the Dash Drive, with every
-##                        mod); "all" is every tool, the Dash Drive and every boost
+##   --give=<a,b>         with --autotest, start with these tools at max level ("dash" is the Dash Drive, at
+##                        its top level); "all" is every tool, the Dash Drive and every boost
 ##   --shots=<dir>        with --autotest, save screenshots into <dir>
 ##   --map                with --autotest, keep the full map open, for screenshots of it
 ##   --goal=<heart|lift>  with --autotest, go for the Heart, or leave by lift after a while

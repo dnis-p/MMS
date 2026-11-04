@@ -59,7 +59,7 @@ static func sections() -> Array:
 			"You can hold %d different tools and %d boosts, your first tool included. Empty boxes at the top left show free slots. Once they are full, cards only level up what you hold. The Tool Belt in the Shop adds more, up to %d of each." % [
 				int(Defs.SLOTS["tools"]), int(Defs.SLOTS["boosts"]), int(Defs.SLOTS["tools"] + Defs.SHOP["slots"]["max"] * Defs.SHOP["slots"]["value"])],
 			"A tool at max level evolves into a stronger form once you also have %d levels of the boost that goes with it. Evolutions show up first among the cards." % Defs.EVOLVE_BOOST,
-			"The Dash Drive is a card too and takes a tool slot. Press Space or Shift (A on a gamepad) to burst %d m the way you move, untouchable while it lasts, then wait %d s. Its cards make the dash longer, faster and quicker to recharge, and the Decoy Clone leaves a copy of you behind that enemies attack until it falls. A clone's own cards add health and an explosion." % [
+			"The Dash Drive is a card too and takes a tool slot. Press Space or Shift (A on a gamepad) to burst %d m the way you move, untouchable while it lasts, then wait %d s. It levels up like a tool: the dash gets longer, faster and quicker to recharge, from level 3 it leaves a copy of you behind that enemies attack until it falls, and from level 5 that copy explodes." % [
 				int(Defs.DASH["base"]["speed"] * Defs.DASH["base"]["time"]), int(Defs.DASH["base"]["cooldown"])],
 			"Fog hides what you haven't seen. Your lamp lights what is near, and you can only dig a few cubes into the dark.",
 			"The further you go from the start, the harder the rock, the richer the ore and the tougher the enemies. The top of the screen shows the layer, how far out you are and the time.",

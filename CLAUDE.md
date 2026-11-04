@@ -12,7 +12,7 @@ formulas, scaling, what to edit for a tweak) is in docs/MECHANICS.md.
 - Top-down 3D for now. World of small cubes, smaller than Minecraft's.
 - Movement is instantly responsive, like 2D games such as VS or Enter the Gungeon, and separate from aiming: the mouse aims.
 - Even the starter shovel hits multiple cubes.
-- Tools fire by themselves, with one exception (owner, 2026-11-04): the Dash Drive, a tool-slot item you press (Space or Shift, gamepad A) for a short untouchable dash the way you move. Its upgrades come as level-up cards, including a decoy clone enemies attack and its health and explosion cards.
+- Tools fire by themselves, with one exception (owner, 2026-11-04): the Dash Drive, a tool-slot item you press (Space or Shift, gamepad A) for a short untouchable dash the way you move. It levels up like a tool, one card per level (owner): no separate upgrade cards. Its levels add a decoy clone enemies attack, then clone health and an explosion.
 - Enemies and traps exist now (owner, 2026-11-01), but digging feel still comes first. No theme yet.
 - Art style is low-poly pixel 3D (owner, 2026-11-04): docs/ART.md has the style, the rules models must follow, and Meshy
   prompts. The owner's reference images are in `art-refs/`, ignored by git and Godot: never commit them, they are other people's work.

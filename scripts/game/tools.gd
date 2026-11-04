@@ -266,13 +266,16 @@ func level_up_options(n: int) -> Array:
 			pool.append(_tool_option(id))
 			if owned.has(id):
 				pool.append(_tool_option(id))  # favour what you already have
-	if run.dash.owned:
-		pool.append_array(run.dash.upgrade_options(2))
+	var dash_card := run.dash.option()
+	if dash_card.is_empty():
+		pass  # at the top level
+	elif run.dash.owned:
+		pool.append(dash_card)
+		pool.append(dash_card)  # favoured like a tool you hold
 	elif tool_room:
-		var card: Dictionary = run.dash.new_option()
 		if slots_used() == tool_slots() - 1:
-			card["hint"] = "Last tool slot"
-		pool.append(card)
+			dash_card["hint"] = "Last tool slot"
+		pool.append(dash_card)
 	for id in Defs.BOOSTS:
 		if boost(id) < Defs.MAX_BOOST_LEVEL and (boosts.has(id) or boost_room):
 			pool.append(_boost_option(id))

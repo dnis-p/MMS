@@ -142,24 +142,33 @@ A tool at max level plus `Defs.EVOLVE_BOOST` = 3 levels of the named boost offer
 | moles | tough | Mole Army | Two more moles, biting twice as hard. |
 
 ### Dash Drive
-The one thing you press: Space or Shift, or the gamepad's A (`dash` action). It takes one tool slot, is a level-up card like a tool, is never locked, and has no levels or evolution. All numbers are in `Defs.DASH`, the code in `scripts/game/dash.gd` and `Player.move`.
+The one thing you press: Space or Shift, or the gamepad's A (`dash` action). It takes one tool slot, is a level-up card like a tool, is never locked, and has no evolution. It levels up like a tool, from 1 to 6. All numbers are in `Defs.DASH`, the code in `scripts/game/dash.gd` and `Player.move`.
 
 | Stat | Formula |
 | --- | --- |
-| Dash | `DASH.base.speed` = 30 m/s for `DASH.base.time` = 0.2 s, so 6 m. Speed and time are the two numbers the mods change |
-| Speed | `30 * (1 + 0.15 * Dash Speed)` |
-| Time | `0.2 * (1 + 0.2 * Long Dash)`. Distance is speed times time |
+| Dash | `DASH.base.speed` = 30 m/s for `DASH.base.time` = 0.2 s, so 6 m |
+| Speed | `30 * (1 + 0.15 * speed steps)` |
+| Time | `0.2 * (1 + 0.2 * length steps)`. Distance is speed times time |
 | Untouchable | The dash's time plus `DASH.base.grace` = 0.15 s. This sets `Player.invuln`, so it also blinks you |
-| Cooldown | `3 * (1 - 0.15 * Quick Recharge)`, counted from the moment you press |
+| Cooldown | `3 * (1 - 0.15 * recharge steps)`, counted from the moment you press |
 | Direction | The way you are steering. With no input, the way you last walked (`Player.last_move`). Mouse aim and the right stick don't matter |
 
 - **While dashing** you can't steer, tools keep firing, and your facing follows your aim as always. Rock stops you, and the move is split into steps of at most 0.2 m (`Mine.CELL * 0.4`) so it can't skip a wall.
-- **Mods** (`DASH.mods`, three levels each unless said): Long Dash, Dash Speed, Quick Recharge, Decoy Clone (one level). Reinforced Clone and Volatile Clone need Decoy Clone first and don't show without it. A level-up adds at most two random Dash Drive cards to the draw, so they never fill the three. Only the Dash Drive card itself says NEW, since it takes a slot. Mod cards show their level, from "Lv 0 > 1", and take no slot.
+- **Levels** (`DASH.levels`, each adding steps worth `DASH.step`). One card per level, always titled Dash Drive. Level 1 says NEW, as it takes the slot; the rest say "Lv 1 > 2" and so on, take no slot, and are favoured in the draw like a tool you hold. At level 6 no more cards come.
+
+| Level | Adds | Dash | Cooldown |
+| --- | --- | --- | --- |
+| 1 | The dash | 6 m | 3 s |
+| 2 | +20% dash time, -15% cooldown | 7.2 m | 2.55 s |
+| 3 | The decoy clone | 7.2 m | 2.55 s |
+| 4 | +15% dash speed, +50% clone health | 8.3 m | 2.55 s |
+| 5 | The clone explodes when it falls | 8.3 m | 2.55 s |
+| 6 | +20% dash time, -15% cooldown, +40% blast damage, a wider blast | 9.7 m | 2.1 s |
 - **Not while** dead or leaving by lift, or in the middle of a dash.
-- **The clone.** Each dash with Decoy Clone leaves one where you stood: a translucent copy of your body with a health bar. Health is `max health * DASH.clone.hp_frac` = 1.2 `* (1 + 0.5 * Reinforced Clone)`. It lasts `DASH.clone.life` = 8 s and blinks for the last 1.5. A new dash pops a clone that still stands before it makes the next. It goes at the end of a run without a blast.
+- **The clone.** From level 3 each dash leaves one where you stood: a translucent copy of your body with a health bar. Health is `max health * DASH.clone.hp_frac` = 1.2 `* (1 + 0.5 * clone_hp steps)`. It lasts `DASH.clone.life` = 8 s and blinks for the last 1.5. A new dash pops a clone that still stands before it makes the next. It goes at the end of a run without a blast.
 - **Who goes for it.** Every awake enemy, bosses included, compares its distance to you with its distance to the clone: if the clone is closer than `DASH.clone.taunt` = 0.7 times the distance to you, the enemy walks to the clone and attacks that. Sleepers don't care. Enemies not near the clone still come for you. Touching it hurts it by the enemy's own damage (`Enemies.dmg`, already scaled by your build and depth), at most once per `DASH.clone.hit_gate` = 0.2 s, however many touch it.
-- **The blast** (Volatile Clone, three levels). When the clone falls, from health or time or being replaced, it breaks rock and hurts enemies in `DASH.clone.boom_radius` = 3.5 m `* (1 + 0.12 * (level - 1)) * Long Handle` for `boom_dmg` = 100 `* (1 + 0.4 * (level - 1)) * Hard Edge * shop damage`. Through fog only the rock you can see breaks, as with Bombs. Enemies hit are pushed away like any hit.
-- **Scaling.** It counts as one upgrade, plus one per mod level, in `upgrades` (section 8), so a full drive is worth 17.
+- **The blast** (from level 5; `clone_boom` steps: 1 at level 5, 2 at level 6). When the clone falls, from health or time or being replaced, it breaks rock and hurts enemies in `DASH.clone.boom_radius` = 3.5 m `* (1 + 0.12 * (steps - 1)) * Long Handle` for `boom_dmg` = 100 `* (1 + 0.4 * (steps - 1)) * Hard Edge * shop damage`. Through fog only the rock you can see breaks, as with Bombs. Enemies hit are pushed away like any hit.
+- **Scaling.** Each level counts as one upgrade in `upgrades` (section 8), as a tool's levels do, so a full drive is worth 6.
 
 ## 7. Enemies
 
@@ -195,7 +204,7 @@ Three things scale the threat: your build, distance from the start, and run time
 **From your build.** Recomputed every frame in `Run._update_power()`:
 
 ```
-upgrades = max(0, (sum of tool levels + sum of boost levels + Dash Drive upgrades) - 1 - free_upgrades)
+upgrades = max(0, (sum of tool levels + sum of boost levels + Dash Drive level) - 1 - free_upgrades)
 best     = highest power_of among owned tools
 
 hardness = best ^ hard_power * (1 + tough_per * upgrades)   enemy health

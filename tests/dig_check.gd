@@ -1028,20 +1028,24 @@ func _check_dash(r: Run) -> void:
 			if o["kind"] in ["tool", "dash"] and o["level_text"] == "NEW" and o["id"] in ["bombs", "dash", "pulse"]:
 				fresh += 1
 	_check("with the tool slots full no new tool is offered", fresh == 0)
-	var mod_new := 0
-	for id in Defs.DASH["mods"]:
-		if d.mod_option(id, 0)["level_text"] == "NEW":
-			mod_new += 1
-	_check("a dash upgrade's first level is not marked NEW (%s)" % d.mod_option("length", 0)["level_text"], mod_new == 0)
-	var avail := d.available_mods(d.mods)
-	_check("the clone's upgrades stay locked until the clone is taken", avail.has("clone") and not avail.has("clone_hp") and not avail.has("clone_boom"))
-	t.apply(d.mod_option("clone", 0))
-	avail = d.available_mods(d.mods)
-	_check("taking the clone unlocks them", not avail.has("clone") and avail.has("clone_hp") and avail.has("clone_boom"))
+	_check("taking it is level 1 (Lv %d)" % d.lvl, d.lvl == 1)
 	var dash_cards := 0
+	var names := {}
+	var texts := {}
 	for k in 100:
-		dash_cards = maxi(dash_cards, t.level_up_options(3).filter(func(o): return o["kind"] == "dash").size())
-	_check("a level-up never fills all three cards with dash upgrades (%d)" % dash_cards, dash_cards >= 1 and dash_cards <= 2)
+		var cards: Array = t.level_up_options(3).filter(func(o): return o["kind"] == "dash")
+		dash_cards = maxi(dash_cards, cards.size())
+		for o in cards:
+			names[o["title"]] = true
+			texts[o["level_text"]] = true
+	_check("after that a level-up offers one Dash Drive card at most (%d)" % dash_cards, dash_cards == 1)
+	_check("and it is the next level of the Dash Drive, not a separate upgrade (%s, %s)" % [names.keys(), texts.keys()],
+		names.keys() == [Defs.DASH["name"]] and texts.keys() == ["Lv 1 > 2"])
+	_check("the clone only comes at level 3", not d.level("clone"))
+	t.apply(d.option())
+	_check("level 2 makes the dash longer and quicker to recharge", d.lvl == 2 and d.level("length") == 1 and d.level("recharge") == 1 and d.level("clone") == 0)
+	t.apply(d.option())
+	_check("level 3 adds the clone", d.lvl == 3 and d.level("clone") == 1)
 
 	# The dash goes the way you steer, takes time, and nothing touches you.
 	var far := d.dash_distance()
@@ -1116,8 +1120,10 @@ func _check_dash(r: Run) -> void:
 	_check("the car stays unharmed", p.hp == hp)
 	e.remove(touching)
 	var wide := d.clone_health()
-	t.apply(d.mod_option("clone_hp", 0))
-	_check("Reinforced Clone adds 50%% health (%.0f to %.0f)" % [wide, d.clone_health()], is_equal_approx(d.clone_health(), wide * 1.5))
+	var span := d.dash_distance()
+	t.apply(d.option())
+	_check("level 4 adds 50%% clone health (%.0f to %.0f)" % [wide, d.clone_health()], is_equal_approx(d.clone_health(), wide * 1.5))
+	_check("and 15%% dash speed (%.1f to %.1f m)" % [span, d.dash_distance()], is_equal_approx(d.dash_distance(), span * 1.15))
 	d._gate = 0.0
 	d.hurt_clone(1e6)
 	_check("it falls when its health runs out", not d.clone_alive())
@@ -1131,7 +1137,7 @@ func _check_dash(r: Run) -> void:
 	e.clear()
 	p.global_position = Vector3.ZERO
 	d.cooldown = 0.0
-	t.apply(d.mod_option("clone_boom", 0))
+	t.apply(d.option())
 	d.trigger(Vector3.RIGHT)
 	while p.bursting():
 		_sim(r, 1)
@@ -1140,43 +1146,40 @@ func _check_dash(r: Run) -> void:
 	d.hurt_clone(1e6)
 	_sim(r, 1)
 	var blast: float = e.full[victim] - e.hp[victim]
-	_check("Volatile Clone explodes when it falls (%.0f damage)" % blast, absf(blast - d.blast_damage()) < 0.5 and blast > 90.0)
+	_check("from level 5 the clone explodes when it falls (%.0f damage)" % blast, absf(blast - d.blast_damage()) < 0.5 and blast > 90.0)
 	e.remove(victim)
 	var first := d.blast_damage()
 	var radius := d.blast_radius()
-	t.apply(d.mod_option("clone_boom", 1))
-	_check("its second level hits 40% harder and wider", is_equal_approx(d.blast_damage(), first * 1.4) and d.blast_radius() > radius * 1.1)
+	span = d.dash_distance()
+	var wait := d.dash_cooldown()
+	t.apply(d.option())
+	_check("level 6 blasts 40% harder and wider", is_equal_approx(d.blast_damage(), first * 1.4) and d.blast_radius() > radius * 1.1)
+	_check("and the dash is longer again (%.1f to %.1f m)" % [span, d.dash_distance()], is_equal_approx(d.dash_distance(), span * 1.4 / 1.2))
+	_check("and recharges quicker again (%.2f to %.2f s)" % [wait, d.dash_cooldown()], is_equal_approx(d.dash_cooldown(), wait * 0.7 / 0.85))
+	_check("level 6 is the top: no more Dash Drive cards", d.lvl == Dash.max_level() and d.option().is_empty()
+		and t.level_up_options(100).filter(func(o): return o["kind"] == "dash").is_empty())
 	d.cooldown = 0.0
 	d.trigger(Vector3.RIGHT)
 	d.clear()
 	_check("clearing a clone on purpose does not blow it up", not d.clone_alive())
 
-	# The other mods and what they cost.
-	var span := d.dash_distance()
-	var wait := d.dash_cooldown()
-	t.apply(d.mod_option("length", 0))
-	t.apply(d.mod_option("speed", 0))
-	t.apply(d.mod_option("recharge", 0))
-	_check("Long Dash and Dash Speed lengthen the dash (%.1f to %.1f m)" % [span, d.dash_distance()], is_equal_approx(d.dash_distance(), span * 1.2 * 1.15))
-	_check("Quick Recharge shortens the wait (%.2f to %.2f s)" % [wait, d.dash_cooldown()], is_equal_approx(d.dash_cooldown(), wait * 0.85))
+	# What it costs.
 	r.dead = true
 	_check("a dead digger can't dash", not d.can_dash())
 	r.dead = false
 	d.give_all()
 	r._update_power()
 	var crowd := r.crowd
-	d.owned = false
-	d.mods.clear()
+	d.set_level(0)
 	r._update_power()
-	_check("the Dash Drive and its mods count towards the enemies' scaling (crowd %.2f with, %.2f without)" % [crowd, r.crowd], crowd > r.crowd)
-	d.owned = true
+	_check("the Dash Drive's levels count towards the enemies' scaling (crowd %.2f with, %.2f without)" % [crowd, r.crowd], crowd > r.crowd)
+	d.give_all()
 	r.hud.refresh(r)
 	_check("the HUD shows the dash bar once it is held", r.hud._dash_bar.visible)
 
 	# Back to how the other checks expect it.
 	d.clear()
-	d.owned = false
-	d.mods.clear()
+	d.set_level(0)
 	d.cooldown = 0.0
 	e.clear()
 	p.global_position = Vector3.ZERO

@@ -1,13 +1,14 @@
 class_name Dash
 extends Node3D
 ## The Dash Drive: a tool-slot item you press (Space, Shift or the gamepad's A) for a short, untouchable
-## burst of speed the way you move. It has no levels; its upgrades are cards picked on level-ups. With the
-## clone mod each dash leaves a decoy where you stood: enemies attack it until it falls, and it can
-## explode. All numbers are in `Defs.DASH`.
+## burst of speed the way you move. It levels up like a tool, one card per level, and each level adds the
+## steps `Defs.DASH.levels` gives it. From level 3 each dash leaves a decoy where you stood: enemies attack
+## it until it falls, and from level 5 it explodes. All numbers are in `Defs.DASH`.
 
 var run: Run
 var owned := false
-var mods := {}  # mod id -> level
+var lvl := 0  # 0 until you take it
+var mods := {}  # steps of each stat that the levels so far add up to, as Defs.DASH.levels says
 var cooldown := 0.0
 var cooldown_total := 1.0  # what the last dash set, for the HUD's bar
 var clone_pos := Vector3.ZERO
@@ -29,89 +30,67 @@ func level(id: String) -> int:
 	return int(mods.get(id, 0))
 
 
-## What this adds to the count that enemies scale with: the drive itself and every mod level.
+static func max_level() -> int:
+	return Defs.DASH["levels"].size()
+
+
+## What this adds to the count that enemies scale with: one per level, like a tool.
 func upgrades() -> int:
-	var n := 1 if owned else 0
-	for id in mods:
-		n += int(mods[id])
-	return n
+	return lvl
+
+
+## Sets the level and adds up the steps of every level up to it.
+func set_level(n: int) -> void:
+	lvl = clampi(n, 0, max_level())
+	owned = lvl > 0
+	mods.clear()
+	for k in lvl:
+		var add: Dictionary = Defs.DASH["levels"][k]["add"]
+		for id in add:
+			mods[id] = level(id) + int(add[id])
 
 
 func acquire() -> void:
 	if owned:
 		return
-	owned = true
+	set_level(1)
 	cooldown = 0.0
 	run.hud.show_hint("%s to dash the way you move" % ("A" if Options.pad else "Space or Shift"), 5.0)
 
 
-## Every mod at max level, for bots and checks.
+## The top level, for bots and checks.
 func give_all() -> void:
-	owned = true
-	for id in Defs.DASH["mods"]:
-		mods[id] = int(Defs.DASH["mods"][id]["max"])
+	set_level(max_level())
 
 
-## Mods that can still be taken, given `levels` (a copy of `mods` when previewing).
-func available_mods(levels: Dictionary) -> Array:
-	var out: Array = []
-	for id in Defs.DASH["mods"]:
-		var m: Dictionary = Defs.DASH["mods"][id]
-		if int(levels.get(id, 0)) >= int(m["max"]):
-			continue
-		var needs: String = m["needs"]
-		if needs == "" or int(levels.get(needs, 0)) > 0:
-			out.append(id)
-	return out
-
-
-## The card that puts the Dash Drive in a free tool slot.
-func new_option() -> Dictionary:
+## The card for the next level, or {} at the top. Level 1 is the one that fills a tool slot, so only it
+## says NEW; the rest read like a tool's levels.
+func option() -> Dictionary:
+	if lvl >= max_level():
+		return {}
 	var d := Defs.DASH
-	return {"kind": "dash", "id": "dash", "title": d["name"], "desc": d["desc"], "hint": d["hint"],
-		"level_text": "NEW", "color": d["color"]}
+	if lvl == 0:
+		return {"kind": "dash", "id": "dash", "title": d["name"], "desc": d["desc"], "hint": d["hint"],
+			"level_text": "NEW", "color": d["color"]}
+	return {"kind": "dash", "id": "dash", "title": d["name"], "desc": d["levels"][lvl]["desc"], "hint": "",
+		"level_text": "Lv %d > %d" % [lvl, lvl + 1], "color": d["color"]}
 
 
-## The card for mod `id` going from level `lvl` to the next. Never "NEW", even for a mod's first level:
-## a mod upgrades the Dash Drive you hold and takes no slot, and NEW means a card that fills one.
-func mod_option(id: String, lvl: int) -> Dictionary:
-	var m: Dictionary = Defs.DASH["mods"][id]
-	var hint: String = Defs.DASH["name"]
-	if m["needs"] != "":
-		hint += " · " + Defs.DASH["mods"][m["needs"]]["name"]
-	return {"kind": "dash", "id": id, "title": m["name"], "desc": m["up"][lvl], "hint": hint,
-		"level_text": "Lv %d > %d" % [lvl, lvl + 1], "color": Defs.DASH["color"]}
-
-
-## Up to `n` random mod cards. A level-up offers only a couple, so the Dash Drive competes with the
-## tools for the three cards instead of filling them.
-func upgrade_options(n: int) -> Array:
-	var ids := available_mods(mods)
-	run.shuffle(ids)
-	var out: Array = []
-	for id in ids.slice(0, n):
-		out.append(mod_option(id, level(id)))
-	return out
-
-
-func apply(option: Dictionary) -> void:
-	var id: String = option["id"]
-	if id == "dash":
+func apply(_option: Dictionary) -> void:
+	if lvl == 0:
 		acquire()
-	elif Defs.DASH["mods"].has(id):
-		mods[id] = mini(int(Defs.DASH["mods"][id]["max"]), level(id) + 1)
+	else:
+		set_level(lvl + 1)
 
 
 # --- stats ---------------------------------------------------------------------------
 
 func dash_speed() -> float:
-	var m: Dictionary = Defs.DASH["mods"]["speed"]
-	return float(Defs.DASH["base"]["speed"]) * (1.0 + float(m["value"]) * level("speed"))
+	return float(Defs.DASH["base"]["speed"]) * (1.0 + float(Defs.DASH["step"]["speed"]) * level("speed"))
 
 
 func dash_time() -> float:
-	var m: Dictionary = Defs.DASH["mods"]["length"]
-	return float(Defs.DASH["base"]["time"]) * (1.0 + float(m["value"]) * level("length"))
+	return float(Defs.DASH["base"]["time"]) * (1.0 + float(Defs.DASH["step"]["length"]) * level("length"))
 
 
 func dash_distance() -> float:
@@ -119,13 +98,11 @@ func dash_distance() -> float:
 
 
 func dash_cooldown() -> float:
-	var m: Dictionary = Defs.DASH["mods"]["recharge"]
-	return float(Defs.DASH["base"]["cooldown"]) * (1.0 - float(m["value"]) * level("recharge"))
+	return float(Defs.DASH["base"]["cooldown"]) * (1.0 - float(Defs.DASH["step"]["recharge"]) * level("recharge"))
 
 
 func clone_health() -> float:
-	var m: Dictionary = Defs.DASH["mods"]["clone_hp"]
-	return run.player.max_hp * float(Defs.DASH["clone"]["hp_frac"]) * (1.0 + float(m["value"]) * level("clone_hp"))
+	return run.player.max_hp * float(Defs.DASH["clone"]["hp_frac"]) * (1.0 + float(Defs.DASH["step"]["clone_hp"]) * level("clone_hp"))
 
 
 func blast_damage() -> float:

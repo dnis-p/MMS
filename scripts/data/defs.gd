@@ -303,30 +303,27 @@ const BOOSTS := {
 
 ## The Dash Drive takes one tool slot, and unlike every tool it is a button (Space, Shift or the gamepad's A):
 ## a short, untouchable burst of speed the way you move, or the way you last moved when you stand still.
-## base: speed (m/s) for time (s), then grace more seconds of invulnerability, then cooldown (s). It has
-## no levels; each mod is a level-up card that stacks up to max (value: per level, up: the card's text for
-## each level). A mod with needs only shows once that mod is owned.
+## base: speed (m/s) for time (s), then grace more seconds of invulnerability, then cooldown (s).
+## It levels up like a tool, one card per level (owner): levels[n] is level n + 1, with the card's text
+## and the steps it adds. step: what one step of each is worth (length is dash time, speed dash speed,
+## recharge a cut to the cooldown, clone_hp clone health). clone puts the decoy clone in, clone_boom makes
+## it explode, and its second and later steps make the blast bigger.
 const DASH := {
 	"name": "Dash Drive", "desc": "Space or Shift: a burst of speed the way you move. Untouchable while it lasts.",
-	"hint": "Takes a tool slot. Upgrades come as cards.", "color": Color(0.35, 0.9, 1.0),
+	"hint": "Takes a tool slot.", "color": Color(0.35, 0.9, 1.0),
 	"base": {"speed": 30.0, "time": 0.2, "grace": 0.15, "cooldown": 3.0},
-	"mods": {
-		"length": {"name": "Long Dash", "max": 3, "value": 0.2, "needs": "",
-			"up": ["+20% dash time: farther, and untouchable for longer", "+20% dash time: farther, and untouchable for longer", "+20% dash time: farther, and untouchable for longer"]},
-		"speed": {"name": "Dash Speed", "max": 3, "value": 0.15, "needs": "",
-			"up": ["+15% dash speed, so it goes farther", "+15% dash speed, so it goes farther", "+15% dash speed, so it goes farther"]},
-		"recharge": {"name": "Quick Recharge", "max": 3, "value": 0.15, "needs": "",
-			"up": ["-15% dash cooldown", "-15% dash cooldown", "-15% dash cooldown"]},
-		"clone": {"name": "Decoy Clone", "max": 1, "value": 0.0, "needs": "",
-			"up": ["Dashing leaves a clone where you stood. Enemies attack it until it falls."]},
-		"clone_hp": {"name": "Reinforced Clone", "max": 3, "value": 0.5, "needs": "clone",
-			"up": ["+50% clone health", "+50% clone health", "+50% clone health"]},
-		"clone_boom": {"name": "Volatile Clone", "max": 3, "value": 0.0, "needs": "clone",
-			"up": ["The clone explodes when it falls", "+40% blast damage, wider blast", "+40% blast damage, wider blast"]},
-	},
+	"step": {"length": 0.2, "speed": 0.15, "recharge": 0.15, "clone_hp": 0.5},
+	"levels": [
+		{"desc": "", "add": {}},
+		{"desc": "+20% dash time and -15% cooldown", "add": {"length": 1, "recharge": 1}},
+		{"desc": "Dashing leaves a clone where you stood. Enemies attack it until it falls.", "add": {"clone": 1}},
+		{"desc": "+15% dash speed, +50% clone health", "add": {"speed": 1, "clone_hp": 1}},
+		{"desc": "The clone explodes when it falls", "add": {"clone_boom": 1}},
+		{"desc": "+20% dash time, -15% cooldown, +40% blast damage and a wider blast", "add": {"length": 1, "recharge": 1, "clone_boom": 1}},
+	],
 	# The clone: health is a share of your max health, it stays life seconds, and enemies pick it over you
 	# when it is closer than taunt times their distance to you. It takes a hit at most every hit_gate
-	# seconds, like you. The blast comes with clone_boom, and each level past the first adds the *_up
+	# seconds, like you. The blast comes with clone_boom, and each step of it past the first adds the *_up
 	# shares. Blast damage and size grow with Hard Edge and Long Handle, as a tool's do.
 	"clone": {"hp_frac": 1.2, "life": 8.0, "taunt": 0.7, "hit_gate": 0.2,
 		"boom_dmg": 100.0, "boom_radius": 3.5, "boom_dmg_up": 0.4, "boom_radius_up": 0.12},
