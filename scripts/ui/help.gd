@@ -4,7 +4,7 @@ class_name Help
 
 
 const CONTROL_NOTES := [
-	"Your tools dig and fight by themselves: there is no attack button. Without aiming, they point the way you walk.",
+	"Your tools dig and fight by themselves: there is no attack button. Without aiming, they point the way you walk. The Dash Drive is the one thing you press.",
 	"The game follows whichever you used last, keyboard and mouse or gamepad. The map's opacity is in Options.",
 ]
 
@@ -13,6 +13,7 @@ const CONTROL_NOTES := [
 static func controls() -> Array:
 	return [
 		["Move", "WASD or arrows", "left stick or d-pad"],
+		["Dash", "Space or Shift, once you hold the Dash Drive: a burst of speed the way you move", "A"],
 		["Aim", "mouse. Only the direction counts: the arrow on the ring around you shows it", "right stick"],
 		["Map", "M or Tab. Tap it to keep the map open, hold it to peek while you keep moving", "Back"],
 		["Zoom the map", "mouse wheel, + and -", "shoulder buttons"],
@@ -58,6 +59,8 @@ static func sections() -> Array:
 			"You can hold %d different tools and %d boosts, your first tool included. Empty boxes at the top left show free slots. Once they are full, cards only level up what you hold. The Tool Belt in the Shop adds more, up to %d of each." % [
 				int(Defs.SLOTS["tools"]), int(Defs.SLOTS["boosts"]), int(Defs.SLOTS["tools"] + Defs.SHOP["slots"]["max"] * Defs.SHOP["slots"]["value"])],
 			"A tool at max level evolves into a stronger form once you also have %d levels of the boost that goes with it. Evolutions show up first among the cards." % Defs.EVOLVE_BOOST,
+			"The Dash Drive is a card too and takes a tool slot. Press Space or Shift (A on a gamepad) to burst %d m the way you move, untouchable while it lasts, then wait %d s. Its cards make the dash longer, faster and quicker to recharge, and the Decoy Clone leaves a copy of you behind that enemies attack until it falls. A clone's own cards add health and an explosion." % [
+				int(Defs.DASH["base"]["speed"] * Defs.DASH["base"]["time"]), int(Defs.DASH["base"]["cooldown"])],
 			"Fog hides what you haven't seen. Your lamp lights what is near, and you can only dig a few cubes into the dark.",
 			"The further you go from the start, the harder the rock, the richer the ore and the tougher the enemies. The top of the screen shows the layer, how far out you are and the time.",
 		]],

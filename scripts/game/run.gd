@@ -21,6 +21,7 @@ var mine: Mine
 var debris: Debris
 var pickups: Pickups
 var tools: Tools
+var dash: Dash
 var enemies: Enemies
 var traps: Traps
 var sites: Sites
@@ -175,6 +176,9 @@ func _ready() -> void:
 	player.base_speed *= character.get("speed", 1.0) * (1.0 + Profile.bonus("legs"))
 	player.base_pickup *= 1.0 + Profile.bonus("magnet")
 	add_child(player)
+	dash = Dash.new()
+	dash.run = self
+	add_child(dash)
 	tools = Tools.new()
 	tools.run = self
 	add_child(tools)
@@ -304,6 +308,7 @@ func _process(delta: float) -> void:
 	mine.show_chunks(player.global_position)
 	_update_light(delta)
 	tools.update(delta)
+	dash.update(delta)
 	mine.update(delta)
 	var at := player.global_position
 	enemies.update(delta, at, player.radius)
@@ -412,6 +417,7 @@ func _update_power() -> void:
 		upgrades += tools.level(id)
 	for id in tools.boost_order:
 		upgrades += tools.boost(id)
+	upgrades += dash.upgrades()
 	upgrades = maxi(0, upgrades - t["free_upgrades"])
 	hardness = pow(best, t["hard_power"]) * (1.0 + t["tough_per"] * upgrades)
 	crowd = 1.0 + t["crowd_per"] * upgrades
@@ -876,6 +882,7 @@ func _finish(how: String) -> void:
 	if banked:
 		return
 	banked = true
+	dash.clear()
 	_freeze()
 	var before := Profile.stats.duplicate()
 	var kept := gems_kept(how)
@@ -1111,6 +1118,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
 		get_viewport().set_input_as_handled()
 		_toggle_pause()
+	elif event.is_action_pressed("dash"):
+		_try_dash()
 	elif event.is_action_pressed("map"):
 		_map_down = Time.get_ticks_msec()
 		_map_was_open = hud.map_full.visible
@@ -1134,7 +1143,19 @@ func close_map() -> void:
 
 ## Screen-relative move direction, in 8 directions.
 func _move_input(delta: float) -> Vector2:
-	var v := Input.get_vector("move_left", "move_right", "move_up", "move_down", Defs.PAD["deadzone"])
 	if autotest:
-		v = bot.steer(self, delta)
-	return v
+		return bot.steer(self, delta)
+	return _player_input()
+
+
+## What the player is steering with right now, zero for nothing, whoever is driving.
+func _player_input() -> Vector2:
+	return Input.get_vector("move_left", "move_right", "move_up", "move_down", Defs.PAD["deadzone"])
+
+
+## The dash button: dashes the way you are moving, or the way you last moved when you stand still.
+func _try_dash() -> void:
+	if not ready_to_play or get_tree().paused or not dash.can_dash():
+		return
+	var v := _player_input()
+	dash.trigger(Vector3(v.x, 0.0, v.y))
