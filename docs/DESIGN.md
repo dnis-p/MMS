@@ -553,6 +553,30 @@ entries are the first ones in sections 8 and 9.
   in that boss fight. The bot never dashes or switches rings, so this is not a measure of real balance.
 
 ## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
+**Owner, 2026-11-04, about 10 tools and 10 boosts** ("i need ideas for new tools and boosts. I want to have about 10 of each"). There are 8 tools and 6 boosts now, so this means 2 more tools and 4 more boosts. Not picked or built yet. The ideas below are all **(suggested)**, to choose from:
+- Tools (suggested):
+  - **Runaway Cart:** a mine cart shoots off the way you aim and ploughs through rock, bouncing off bedrock and hard rock a few times. It crosses the whole screen.
+  - **Dynamite Trail:** drops a lit stick behind you every few steps, and it blows a moment later. It covers behind you, so running from a swarm becomes an attack.
+  - **Acid Flask:** lobs a flask that leaves a puddle. The acid eats outward through rock cube by cube for a few seconds and burns enemies in it (like VS's Santa Water).
+  - **Boomerang Pick:** a thrown pick flies out, turns and comes back, hitting everything it passes both ways.
+  - **Jackhammer:** pounds the ground, and a shockwave runs along the walls of the tunnel you're in, popping them. It widens old tunnels and hits enemies coming down them.
+  - **Cryo Spray:** a cone of frost. Frozen rock breaks in one hit from anything, and frozen enemies slow down. It works with every other tool.
+  - **Ore Hook:** shoots at the nearest ore you can see, breaking the cubes in the way, and pulls the gem back to you.
+  - **Echo Pinger:** a ping that lights up the fog further for a moment and marks ore. It does a little damage.
+  - Claude's pick for the two: Runaway Cart and Dynamite Trail, the most different from the current tools and both easy to read on screen. Tesla Pick and Tunnel Worm (section 6) were left out because they overlap Spark Coil and Mole Pack.
+- Boosts (suggested), with the evolution each could unlock:
+  - **Extra Hands:** +1 of whatever a tool throws: blades, bombs, moles, jumps (like VS's Duplicator), with few levels because it's strong. Saw Blades.
+  - **Bright Lamp:** +15% light radius, and you can dig further into the fog. Mining Beam.
+  - **Aftershock:** broken cubes sometimes pop a neighbour, so you get small chain reactions. Shock Pulse.
+  - **Sweet Spot:** a chance for a critical hit: double damage, a bigger pop and its own sound. Boomerang Pick or Runaway Cart.
+  - **Lucky Pick:** more ore and gem drops, and geodes are a bit more common. Ore Hook.
+  - **Rhythm:** the combo lasts longer before it drops, and Frenzy builds faster. Dynamite Trail.
+  - **Hot Coffee:** slowly heals over time, faster while your combo is high. No evolution.
+  - **Padding:** take 8% less damage from every hit. Jackhammer.
+  - Claude's pick for the four: Extra Hands, Aftershock, Bright Lamp and Sweet Spot. Aftershock and Sweet Spot add to the popping feel, and Bright Lamp works with the fog.
+- Saw Blades, Shock Pulse and Mining Beam have no evolution yet, so new boosts could give them one.
+- A run holds only 4 tools and 4 boosts (`Defs.SLOTS`), so a bigger pool means each run sees a different mix, and a particular evolution comes up less often.
+
 **Owner, 2026-11-03, Frenzy feels too easy to set off** ("i kinda feel like its set off too easily"). Not changed yet: the owner asked when it starts, options are in the chat of that day.
 
 **Owner, 2026-11-01, plans for the digging game (a first version is built, see section 8; the rest of these stay open)**
