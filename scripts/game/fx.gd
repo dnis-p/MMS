@@ -1,10 +1,9 @@
 class_name Fx
 extends Node3D
-## Juice: pooled particle bursts, floating damage numbers, shock rings,
+## Juice: pooled particle bursts, shock rings,
 ## lightning bolts and screen-shake trauma.
 
 const BURSTS := 28
-const NUMBERS := 40
 const RINGS := 12
 const BOLT_SEGMENTS := 256
 const RING_START := 0.2  # radius every ring grows from
@@ -12,10 +11,6 @@ const RING_START := 0.2  # radius every ring grows from
 var trauma := 0.0
 var _bursts: Array[CPUParticles3D] = []
 var _next_burst := 0
-var _numbers: Array[Label3D] = []
-var _number_life: Array[float] = []
-var _number_vel: Array[Vector3] = []
-var _next_number := 0
 var _rings: Array[MeshInstance3D] = []
 var _ring_life: Array[float] = []
 var _ring_len: Array[float] = []
@@ -55,20 +50,6 @@ func _ready() -> void:
 		p.local_coords = false
 		add_child(p)
 		_bursts.append(p)
-	for i in NUMBERS:
-		var l := Label3D.new()
-		l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		l.no_depth_test = true
-		l.font_size = 64
-		l.outline_size = 14
-		l.pixel_size = 0.01
-		l.render_priority = 10
-		l.outline_render_priority = 9
-		l.visible = false
-		add_child(l)
-		_numbers.append(l)
-		_number_life.append(0.0)
-		_number_vel.append(Vector3.ZERO)
 	var torus := TorusMesh.new()
 	torus.inner_radius = 0.9
 	torus.outer_radius = 1.0
@@ -107,8 +88,6 @@ func _ready() -> void:
 
 
 func clear() -> void:
-	for l in _numbers:
-		l.visible = false
 	for r in _rings:
 		r.visible = false
 	_bolt_a.clear()
@@ -127,20 +106,6 @@ func burst(p: Vector3, color: Color, amount := 14, power := 1.0) -> void:
 	b.initial_velocity_min = 4.0 * power
 	b.initial_velocity_max = 9.0 * power
 	b.restart()
-
-
-func number(p: Vector3, value: float, crit := false) -> void:
-	var l := _numbers[_next_number]
-	_number_life[_next_number] = 0.65
-	_number_vel[_next_number] = Vector3(randf_range(-1.0, 1.0), 4.0, 0.0)
-	_next_number = (_next_number + 1) % NUMBERS
-	l.text = str(int(round(value))) + ("!" if crit else "")
-	l.modulate = Color(1.0, 0.85, 0.2) if crit else Color(1, 1, 1)
-	l.outline_modulate = Color(0.6, 0.1, 0.0) if crit else Color(0, 0, 0)
-	l.font_size = 88 if crit else 60
-	l.global_position = p + Vector3(randf_range(-0.3, 0.3), 1.4, 0)
-	l.scale = Vector3.ONE * 1.6
-	l.visible = true
 
 
 func ring(p: Vector3, radius: float, color: Color, duration := 0.35) -> void:
@@ -187,19 +152,6 @@ func shake(amount: float) -> void:
 
 func update(delta: float) -> void:
 	trauma = maxf(0.0, trauma - delta * 1.8)
-	for i in NUMBERS:
-		if _number_life[i] <= 0.0:
-			continue
-		_number_life[i] -= delta
-		var l := _numbers[i]
-		l.global_position += _number_vel[i] * delta
-		_number_vel[i].y -= 9.0 * delta
-		var s := lerpf(1.0, 1.6, clampf((_number_life[i] - 0.5) / 0.15, 0.0, 1.0))
-		l.scale = Vector3.ONE * s
-		l.modulate.a = clampf(_number_life[i] / 0.25, 0.0, 1.0)
-		l.outline_modulate.a = l.modulate.a
-		if _number_life[i] <= 0.0:
-			l.visible = false
 	for i in RINGS:
 		if _ring_life[i] <= 0.0:
 			continue

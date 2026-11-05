@@ -12,7 +12,7 @@ var _next := 0
 var _next_play := {}
 ## Minimum milliseconds between two plays of the same sound, stretched at random up to 1.8 times.
 ## Keep these well above a frame: evenly repeated sounds blur into a low buzz.
-var _throttle := {"hit": 35, "shot": 45, "pickup": 30, "kill": 40, "zap": 60, "boom": 70, "saw": 90, "pop": 40, "tick": 70, "clink": 35, "swing": 60}
+var _throttle := {"hit": 35, "pickup": 30, "kill": 40, "zap": 60, "boom": 70, "pop": 40, "tick": 70, "clink": 35, "swing": 60}
 var muted := false
 
 
@@ -45,8 +45,6 @@ func play(sound: String, volume_db := 0.0, pitch := 1.0, exact := false) -> void
 # --- synthesis -------------------------------------------------------------
 
 func _build_all() -> void:
-	_streams["shot"] = _make(0.07, func(t: float, _i: int) -> float:
-		return _sq(t, lerpf(900.0, 300.0, t / 0.07)) * 0.35 * _env(t, 0.07))
 	_streams["hit"] = _make(0.05, func(t: float, _i: int) -> float:
 		return randf_range(-1.0, 1.0) * 0.4 * _env(t, 0.05))
 	_streams["kill"] = _make(0.14, func(t: float, _i: int) -> float:
@@ -78,18 +76,13 @@ func _build_all() -> void:
 		return _sq(t, lerpf(160.0, 70.0, t / 0.22)) * 0.4 * _env(t, 0.22))
 	_streams["dash"] = _make_lowpass(0.25, 0.35, func(t: float, _i: int) -> float:
 		return randf_range(-1.0, 1.0) * sin(PI * t / 0.25) * 0.8)
-	_streams["saw"] = _make(0.1, func(t: float, _i: int) -> float:
-		return _saw(t, 520.0) * 0.18 * _env(t, 0.1))
 	_streams["card"] = _make(0.05, func(t: float, _i: int) -> float:
 		return _sq(t, 1600.0) * 0.2 * _env(t, 0.05))
 	_streams["levelup"] = _arpeggio([523.25, 659.25, 783.99, 1046.5], 0.09, 0.25)
-	_streams["jackpot"] = _arpeggio([523.25, 659.25, 783.99, 1046.5, 1318.5, 1568.0, 2093.0], 0.07, 0.25)
 	_streams["reward"] = _arpeggio([783.99, 1174.66], 0.06, 0.25)
 	_streams["warn"] = _make(1.6, func(t: float, _i: int) -> float:
 		var f := 420.0 + 260.0 * (0.5 + 0.5 * sin(TAU * 1.25 * t))
 		return _sq(t, f) * 0.25 * clampf((1.6 - t) * 4.0, 0.0, 1.0))
-	_streams["slam"] = _make_lowpass(0.8, 0.06, func(t: float, _i: int) -> float:
-		return (sin(TAU * lerpf(90.0, 30.0, t / 0.8) * t) + randf_range(-0.6, 0.6)) * pow(1.0 - t / 0.8, 2.0))
 
 
 func _env(t: float, length: float) -> float:
