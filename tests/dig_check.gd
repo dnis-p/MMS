@@ -51,6 +51,7 @@ func _process(delta: float) -> void:
 			_check_goal(r)
 			_check_rewards(r)
 			_check_meta(r)
+			_check_objectives(r)
 			_check_rooms(r)
 			_check_evolutions(r)
 			_check_clues(r)
@@ -590,6 +591,76 @@ func _check_meta(r: Run) -> void:
 	_check("every locked thing has a way to get it", _all_reachable())
 	_check("the nearest goals come first", Profile.closest_goals(1)[0]["id"] != "heart")
 	Profile.reset()
+
+
+## The objectives panel in a run: which goals it picks, what it counts, and when it hides.
+func _check_objectives(r: Run) -> void:
+	var h := r.hud
+	var counters := ["cubes", "kills", "best_combo", "geodes", "frenzies", "relics", "evolutions", "seams", "crushed", "band"]
+	var saved := {}
+	for id in counters:
+		saved[id] = r.get(id)
+		r.set(id, 0)
+	var saved_loot := r.loot
+	var saved_killed := r.bosses.killed
+	r.loot = 0.0
+	r.bosses.killed = 0
+	Profile.reset()
+	var shown: int = Defs.OBJECTIVES["shown"]
+	var ids := func() -> Array: return Profile.closest_goals(shown, r.live_stats()).map(func(g): return g["id"])
+	var start: Array = ids.call()
+	_check("a fresh profile lists the first goals in order, the same every time (%s)" % ", ".join(start),
+		start.size() == shown and start == ids.call() and start == [Defs.GOALS[0]["id"], Defs.GOALS[1]["id"], Defs.GOALS[2]["id"]])
+
+	# What the panel shows, row by row.
+	var rows := func() -> Array:
+		h._goals_next = 0.0
+		h.refresh(r)
+		var out: Array = []
+		for p in h._goal_rows:
+			if p[0].visible:
+				out.append([p[1].text, p[2].text, p[3].value])
+		return out
+	var find := func(text: String) -> Array:
+		for row in rows.call():
+			if row[0] == text:
+				return row
+		return []
+	r.kills = 2000
+	_check("the goal nearest to done comes first", ids.call()[0] == "kills")
+	var kills: Array = find.call("Kill 3,000 enemies")
+	_check("a row shows the goal, its count and a bar (%s)" % str(kills), kills.size() == 3 and kills[1] == "2,000 / 3,000" and absf(kills[2] - 2000.0 / 3000.0) < 0.01)
+	_check("the panel is on screen", h._goals_box.visible and rows.call().size() == shown)
+	Profile.stats["kills"] = 500
+	_check("what you did in earlier runs counts too", find.call("Kill 3,000 enemies")[1] == "2,500 / 3,000")
+	r.loot = 1500.0
+	_check("gems you carry count as banked", find.call("Bank 3,000 gems in total")[1] == "1,500 / 3,000")
+	r.band = 3
+	Profile.stats["band"] = 4
+	var stone: Dictionary = Defs.GOALS[2]
+	_check("a best-of stat takes the larger of this run and before, not the sum", Profile.goal_total(stone, r.live_stats()) == 4)
+	Profile.stats["band"] = 1
+	_check("a goal this run has met reads DONE", find.call("Reach the Stone layer")[1] == "DONE")
+	Profile.done["kills"] = true
+	_check("a goal already finished is not listed", not ids.call().has("kills"))
+	h.map_full.visible = true
+	h.refresh(r)
+	_check("the panel steps aside for the full map", not h._goals_box.visible)
+	h.map_full.visible = false
+	h.refresh(r)
+	_check("and comes back", h._goals_box.visible)
+	for g in Defs.GOALS:
+		Profile.done[g["id"]] = true
+	rows.call()
+	_check("with every goal done there is no panel", Profile.closest_goals(shown, r.live_stats()).is_empty() and not h._goals_box.visible)
+
+	Profile.reset()
+	for id in counters:
+		r.set(id, saved[id])
+	r.loot = saved_loot
+	r.bosses.killed = saved_killed
+	h._goals_next = 0.0
+	h.refresh(r)
 
 
 func _check_rooms(r: Run) -> void:
