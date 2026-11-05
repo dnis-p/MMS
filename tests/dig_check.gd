@@ -1190,7 +1190,7 @@ func _check_dash(r: Run) -> void:
 	_check("it takes one hit at a time, like you", d.clone_hp == after_hit)
 	_sim(r, 10)
 	_check("and the next one once the gap is over", d.clone_hp < after_hit)
-	_check("the car stays unharmed", p.hp == hp)
+	_check("you stay unharmed", p.hp == hp)
 	e.remove(touching)
 	var wide := d.clone_health()
 	span = d.dash_distance()

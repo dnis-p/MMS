@@ -6,7 +6,7 @@ Technical reference for DIG: the rules as they are now, not how they got there. 
 - **Names.** `RUN.cave_r` means key `cave_r` in the `Defs.RUN` dictionary. The same goes for `THREATS`, `WORLD`, `FRENZY`, `DIGGER`, `CAMERA`, `AIM` and `PAD`.
 - **Units.** Distances are metres, times are seconds. One cube is 0.5 m wide.
 - **Status.** Numbers are first guesses for testing. Section 15 says what has been measured.
-- **History and ideas.** `docs/DESIGN.md` keeps decisions, the done list (section 8) and the to-do list (section 9).
+- **History and ideas.** `docs/DESIGN.md` keeps decisions, the done list (section 6) and the to-do list (section 7).
 
 ## 1. The game in short
 Top-down 3D digging roguelite, in Godot 4.7, GDScript, GL Compatibility renderer. The target feel is popping bubble wrap with Vampire Survivors rewards. You move, and your tools dig and fight by themselves where you aim. Each level-up offers 3 upgrades. Break the Heart at the far end of the mine, or leave early by lift, to keep what you carried. Gems banked between runs buy permanent upgrades. The target run length is about 10 minutes (owner).

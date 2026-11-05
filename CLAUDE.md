@@ -1,10 +1,12 @@
 # DIG (working title)
 
-Top-down 3D digging prototype in Godot 4.7, GDScript only, placeholder art and sound. Repo `dnis-p/dig`, branch `main`.
-It started from a car game (MMS), which was retired on 2026-11-04: its last version is kept only as the tag `car-game`.
-See README.md for controls and layout. **Ideas and decisions are in docs/DESIGN.md: read the branch note at its top, and add any
-new idea or decision the owner gives you there (mark owner's words vs your suggestions).** How the game works right now (rules,
-formulas, scaling, what to edit for a tweak) is in docs/MECHANICS.md.
+Top-down 3D digging prototype in Godot 4.7, GDScript only, placeholder art and sound. Repo `dnis-p/dig`. Two devs, each on
+their own branch from `main` (owner, 2026-11-05): the owner (dnis-p) on `dev/dnis`, gprundev on theirs. Finished features
+are merged into `main` a little at a time.
+See README.md for controls and layout. **Ideas and decisions are in docs/DESIGN.md: add any new idea or decision the owner
+gives you there (mark owner's words vs your suggestions).** How the game works right now (rules,
+formulas, scaling, what to edit for a tweak) is in docs/MECHANICS.md. docs/STRUCTURE.md shows how it fits together as
+Mermaid diagrams, with planned parts dashed.
 
 ## Design goals (from the owner, keep these in mind for every change)
 - It should feel like popping bubble wrap, with Vampire Survivors rewards: juicy visuals and sound come first.
@@ -49,21 +51,26 @@ Parse errors that mention `Sfx` only occur when scripts are checked standalone (
 - Mouse aiming (hidden captured pointer, arrow on a ring) is untested with a real mouse, and the capture is untested in a browser. Gamepad play, including rumble, is tested only with simulated input, not a real controller.
 
 ## How we work (agreed with the owner)
-docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 = done list** (since v1.0).
-1. When an item from section 9 is completed, **move it to section 8** (remove it from 9).
-2. In section 8 write an accurate description of what was actually implemented and how it behaves.
+docs/DESIGN.md ends with two tracking sections: **7 = owner's to-do list**, **6 = done list**.
+1. When an item from section 7 is completed, **move it to section 6** (remove it from 7).
+2. In section 6 write an accurate description of what was actually implemented and how it behaves.
    If it differs from the proposal (different approach, changed number, dropped/added part, limitation),
    say so explicitly and say why. Keep the owner's original wording if it helps, then add what really happened.
 3. Describe real behavior, not intentions. Check the code; don't claim something works if it wasn't verified.
 4. If an item can't be done as proposed, don't silently change it: tell the owner, explain options, wait.
-5. New ideas/decisions the owner gives in chat go into docs/DESIGN.md (section 9 for improvements, plus the
+5. New ideas/decisions the owner gives in chat go into docs/DESIGN.md (section 7 for improvements, plus the
    relevant section for decisions), marked as the owner's. Claude's own suggestions are marked "(suggested)".
    Anything marked "Decided" stays unless the owner says otherwise.
 6. Update README.md and CLAUDE.md when something they describe changes (controls, content, commands, gaps).
    Update docs/MECHANICS.md in the same commit whenever a rule, formula or balance number it states changes: it is what
    other models and people get to work from, and it describes how things are now, not their history.
+   Likewise update the diagrams in docs/STRUCTURE.md when the structure they show changes (the loop, a run's phases and
+   endings, where stats come from, unlocks), or when a planned part is built or dropped. Mermaid can't take a colon inside
+   a state diagram's label.
 7. Keep entries concise, dated, in the style of the rest of the file.
 8. Git: small, clearly named commits. Run `git pull` before starting work (the owner may edit on GitHub).
+   Work on the dev's own branch, not on `main`. Bring `main` into it now and then (`git merge origin/main`), so the other
+   dev's work arrives in small pieces. A feature goes to `main` only when the owner asks, by a pull request or a merge.
    Don't push unless asked (owner pushes about daily). Ask before force-pushing/rewriting history.
    Don't commit export_presets.cfg changes (e.g. "Signed" on) unless asked. Ask before anything destructive,
    anything that costs money, or anything that changes a "Decided" item.
@@ -78,5 +85,5 @@ docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 
 - Android Studio is installed; the Android SDK and Java are set in the Godot editor, so APKs can be exported
   from the editor (Project > Export). `tools/android/build_apk.sh` and `tools/web/build_web.sh` call `godot`
   from PATH, so they need a `godot` alias/shim to the console exe in Git Bash (bash itself is available).
-- Saves are in `%APPDATA%/Dig` (`config/custom_user_dir_name`): `options.cfg`, and `profile.cfg` once a run is saved. Don't delete them without asking, and don't rename the folder without moving them. The owner plays mostly in the browser, where saves live in browser storage. `%APPDATA%/MMS-Dig` is the old folder (since 2026-11-04) and `%APPDATA%/MMS` the old car game's.
+- Saves are in `%APPDATA%/Dig` (`config/custom_user_dir_name`): `options.cfg`, and `profile.cfg` once a run is saved. Don't delete them without asking, and don't rename the folder without moving them. The owner plays mostly in the browser, where saves live in browser storage. `%APPDATA%/MMS-Dig` is the old folder (until 2026-11-04).
 - `icon.svg.import` shows as modified after imports (line endings); ignore it, don't commit it.
