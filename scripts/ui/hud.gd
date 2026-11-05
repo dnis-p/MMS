@@ -296,7 +296,7 @@ func _refresh_goals(run: Node) -> void:
 		var g: Dictionary = goals[i]
 		var need := int(g["need"])
 		var total := mini(Profile.goal_total(g, live), need)
-		var count := "DONE" if total >= need else "%s / %s" % [_format(total), _format(need)]
+		var count := "%s / %s" % [_format(total), _format(need)]
 		if parts[1].text != g["text"]:
 			parts[1].text = g["text"]
 		if parts[2].text != count:

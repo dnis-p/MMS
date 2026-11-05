@@ -640,7 +640,7 @@ func _check_objectives(r: Run) -> void:
 	var stone: Dictionary = Defs.GOALS[2]
 	_check("a best-of stat takes the larger of this run and before, not the sum", Profile.goal_total(stone, r.live_stats()) == 4)
 	Profile.stats["band"] = 1
-	_check("a goal this run has met reads DONE", find.call("Reach the Stone layer")[1] == "DONE")
+	_check("a goal this run has met leaves the panel, to make room for the next", find.call("Reach the Stone layer").is_empty() and rows.call().size() == shown)
 	Profile.done["kills"] = true
 	_check("a goal already finished is not listed", not ids.call().has("kills"))
 	h.map_full.visible = true
