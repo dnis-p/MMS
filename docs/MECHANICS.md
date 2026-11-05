@@ -413,6 +413,11 @@ Every price doubles per level, except the Tool Belt, which triples. The whole sh
 
 Beam has no goal: it comes from the Strange Lens relic. Stats add up across runs, except `band` and `combo`, which keep the best run. The `banked` stat counts gems kept from runs, including the Heart bonus, but not goal payouts.
 
+**The objectives panel** (`Defs.OBJECTIVES`, built in `Hud._build_goals`). During a run the top left, under the tool and boost boxes, lists the `OBJECTIVES.shown` = 3 unfinished goals nearest to done: the goal's text, `count / need` (or DONE), and a thin bar.
+- **What it counts:** the stat as it stands before the run plus this run so far (`Run.live_stats`, then `Profile.goal_total`), so `kills`, `cubes`, `geodes`, `bosses` and the like add up and `band` and `combo` take the larger. `banked` counts **all** the gems you carry, as if you got out now: dying would keep only `RUN.death_keep` of them. `lifts` and `hearts` stay 0 until the run ends that way. The banner that announces a goal during the run is stricter: it uses the death share (`Run._announce_goals`).
+- **Which goals:** most of the goal met first, goals already finished (`Profile.done`) left out, ties in the order of `Defs.GOALS` (`Profile.closest_goals`, which the results screen uses too). A goal this run has already met reads DONE and keeps its row until the run ends, when it is paid. With every goal finished there is no panel.
+- **When:** redrawn every `OBJECTIVES.every` = 0.25 s of run time. Hidden while the full map is open.
+
 ## 14. Where to change what
 
 | To change | Edit |
@@ -420,6 +425,7 @@ Beam has no goal: it comes from the Strange Lens relic. Stats add up across runs
 | Levelling speed | `Defs.xp_to_next`, `RUN.gem_xp`, cube `xp` |
 | Gems earned per run | `RUN.gem_bank`, `RUN.death_keep`, `RUN.heart_bonus` |
 | Shop and goal pace | `Defs.SHOP`, `Defs.GOALS` |
+| The objectives panel | `Defs.OBJECTIVES`: how many goals, how often it redraws, its width and backing |
 | Enemy toughness | `THREATS.hard_power`, `tough_per`, `hp_band` |
 | Enemy numbers | `THREATS.crowd_per`, the `swarm_*` and `horde_*` values |
 | How far off enemies arrive | `THREATS.spawn_margin`, `spawn_depth` |
