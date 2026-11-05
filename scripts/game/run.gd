@@ -860,6 +860,12 @@ func _run_stats(kept: int, how: String) -> Dictionary:
 		"frenzies": frenzies, "relics": relics, "evolutions": evolutions, "bosses": bosses.killed, "seams": seams, "crushed": crushed, "lifts": 1 if how == "lift" else 0, "hearts": 1 if how == "heart" else 0}
 
 
+## What this run has done so far, as the profile's stats, for the objectives panel. `banked` counts all
+## the gems you carry, as if you got out now; dying keeps only a share of them.
+func live_stats() -> Dictionary:
+	return _run_stats(int(loot), "")
+
+
 ## Goals are only paid out at the end, but you hear about them the moment you earn them.
 func _announce_goals(delta: float) -> void:
 	_goal_timer -= delta

@@ -90,11 +90,22 @@ static func claim_goals() -> Array:
 	return news
 
 
-## The unfinished goals nearest to done.
-static func closest_goals(n: int) -> Array:
-	var open: Array = Defs.GOALS.filter(func(g): return not done.has(g["id"]))
-	open.sort_custom(func(a, b): return float(stat(a["stat"])) / a["need"] > float(stat(b["stat"])) / b["need"])
-	return open.slice(0, n)
+## What a goal's stat stands at, with the numbers of a run still going (`run_stats`, as Run.live_stats gives
+## them) added. Not capped at the goal's need.
+static func goal_total(g: Dictionary, run_stats := {}) -> int:
+	return with_run(g["stat"], int(run_stats[g["stat"]])) if run_stats.has(g["stat"]) else stat(g["stat"])
+
+
+## The unfinished goals nearest to done, by how much of each is met, counting `run_stats` if a run is on.
+## Goals tied keep the order of Defs.GOALS, so the list doesn't shuffle from one look to the next.
+static func closest_goals(n: int, run_stats := {}) -> Array:
+	var open: Array = []
+	for i in Defs.GOALS.size():
+		var g: Dictionary = Defs.GOALS[i]
+		if not done.has(g["id"]):
+			open.append([minf(float(goal_total(g, run_stats)) / g["need"], 1.0), i])
+	open.sort_custom(func(a, b): return a[0] > b[0] or (a[0] == b[0] and a[1] < b[1]))
+	return open.slice(0, n).map(func(o): return Defs.GOALS[o[1]])
 
 
 static func has_tool(id: String) -> bool:

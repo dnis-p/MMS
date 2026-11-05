@@ -20,6 +20,10 @@ var _dash_bar: ProgressBar  # the Dash Drive's cooldown, once you hold it
 var _dash_label: Label
 var _dash_text := ""
 var _dash_ready := false
+var _goals_box: PanelContainer  # the objectives panel: the goals you are closest to, counting this run
+var _goal_rows: Array = []  # per row: [row, text label, count label, bar]
+var _goals_next := 0.0  # run time of the next refresh
+var _goals_any := false
 var _hint: Label
 var _fps_label: Label
 var _compass: Control
@@ -101,6 +105,7 @@ func _ready() -> void:
 	_boost_icons = HBoxContainer.new()
 	_boost_icons.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	left.add_child(_boost_icons)
+	_build_goals(left)
 
 	_depth_label = Ui.label("", 22)
 	_depth_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
@@ -231,6 +236,74 @@ func _ready() -> void:
 	add_child(_hint)
 
 
+## The objectives panel, under the tool and boost boxes: a title, then a line and a thin bar per goal.
+func _build_goals(parent: Control) -> void:
+	var o := Defs.OBJECTIVES
+	_goals_box = PanelContainer.new()
+	_goals_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_goals_box.custom_minimum_size.x = o["width"]
+	_goals_box.visible = false
+	var back := StyleBoxFlat.new()
+	back.bg_color = o["bg"]
+	back.set_corner_radius_all(10)
+	back.content_margin_left = 12
+	back.content_margin_right = 12
+	back.content_margin_top = 8
+	back.content_margin_bottom = 10
+	_goals_box.add_theme_stylebox_override("panel", back)
+	var box := VBoxContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_constant_override("separation", 5)
+	_goals_box.add_child(box)
+	box.add_child(Ui.label("OBJECTIVES", 15, Color(1.0, 0.65, 0.2)))
+	for i in int(o["shown"]):
+		var row := VBoxContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_theme_constant_override("separation", 2)
+		var line := HBoxContainer.new()
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var text := Ui.label("", 18, Color(0.92, 0.9, 0.85))
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text.clip_text = true
+		line.add_child(text)
+		var count := Ui.label("", 18, Color(1.0, 0.85, 0.35))
+		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		line.add_child(count)
+		row.add_child(line)
+		var bar := Ui.bar(Color(1.0, 0.75, 0.25), 8)
+		row.add_child(bar)
+		box.add_child(row)
+		_goal_rows.append([row, text, count, bar])
+	parent.add_child(_goals_box)
+
+
+## The goals nearest to done, counting this run so far, a few times a second. Hidden while the full map is
+## open, and when there is nothing left to do.
+func _refresh_goals(run: Node) -> void:
+	_goals_box.visible = _goals_any and not map_full.visible
+	if run.run_time < _goals_next:
+		return
+	_goals_next = run.run_time + float(Defs.OBJECTIVES["every"])
+	var live: Dictionary = run.live_stats()
+	var goals := Profile.closest_goals(_goal_rows.size(), live)
+	_goals_any = not goals.is_empty()
+	_goals_box.visible = _goals_any and not map_full.visible
+	for i in _goal_rows.size():
+		var parts: Array = _goal_rows[i]
+		parts[0].visible = i < goals.size()
+		if i >= goals.size():
+			continue
+		var g: Dictionary = goals[i]
+		var need := int(g["need"])
+		var total := mini(Profile.goal_total(g, live), need)
+		var count := "DONE" if total >= need else "%s / %s" % [_format(total), _format(need)]
+		if parts[1].text != g["text"]:
+			parts[1].text = g["text"]
+		if parts[2].text != count:
+			parts[2].text = count
+		parts[3].value = float(total) / need
+
+
 func show_hint(text: String, duration := 4.0) -> void:
 	_hint.text = text
 	_hint.modulate.a = 1.0
@@ -321,6 +394,7 @@ func refresh(run: Node) -> void:
 	_last_combo = combo
 	_refresh_dash(run.dash)
 	_refresh_icons(run.tools)
+	_refresh_goals(run)
 
 
 ## A bar that fills while the dash recharges, with the key to press once it is ready.
