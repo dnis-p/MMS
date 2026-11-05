@@ -1,6 +1,8 @@
 # DIG (working title)
 
-Top-down 3D digging prototype in Godot 4.7, GDScript only, placeholder art and sound. Repo `dnis-p/dig`, branch `main`.
+Top-down 3D digging prototype in Godot 4.7, GDScript only, placeholder art and sound. Repo `dnis-p/dig`. Two devs, each on
+their own branch from `main` (owner, 2026-11-05): the owner (dnis-p) on `dev/dnis`, gprundev on theirs. Finished features
+are merged into `main` a little at a time.
 See README.md for controls and layout. **Ideas and decisions are in docs/DESIGN.md: add any new idea or decision the owner
 gives you there (mark owner's words vs your suggestions).** How the game works right now (rules,
 formulas, scaling, what to edit for a tweak) is in docs/MECHANICS.md. docs/STRUCTURE.md shows how it fits together as
@@ -67,6 +69,8 @@ docs/DESIGN.md ends with two tracking sections: **7 = owner's to-do list**, **6 
    a state diagram's label.
 7. Keep entries concise, dated, in the style of the rest of the file.
 8. Git: small, clearly named commits. Run `git pull` before starting work (the owner may edit on GitHub).
+   Work on the dev's own branch, not on `main`. Bring `main` into it now and then (`git merge origin/main`), so the other
+   dev's work arrives in small pieces. A feature goes to `main` only when the owner asks, by a pull request or a merge.
    Don't push unless asked (owner pushes about daily). Ask before force-pushing/rewriting history.
    Don't commit export_presets.cfg changes (e.g. "Signed" on) unless asked. Ask before anything destructive,
    anything that costs money, or anything that changes a "Decided" item.

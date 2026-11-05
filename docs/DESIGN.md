@@ -4,7 +4,7 @@ Living document. The owner's words and decisions come first; Claude's suggestion
 **(suggested)** and are only ideas until the owner says yes. Anything marked **Decided** should not be
 changed without asking. Add new ideas at the bottom of the right section, with the date if useful.
 
-**DIG:** a top-down 3D digging roguelite, on branch `main`. How it works right now is in docs/MECHANICS.md, how it fits
+**DIG:** a top-down 3D digging roguelite. Each dev works on their own branch and merges finished features into `main`. How it works right now is in docs/MECHANICS.md, how it fits
 together in docs/STRUCTURE.md (diagrams), the art style in docs/ART.md.
 
 ## 1. Vision (owner)
@@ -63,6 +63,9 @@ together in docs/STRUCTURE.md (diagrams), the art style in docs/ART.md.
 - Which of the section 4 ideas does the owner want first?
 
 ## 6. ALL IMPROVEMENTS IMPLEMENTED SO FAR
+**2026-11-05, a branch per dev** (owner: "each dev will be working on a separate branch from the main ... we will slowly merge new features to the main one")
+- The owner's branch is `dev/dnis`, made from `main` (the name is Claude's pick, as the owner had none; gprundev's could be `dev/gprundev`). CI builds and tests every branch, but only `main` publishes the web build.
+
 **2026-11-05, structure diagrams** (owner: a diagram of the game's logic and structure that Claude can read and keep up to date)
 - `docs/STRUCTURE.md`, in Mermaid, which GitHub draws from text (suggested over draw.io, Excalidraw or Miro, which Claude can't edit well or at all). Five diagrams: the loop between runs, inside a run, a run's phases and endings, where your stats come from, and unlocks now and planned. Planned parts (owner's decisions not built yet) have dashed borders.
 - Drawn from what MECHANICS says, not from the owner's own picture of the plan, so the owner may want to change it. Checked by rendering every diagram with Mermaid 11.4 in a browser; not yet looked at on GitHub.
