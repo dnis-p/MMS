@@ -30,7 +30,7 @@ const MAP := {"wall": 2.0, "floor": Color(0.86, 0.81, 0.71), "rock_dim": 0.5, "m
 	"zooms": [1.0, 2.0, 4.0, 8.0], "zoom": 2, "shade": 0.5, "hold": 0.3, "opacities": [0.35, 0.5, 0.65, 0.8, 1.0], "opacity": 0.65,
 	"budget": 0.6, "every": 0.1}
 
-## The objectives panel in a run: always the two steps that finish the map (the guardians, then the Heart, bars in
+## The objectives panel in a run: always the two main goals, the steps that finish the map (the guardians, then the Heart, bars in
 ## map_color), and below them the `shown` unfinished goals nearest to done, counting this run so far, which come and go as
 ## refreshed every `every` seconds. width: pixels. bg: the panel's backing, so the text reads over bright rock.
 const OBJECTIVES := {"shown": 3, "every": 0.25, "width": 330.0, "bg": Color(0.04, 0.04, 0.06, 0.55), "map_color": Color(0.4, 0.9, 1.0)}

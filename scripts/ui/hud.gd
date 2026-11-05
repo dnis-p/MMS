@@ -257,7 +257,7 @@ func _build_goals(parent: Control) -> void:
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_theme_constant_override("separation", 5)
 	_goals_box.add_child(box)
-	box.add_child(Ui.label("FINISH THE MAP", 15, o["map_color"]))
+	box.add_child(Ui.label("MAIN GOALS", 15, o["map_color"]))
 	for i in 2:
 		_map_rows.append(_goal_row(box, o["map_color"]))
 	_side_title = Ui.label("SIDE GOALS", 15, Color(1.0, 0.65, 0.2))
