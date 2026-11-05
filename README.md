@@ -27,7 +27,7 @@ Fog of war is on by default: it thickens in rings around what you have mined or 
 
 The minimap in the bottom right and the full map show only what you have opened or seen, plus the rock at its edge. The full map lies over the game with your digger on the map right on top of your digger; its opacity is in Options and the pause menu.
 
-In a run an OBJECTIVES panel at the top left shows the three goals you are closest to, with this run counted in as you play (gems you carry count as banked there).
+In a run an OBJECTIVES panel at the top left shows what finishes the map (guardians, then the Heart) and the three side goals you are closest to, with this run counted in as you play (gems you carry count as banked there).
 
 
 Movement is instant, like a 2D game, and separate from aiming. Tools dig by themselves where you aim. Cubes give a little XP, ore drops shiny gems worth more,
