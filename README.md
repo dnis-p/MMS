@@ -54,6 +54,6 @@ Options after `--`: `--autotest`, `--seed=<n>`, `--give=<tools>` (or `all`; `das
 - `scripts/ui/loading.gd`: the loading screen.
 - `scripts/game/run.gd`: one dig; routes events, how it ends, camera, input.
 - `scripts/game/debris.gd`, `fx.gd`, `pickups.gd`: chips, rings and shake, gems.
-- `docs/DESIGN.md`: ideas and decisions; sections 8 and 9 track done and to-do.
+- `docs/DESIGN.md`: ideas and decisions; sections 6 and 7 track done and to-do.
 - `docs/MECHANICS.md`: how the game works now: rules, formulas, scaling and what to edit for a tweak.
 - `docs/ART.md`: the art style (low-poly pixel 3D) and a Meshy AI prompt for every model.

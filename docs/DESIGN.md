@@ -4,141 +4,45 @@ Living document. The owner's words and decisions come first; Claude's suggestion
 **(suggested)** and are only ideas until the owner says yes. Anything marked **Decided** should not be
 changed without asking. Add new ideas at the bottom of the right section, with the date if useful.
 
-**DIG (since 2026-10-31):** this repo is the digging prototype, on branch `main`. It started from a car game (MMS), retired on
-2026-11-04 and kept only as the tag `car-game`, so sections 1-5 and the older entries below describe that game, not this one. The
-digging entries are the first ones in sections 8 and 9.
+**DIG:** a top-down 3D digging roguelite, on branch `main`. How it works right now is in docs/MECHANICS.md, the art
+style in docs/ART.md.
 
 ## 1. Vision (owner)
-- (owner, 2026-10-30) Update: PC is the priority, and the fixed path is replaced by open maps with free 8-direction
-  driving (see 4, 5 and 8). The two points below about phone-first and auto-driving are the original vision.
-- A mobile game first (a test of gameplay with placeholder art), possibly a full-scale PC game later.
-  Must be **multiplatform** (Android, web, iOS later, PC).
-- Linear progression through levels. You **drive a vehicle through different biomes** and kill hordes of
-  monsters or enemies that come to you.
-- The vehicle **drives automatically along a predetermined path** (straight in the prototype, curving later)
-  because it is a phone game. The player attacks and survives with weapons and abilities.
-- **Several classes** so players can replay with different characters. Example: a heavy tank that moves
-  slowly but has lots of defense and power.
-- **Themes**: starts as pure Mad Max / motorhead, then passes through cyberpunk zones and many other
-  themes, each with upgrades.
-- **Enemy variety and bosses.** Bosses change the gameplay to an arena (see 3).
-- **Each level gets harder.** Leaderboards and rankings add competitiveness.
-- Name "MMS / Motorhead Madness Survival" is **provisional**.
+- A digging game that feels like **popping bubble wrap**, with Vampire Survivors rewards: juicy visuals and sound come first
+  (2026-10-31).
+- Top-down 3D, a world of small cubes. Hit cubes flash and vibrate, broken ones burst into bits, ore leaves something shiny.
+- Movement is instant, like 2D games such as VS or Enter the Gungeon, and separate from aiming: the mouse aims.
+- Enemies and traps exist (2026-11-01), but the digging feel still comes first. No theme yet.
+- PC only for now (2026-10-31).
 
 ## 2. Feel principles (owner)
 - **Satisfying, simple, scalable**, like Vampire Survivors: play almost without thinking, anyone can play,
   no deep build theory (not Path of Exile).
 - Satisfaction comes from juicy feedback: hits, sounds with slot-machine-like rewards, visual impact.
 - Upgrades stay simple; max-level items **combine into evolved versions** (as in Vampire Survivors).
-- Keep the prototype free of extra mechanics. No ability buttons: **Decided** (keep it like Vampire Survivors).
+- Tools fire by themselves, no ability buttons: **Decided** (keep it like Vampire Survivors). One exception (owner, 2026-11-04):
+  the Dash Drive, which you press.
+- Permanent upgrades must not take too long to earn: no 80-hour grind for the best one.
 
-## 3. Boss arena (owner)
-- Camera fixed to the vehicle; the vehicle constantly circles the boss and attacks.
-- All weapons and upgrades keep working. The player can swipe to move to an **outer or inner ring**.
-- Dash to dodge along the circle; the player only chooses the direction. **Decided** (built).
-- (owner, 2026-10-30) The dash direction becomes the circling direction (built, see section 8).
-
-## 4. Decisions made so far
+## 3. Decisions made so far
 | Topic | Decision |
 |---|---|
-| Camera | 3D scene, nearly top-down with a slight tilt (about 18 degrees from vertical), fixed orientation. Can still be changed by moving the camera. |
-| Movement | (owner, 2026-10-30) Free driving on walled open maps with smooth, tight steering ("flowy", no drift): the car follows its front wheels like a real car. Replaces instant 8-direction turning. Touch uses an analog virtual stick. |
-| Maps | (owner, 2026-10-30) Roads optional per map. No big structures that cover the player or enemies; buildings only as map walls. |
-| Boss trigger | Random moment 90-150 s into a stage (owner offered this or kills; Claude picked this one, not confirmed yet). |
-| Engine / language | Godot 4.7, GDScript. Compatibility renderer for phones and web. |
-| Orientation | Landscape (works on phone and PC). Portrait was mentioned as a possibility, not chosen. |
-| Chest | Not a slot machine. A tachometer ("Redline"): needle lands on green = 1, orange = 3, red = 5 rewards. Owner asked for a different twist. Open to a better idea. |
-| Prototype scope | 1 stage loop, 3 classes, 6 weapons, 6 passives, 6 evolutions, 4 biomes, ring boss. |
-| Leaderboard | Local top-10 only for now. |
-| Distribution | APK from GitHub Actions, web via GitHub Pages (needs public repo), itch.io possible later. |
+| Engine / language | Godot 4.7, GDScript, GL Compatibility renderer. |
+| Platform | PC only for now (owner, 2026-10-31): mouse and keyboard, or a gamepad. Input stays as actions and UI anchored. |
+| Camera | Top-down 3D (owner), fixed orientation, looking about 70 degrees down (`Defs.CAMERA`). |
+| Movement | Instant, separate from aiming (owner). |
+| Art | Low-poly pixel 3D (owner, 2026-11-04), see docs/ART.md. |
+| Fog | Fog of war like an ARPG dungeon, on by default, with a switch (owner). |
+| Distribution | Web build on GitHub Pages and an APK from GitHub Actions; itch.io possible later. |
 
-## 5. Future features (owner's direction)
-- More classes, themes/biomes and enemy types; bosses per biome.
-- Online **leaderboards and rankings** to drive competition.
-- Possible **PC version** as a full-scale game; keep input, UI and services platform-independent.
-- (owner, 2026-10-30) **PC is now the priority.** The owner mainly tests on PC; phone stays a target but comes after it.
-- (owner, 2026-10-30) Free movement: **built** on owner's request, see section 8. Owner's answers on how it should work:
-  - Movement: **8 directions, changed instantly** when the buttons are pressed, no turning animation, like Vampire Survivors.
-  - Progress to the boss: either by **enemies killed**, or the boss **appears at a random moment in a time window**
-    (for example between 90 and 150 s, the screen changes and says "[boss name] incoming").
-  - Phone: same game as PC for now, using a virtual controller to move, as Vampire Survivors does.
-- (owner, 2026-10-30) Idea, not to be implemented yet: **procedural levels**, for levels with walls and so on. Asked whether
-  it is viable or too complicated and unnecessary.
-  - (suggested) Viable if rule-based: keep hand-set size, theme and wall ring, randomise the inside from reusable
-    pieces, with a check that the map stays open. Maps already scatter obstacles this way. Avoid full maze or
-    room generation; it adds cost without serving the "play without thinking" goal.
-
-## 6. Ideas backlog (suggested by Claude, not yet approved)
-**Player agency (keep it light given the "play without thinking" rule)**
-- Throttle/brake as the only extra input: risk vs reward (faster = fewer kills and XP, slower = more danger).
-- Short lane-shift swipes for rams and dodging hazards.
-- Ram damage that scales with speed.
-
-**Build and vehicle**
-- Hardpoints with firing arcs (front, sides, rear, roof). Weapons visibly attach to the vehicle (started).
-- Trailers/wagons that carry turrets, shields or drones, so the player grows into a convoy.
-- Heat/fuel resource for weapons and nitro.
-- Cross-theme part combos that unlock hidden evolutions (for example a wasteland flamethrower with cyberpunk drones).
-
-**Run structure**
-- Two progression layers: in-run level-ups plus a garage with permanent upgrades between runs.
-- Forks in the road: risky route (elite enemies, better loot) vs safe route.
-- Biome rules, not just art: EMP zones switch off electronic weapons, sandstorms cut vision,
-  ice makes steering slide, toxic swamp damages when slow.
-
-**Mechanic twist (suggested 2026-10-30)**
-- (approved by owner 2026-10-30) Redline meter: keeping speed and avoiding hits fills a tachometer that raises fire rate and ram power. Stopping or
-  being hit drops it. At full, an automatic short nitro rams through enemies. No button.
-- (saved for later review, owner 2026-10-30) Burnout ring: the car leaves a burning trail; closing a loop around enemies blasts everything inside.
-- (saved for later review, owner 2026-10-30) Roads as fast lanes: driving on a road gives a speed bonus, so map layout matters.
-
-**Food-chain flip (suggested 2026-10-30, reaction to the owner's monster idea in section 9)**
-- Anything smaller than you is eaten by touching it; bigger things hurt you. Auto attacks weaken big ones until they glow, then
-  you drive into them to finish. One input stays one input. Today's threat becomes tomorrow's snack as you grow.
-- Test the rule in the current project with placeholders before choosing a theme. Raccoon that eats its way up from dumpster to
-  city suits the escalation best. Car version: ram wrecks and weld them on.
-- Boss length: aim for a target fight time and set boss HP from it, and check level pace first, since level 25 by 90-150 s is one
-  level every 4-6 s.
-
-**Enemies**
-- Boarders that climb on the vehicle until rammed off, chasers from behind, roadblocks, enemy rammer cars,
-  flying drones, roadside artillery, swarms that slow the vehicle, environmental kills (explosive barrels,
-  collapsing bridges, ramps).
-
-**Class ideas**
-- Interceptor (motorbike, fast, dash), War Rig (truck, turrets, trailers), Hover/Cyber (shields, energy weapons),
-  Hearse/Necro (dead enemies become allies), Engineer buggy (drones, repairs, mines).
-- Built so far: Juggernaut, Interceptor, War Rig.
-
-**Boss arena**
-- Two or three rings (built). Attack patterns designed around the circle (built: radial bursts with a gap,
-  ring slam, sweeping beam, summons). More boss patterns per biome, environmental hazards on the ring
-  that damage the boss when the player dashes through them.
-
-**Competition**
-- Daily/weekly seeded runs with a fixed loadout and level, so rankings are fair.
-- Separate leaderboards per class plus an endless mode.
-- Score rewards skill: time, damage taken, combo, not just kills.
-- Anti-cheat: store seed and inputs so suspicious runs can be replayed and checked.
-- Ghost runs of friends or the player just above you.
-- Rankings must not depend on permanent upgrades or money, or they stop being fair.
-- (owner, 2026-10-30) For multiplayer versions, a leaderboard entry should also show the player's **build, time, score and kills**.
-- (owner, 2026-10-30) Not decided if permanent upgrades count on leaderboards. Owner's view: everyone can earn them by playing,
-  so it is not really unfair. They must not take too long: no 80-hour grind for the best upgrade.
-
-**PC / later**
-- Manual aim (twin-stick), local co-op where a second player controls the roof turret.
-- Business model open: mobile free-to-play with ads/purchases (Unity has the strongest ad support, but Godot
-  was chosen for this prototype) vs premium on Steam. Decide after the prototype is playtested.
-- Platform services behind one interface (Google Play Games, Game Center, Steamworks).
-
+## 4. Ideas backlog (suggested by Claude, not yet approved)
 **Digging ideas not built yet (suggested 2026-10-31)**
 - Rhythm in three beats once enemies are wanted: calm digging, breaking into a nest and getting surrounded, then the reward. Enemies
   live in pockets, so the owner's "surrounded and shredding" phase comes from your own digging.
 - A slow threat rising behind you (collapse, lava), so standing still is never safe.
 - Runs of about 20 minutes, one descent, with meta progression between runs. Not an open world: it costs saving and streaming and
   loses the VS shape. Buried finds that unlock forever also give the Hades-style mystery.
-- Themes: digging down through a landfill into what is buried under it (raccoons love shiny things), or drill rigs for Motorhead.
+- Themes: digging down through a landfill into what is buried under it (raccoons love shiny things).
 - Close games to study: Deep Rock Galactic: Survivor (VS plus mining), Dome Keeper (digging plus waves), Motherload, Noita.
 
 **Digging brainstorm (suggested 2026-11-01, asked for by the owner, nothing approved yet; none of it needs a new button)**
@@ -151,16 +55,20 @@ digging entries are the first ones in sections 8 and 9.
 - Character ideas: Digger (shovel), Mole (tiny light, feels ore through fog), Rig (no aim, breaks rock by driving into it), Demolisher (bombs, immune to own blasts, gas rock heals), Prospector (double gems, half health), Foreman (a helper bot digs on its own).
 - Tool ideas: Acid (spreads through rock), Tesla Pick (jumps along ore), Dynamite Trail (dropped as you walk), Tunnel Worm (a pet that eats a winding tunnel), Echo (pings reveal the fog), Jackhammer (shockwave along walls).
 - Evolutions: a maxed tool plus a maxed boost, for example Drill plus Quick Hands becomes a Tunnel Borer that leaves a wide corridor.
-- Meta: a short gem shop with no long grind (owner, section 6), a Collection of everything found, a camp that visibly grows, lifts that start you deeper, new mines with their own rules, and a Curse setting that trades danger for gems.
+- Meta: a short gem shop with no long grind (owner, section 2), a Collection of everything found, a camp that visibly grows, lifts that start you deeper, new mines with their own rules, and a Curse setting that trades danger for gems.
 - Themes, in order of Claude's preference: raccoon in a landfill digging down through layers of history (bubble wrap really is trash, tools are junk taped together); gravedigger from cemetery to Hell (fits the lamp and fog, closest to VS); prison escape starting with a spoon (being caught explains every restart); inside a sleeping giant (skin to Heart, gross popping); ant colony (workers fill the tunnels you dig); mole (blindness explains the fog, cute); corporate asteroid mine (disposable staff); dwarves (safe, least original).
 
-## 7. Open questions
-- Is portrait or landscape better for phones? Test on a real device.
-- Are the pacing, difficulty and touch controls right? Not yet tested on a phone.
-- Final name, art direction and sound direction.
-- Which of the section 6 ideas does the owner want first?
+## 5. Open questions
+- Final name, theme and sound direction.
+- Which of the section 4 ideas does the owner want first?
 
-## 8. ALL IMPROVEMENTS IMPLEMENTED SO FAR (since v1.0)
+## 6. ALL IMPROVEMENTS IMPLEMENTED SO FAR
+**2026-11-05, the car game's leftovers removed** (owner: "delete everything from the car game that isn't needed for the dig game, whether it be code or info in the docs")
+- Code: floating damage numbers (40 hidden labels updated every frame, never shown in DIG) and four sounds nothing played (shot, saw, jackpot, slam). The web build's second, "packed" version is gone with its loading page, which still said Motorhead Madness Survival; nothing published it, as GitHub Pages and the itch.io zip use the standard build.
+- Docs: the car game's vision, boss arena, decisions, future features, ideas, open questions, its done entries (2026-10-30) and its to-do items. DESIGN now starts with DIG's own vision, feel principles and decisions, taken from what the owner said for DIG, and the sections are renumbered: 6 is the done list, 7 the to-do list.
+- Kept from the car game's feel principles, as the owner's and true for DIG: VS-like simplicity, juicy feedback, evolutions, no ability buttons (with the Dash Drive as the exception), and no long grind.
+- Not touched: the tag `car-game` on GitHub and the old commits in `main`'s history.
+
 **2026-11-04, the Dash Drive levels up like a tool, one card per level** (owner: dash upgrades had "slightly different name (like long dash) and it still says NEW on those cards"; then "Dash lvl 1 when you first get it ... ->lvl2, 3, 4 etc", "idc if each level the dash changes name but i dont want to see a different name and a separate level from the main upgrade branch it has")
 - Checked: the owner was right. Each of the six upgrades (Long Dash, Dash Speed, Quick Recharge, Decoy Clone, Reinforced Clone, Volatile Clone) was its own card with its own levels, drawn at random, and the first level of each said NEW, though none took a slot. A first fix only changed NEW to "Lv 0 > 1"; the owner then asked for one line, so the upgrades are now levels of the Dash Drive.
 - Now: one card, always titled Dash Drive. Level 1 says NEW and takes the tool slot; then "Lv 1 > 2" up to level 6, the same top level as a tool. It is favoured in the draw like a tool you hold, and only one Dash Drive card shows at a time.
@@ -169,11 +77,11 @@ digging entries are the first ones in sections 8 and 9.
 - **Enemies scale less with it**: a full Dash Drive now counts 6 upgrades, like a tool, not 17.
 - The HUD box shows its level ("D3"), like the tools' numbers. Rule checks cover each level and that no other dash card shows. Bots ran, but nobody has played it.
 
-**2026-11-04, DIG is the whole repo now: branch `main`, repo `dnis-p/dig`** (owner: "get rid of the car game/branch and make the dig one the main branch", "rename the branch to main", "rename the repo to dig or something like that")
-- The digging branch `prototype/dig` became `main`, the default branch. The car game's branch `claude/sleepy-davinci-fxgwnn` was deleted, and its last version is kept as the tag `car-game` (the owner chose a tag over deleting it outright). The car game's older commits are still in `main`'s history, since DIG started from it.
-- The repo is renamed from MMS to `dig`, so the game is now at https://dnis-p.github.io/dig/. The old addresses (/MMS/ and /MMS/dig/) stop working.
-- The site used to be built by the car game's workflow, which built both games. Now DIG's own workflow publishes it on every push to `main`, after the smoke test, web build and APK. The `dig_only` shortcut is gone, as there is nothing else to skip.
-- The Android app shows as DIG and builds as `dig.apk` (was "MMS Prototype", `mms-prototype.apk`). Its app ID is now `com.dnisp.dig` (was `com.mmsprototype.game`): the owner has no copy on a phone yet, so nothing is lost, but it should stay fixed from now on.
+**2026-11-04, DIG is the whole repo now: branch `main`, repo `dnis-p/dig`** (owner: "make the dig one the main branch", "rename the branch to main", "rename the repo to dig or something like that")
+- The digging branch `prototype/dig` became `main`, the default branch.
+- The repo is renamed to `dig`, so the game is at https://dnis-p.github.io/dig/.
+- DIG's own workflow publishes the site on every push to `main`, after the smoke test, web build and APK.
+- The Android app shows as DIG and builds as `dig.apk`. Its app ID is `com.dnisp.dig`: the owner has no copy on a phone yet, so nothing was lost by changing it, but it should stay fixed from now on.
 - Saves moved from `%APPDATA%/MMS-Dig` to `%APPDATA%/Dig` (owner: "could it be just Dig"). The old folder held only `options.cfg` (no dig progress: the owner plays in the browser), which was copied over. The old folder is still there.
 - Builds no longer run when only a tag is pushed.
 - The owner's local folder path was removed from CLAUDE.md, and from every old commit (owner's choice), which changed all commit IDs. The tags `fog-grid-squares` and `fog-soft-rings` were moved to the rewritten commits.
@@ -245,13 +153,6 @@ digging entries are the first ones in sections 8 and 9.
 - **Changed to make room (suggested).** The main menu's Fog of war button became Options, which holds it. The bottom hint is narrower and wraps, so it stays clear of the minimap.
 - **Fog.** With fog on, the map shows only what you know; with it off, the whole mine. A switch mid-run redraws it.
 - **How it is built.** One small texture per 32 by 32 cube chunk, redrawn when something in it changes, nearest first, within 0.6 ms a frame. A chunk takes about 0.4 ms. Checked by rule checks (what shows with and without fog, tap, hold, menus close it, opacity steps) and bot screenshots; the owner hasn't tried it, and it hasn't been checked with a real gamepad.
-
-**2026-11-03, faster web publishing** (owner asked whether the default branch rebuilding every time slows the web build; chose options 1 and 2)
-- **Why it rebuilds at all.** GitHub Pages publishes the whole site as one package, the car game at /MMS/ and this game at /MMS/dig/, so a DIG push still needs the default branch's workflow to rebuild and publish everything. Reusing its old build isn't possible without changing how the site is published (a `gh-pages` branch and a Pages setting), which was not chosen.
-- **Option 1, default branch.** Its workflow has a `dig_only` input. When this branch starts it with `dig_only=true`, the car game's 31 s smoke test and its APK are skipped; its web build (about 9 s) still runs, as the site needs it. Its own pushes and manual runs still do everything.
-- **Option 2, this branch.** The request to republish now goes out as soon as the smoke test and web build pass, before the APK, instead of from a second job after the whole build. If the APK then fails, the site is already updated and the run shows red.
-- **Measured.** Push to live was about 3 minutes before. The first push after the change (2026-11-03, 12:33 UTC) was live 2 min 9 s later: the republish skipped the car game's test and APK as planned.
-- **Seen once: a deploy that didn't go live.** At 12:15 a republish built and deployed the map, and GitHub reported success, but Pages kept serving the deploy from 12:12, for both games, until the next one. It came right after a full deploy of the same car-game commit; the cause isn't visible without a login. An empty commit pushed to this branch republished it. If it happens again, the workflow could check the live site after deploying (suggested).
 
 **2026-11-03, main menu fits the screen again** (owner: on the web the main menu "cuts at the bottom ... dont add a scroll bar to the main menu")
 - **Cause.** The screen is always 720 units tall; a window wider than 16:9 only adds room at the sides. The new How to play button took the main menu to 758, so the last button was cut off, on the web and in the desktop build alike.
@@ -389,9 +290,7 @@ digging entries are the first ones in sections 8 and 9.
   or nests. Difficulty is a first guess. Screenshots show nests and fights; spike plates and the gas fuse were tested by checks but not looked at.
 
 **2026-11-01, playable in a browser** (owner)
-- Published at https://dnis-p.github.io/MMS/dig/, with the car game staying at /MMS/. A push to this branch builds it and then starts the
-  default branch's workflow, which builds both games and publishes them. The only changes on the default branch are its workflow
-  file and CLAUDE.md, not the car game.
+- Each push builds the web version and publishes it on GitHub Pages, now at https://dnis-p.github.io/dig/.
 
 **2026-11-01, fog of war and Pulse** (branch `prototype/dig`; rule checks, a bot and screenshots, the owner has not played it)
 - **Fog of war** (owner), on by default. You see 10 m at most and the rest is black, like an ARPG dungeon. Light follows real sight
@@ -415,9 +314,6 @@ digging entries are the first ones in sections 8 and 9.
 **2026-10-31, digging prototype** (branch `prototype/dig`; rule checks, a bot and screenshots, the owner has not played it and nobody has listened to the sounds)
 - **Raccoon deleted** (owner): the branch `prototype/raccoon-eat` is gone from this PC and GitHub. Lessons kept: hunting alone wasn't
   satisfying; what the owner liked was density, lots of things dying at once.
-- **Base** (owner): car game code on its own branch, so the car game is untouched. Cars, enemies, bosses, weapons, Garage, crates
-  and saves were removed from this branch only. Effects, sounds, gems, level-up screen, HUD pieces and the bot are reused. Saves
-  would go to a separate folder, `MMS-Dig`, so real car progress can't be touched; nothing is saved yet.
 - **World.** Top-down 3D (owner). One flat layer of 102,400 cubes of 0.5 m, each hit point stored per cube, drawn in chunks. Random
   every run: rock changes every 13 m out from the start through 7 bands, with caves, 4 ores and 55 crystal blobs. Bedrock edge.
 - **Movement** (owner): instant. Full speed, new direction and stopping all happen on the next frame. Rock blocks you.
@@ -433,7 +329,7 @@ digging entries are the first ones in sections 8 and 9.
 - Limits: a bot reaches about level 5 in 35 s and level 8-16 in 90 s of game time, so pacing is a first guess. About 150 fps at 1080p on this PC with a bot;
   never run on a phone. Cubes have no gaps: gaps showed dark lines along chunk edges, cause not found.
 - Test: `tests/dig_check.tscn`.
-- **Buzz removed** (owner: a really annoying deep buzzing while digging). The Drill's looping engine sound, left over from the cars,
+- **Buzz removed** (owner: a really annoying deep buzzing while digging). The Drill's looping engine sound
   is deleted, so the Drill has no sound of its own now. Pops and hit ticks could repeat every frame, which blurs into a low hum, so
   they now wait 40-72 ms and 70-126 ms at random. Found by reading the code; Claude can't hear the result.
 - **Gems** (owner). Every shiny mineral now drops a gem every time: crystal used to drop one in eight, and at most 500 gems could lie
@@ -443,147 +339,12 @@ digging entries are the first ones in sections 8 and 9.
   aim and bombs land on the pointer when rock is in range; Saws and Pulse go all around. Tools still fire by themselves with no click,
   Claude's choice: holding a button would be one small change. The camera leans up to 3 m toward the pointer. There is a ring-and-cross
   cursor, and until the mouse moves, tools point the way you walk. Tested by checks and a bot, not with a real mouse.
-- **PC only on this branch** (owner). Touch controls and the virtual stick are removed.
+- **PC only** (owner). Touch controls and the virtual stick are removed.
 - **Constant shake** (owner: way too much late game, shouldn't grow with upgrades). Shakes no longer add up: the strongest current
   one wins. Single cube pops no longer shake at all. Biggest shake is the level-up blast, 0.4 at most even with every tool at max,
   about 11 cm of camera movement. Also capped the camera punch and limited the big-pop freeze and thud to once per 0.6 s, which would have stuttered late game.
 
-**2026-10-30, third batch** (checked by automated tests and bots; the owner has not played these yet)
-- **MG firing at far enemies** (owner saw this). There was no bug in choosing the target: it was always the closest at
-  the moment of firing. The bullets just missed it, for two reasons, and flew on to enemies behind. (1) They aimed where
-  the enemy was, not where it was going, and extra barrels fanned outward. With a moving car and no kickback in the test,
-  high-level MG hit 56-75% of the time. Now it leads the target and all barrels converge: 90%, and all 3 barrels on target
-  in game_check. (2) The kickback added last batch pushed the closest enemy out of reach at high fire rates, so MG kick now
-  drops as the MG levels up (9 per bullet down to 1.2 evolved), and the kick cap went from 22 to 14. Level 1 stayed about
-  the same, around 80-90%. Other weapons do not lead targets except mines, and rockets home in anyway.
-- **Closest-enemy firing** (owner). Rockets now take the closest enemy, then the next closest; spare rockets go to the
-  closest. Their random launch swerve is much smaller. Mines are thrown at the closest enemy within 18 m, where it will be
-  on landing, and only go in a random direction when nothing is in range. This replaces last batch's "any direction".
-  Hood MG and Tesla already used the closest. Saw Blades and Shock Plating hit all around you, so no targeting applies.
-- **Keyboard menus** (owner). Arrows or WASD move, Space or Enter confirm, on level-ups, the main menu, Garage and all
-  panels. The selected button has a gold border. Level-up keeps a 0.35 s delay so a key press can't pick by accident. The
-  crate screen now closes only on Space or Enter (any key closed it before; the on-screen text still says "Tap to continue").
-  Tested on level-ups with simulated input; the others use the same system but were not tested one by one.
-- **Skip to boss** (owner) is in the pause menu in every build again. Runs that use it stay off the leaderboard but still
-  earn parts while we are testing.
-- **Vehicle speed** (owner). Juggernaut 7 to 10, War Rig 8.2 to 11.5, Interceptor 9.5 to 13. Enemy speed went up less, about
-  20%: crawler 5.5, runner 11.5, spitter 10.5, brute 6. Maps are 1.5 times larger with twice the obstacles. The camera sits a
-  little higher and looks ahead by 0.35 s of travel. The boss arena uses 72% of vehicle speed, so it plays as before.
-- **Smooth steering** (owner, replaces the instant 8-direction decision). Keys still give 8 target directions; the stick is
-  fully analog. The car takes 0.25 s to reach speed, brakes in 0.15 s, slows up to 20% in hard turns and leans a little.
-  The first version spun the car around its centre, which the owner found unrealistic after playing it. **Front-wheel steering**
-  (owner, 2026-10-30) replaced that: the front wheels turn toward the input, visibly on the model, and the car follows them. The
-  rear axle rolls straight along the car and the nose swings around it. There is no drift or slip any more. Turning radius is the
-  class "turn" stat: Juggernaut 4 m, War Rig 3.8 m, Interceptor 3 m. Consequences: a stopped car cannot turn on the spot, there
-  is no reverse, and a full U-turn is an arc taking roughly 0.8-1.4 s by calculation (it was about 0.5 s). A car pinned against a
-  wall can still rotate, so it can't get stuck. Tuning is in `Defs.DRIVE` and "turn"; feel needs the owner's judgment. Bots with
-  this steering, same test as below: past the first boss, Juggernaut 5, War Rig 4, Interceptor 2 of 6, no worse than before.
-- **Redline meter** (owner approved, my proposal). A bar at the bottom of the screen fills in about 11 s of driving at 70%+ speed,
-  drains when slower, and loses 30% per hit. It raises fire rate by up to 35% and ram damage up to 2.5x. When full, **nitro**
-  fires by itself: 2.5 s of 1.4x speed, no damage taken, 4x ram damage, then the meter restarts at 25%. It only fills on the map;
-  in the boss arena it stays at its last value and still gives its bonus, with no nitro.
-- **Garage** (owner: permanent progress). Parts are earned every run, even failed ones: 1 per 10 kills, 15 per stage reached,
-  40 per boss (times its stage). The Garage opens from the main menu and has 8 upgrades (hull, damage, speed, pickup range,
-  XP, armor, starting Redline, one revive). Costs rise with level. About 3,250 parts buys everything, which at the rough 70
-  parts per run the bots suggest is around 45 runs, or 2-3 hours. That is an estimate, not measured. There is a reset button
-  that needs two presses, and a "+500 parts" test button in debug builds. Bots ignore the Garage, so balance checks measure
-  the base game. Upgrades have a "class" field ready for class-specific ones, not used yet.
-- **Saving.** Progress is in a local profile file handled only by `scripts/autoload/save.gd`, with a version number. It is saved
-  after every boss, death and quit. Saves now live in a fixed folder (`%APPDATA%/MMS` on Windows) so renaming the project can't
-  lose them; the existing scores were copied there. Progress is per device: per browser on web, and lost on uninstalling on Android.
-- Bot results after all of this, 6 seeds per class, 220 s limit at double speed: past the first boss, Juggernaut 3, War Rig 2,
-  Interceptor 1. Small sample, and the bot doesn't use speed well. Balance not retuned, on purpose, until the owner has played it.
-
-**2026-10-30, second batch** (bot and automated checks only; the owner has not played these yet, so feel is unconfirmed)
-- **Enemy kickback** (owner: so they don't swarm you this easily). Every attack except burn pools now pushes enemies
-  away and they walk at 35% speed until the push fades. One MG bullet moves a crawler about 2 m. Pushes stack up to a
-  cap. Brutes take 25%, runners 80%, the boss none. Tesla had no push before and has one now. Numbers are in `Defs.KNOCK`
-  and per weapon. map_check confirms the push.
-- **Purple enemies (spitters) can be caught** (owner: slightly slower than the player). They used to match 95% of the
-  car's speed; now 60%, and they back off more slowly. At the slowest speed (7) a car closed from 9 m to contact range
-  in under 6 s in map_check.
-- **Open world** (owner: replaces the fixed path). Each biome is a walled rectangular map, 300-360 m across. The road
-  system is gone. **Wastes** has one winding road, **Neon** a street grid, **Frost** and **Toxic** none; roads are
-  decoration only. Inside there are only small obstacles (rocks, wrecks, crates, posts, ice spikes, stumps), about 2.5 m
-  tall at most and at least 12 m apart, plus flat ground decor. Buildings and cliffs exist only as the outer walls. The
-  south wall is 1.4 m tall because the camera looks over it; a tall one would hide the car. Solid obstacles stop the car
-  and enemies; bullets and rockets pass over. Enemies are checked against obstacles every other frame to stay cheap. All
-  maps use random placement each stage.
-- **8-direction driving** (owner: instant, no turning animation, like VS). WASD or arrows; on touch or mouse drag, a
-  floating virtual stick appears where you press and snaps to 8 directions. Diagonals keep the same speed. **The car stops
-  with no input** (my reading of "like Vampire Survivors"; easy to change if you want it to keep rolling).
-  The joystick was tested with simulated input, not on a phone.
-- **Boss trigger** (owner offered kills or a random time window). Chosen: the random window, 90-150 s, because kills would
-  reward strong builds with less time to level. A banner says "[BOSS NAME] INCOMING". The HUD now shows elapsed time, no
-  countdown. The ring arena itself is unchanged except the ring sizes below.
-- **Camera for open world.** Fixed orientation, 9 m south and 28 m up, almost centred on the car. This replaces the
-  road camera from the first batch. Boss camera unchanged.
-- **Enemy scaling with player level** (owner). Per level above 1: +3% enemy HP, +1.2% enemy damage, +1.5% spawn pressure,
-  on top of stage scaling. Applies to enemies spawned after the level-up; the boss HP uses the level at the moment it
-  appears. Enemy speed already follows the car from the first batch.
-- **Spawning changed** (not requested, needed for open world). The old rates relied on driving past enemies; in the open
-  every bot was swamped with 200-350 enemies by 80 s. Now the game holds a target number of living enemies, 15 + 0.35 per
-  second, times stage and level factors, as VS does. Hordes come on top. Spawns are just off screen, 65% in your direction
-  of travel. Enemies left 80 m behind reappear just off screen.
-- **Other changes the open world needed.** Crawlers 3.4 to 4.6 speed so they can reach you. Runners 11.5 to 9.5 so you can
-  outrun them in the fastest class. Pickup radius 3.8 to 6. Hit recovery 0.45 to 0.6 s. Enemy contact damage about 20%
-  lower. Repair drop chance 1.2% to 2%. Boss HP 4500 to 3000, since it can now appear at 90 s. Hordes 36 to 20 enemies.
-  Elites at 40 and 80 s, hordes at 30, 60, 85 and 115 s. Rings are now 5.8 / 10 / 14 m (were 7 / 10.5 / 14) because saws
-  could not reach the boss from any ring.
-- **Far gems** (was deferred). Fixed as a side effect: you can drive to any gem, and gems and crates no longer disappear
-  with distance.
-- **Class balance** (owner: Juggernaut too strong, Interceptor weakest). Juggernaut: 150 HP, speed 7, ram 35, might 1.05
-  (was 165, 6.5, 45, 1.15). Interceptor: 110 HP, armor 1, ram 20, might 1.05 (was 95, 0, 14, 1.0). War Rig: 130 HP, speed
-  8.2, might 1.05 (was 125, 7.8, 1.0). Saw Blades stronger: damage 9 to 13, faster hits, wider orbit.
-  Measured with a bot on 6 seeds per class, 220 s limit at double speed: runs that got past the first boss were
-  Interceptor 2, Juggernaut 2, War Rig 1, and no class stood out. **Small sample with a simple bot, so it only shows
-  no class is far ahead for that bot.** It needs your playtest; a human plays melee and kiting differently.
-**2026-10-30** (bot and automated checks only; the owner has not played these yet, so feel is unconfirmed)
-- **Camera zoom-out** (owner: see more, especially behind). Road camera moved from 9 m back / 16.5 m up / 6.5 m
-  look-ahead to 13 / 24 / 3. About 11 m of ground is visible behind the car (was about 5) and about 35 m ahead (was
-  about 45), so the view ahead is slightly shorter. Field of view unchanged. Boss arena camera not changed.
-  Added so enemies don't appear on screen: crawlers spawn 40-50 m ahead (was 26-36), side runners 30-34 m (was
-  17-22), spitters 28-32 m out (was 15-20), elites 42 m ahead (was 30), hordes 26 m around (was 17). Enemies
-  take a little longer to arrive. Checked with one gameplay screenshot at 1280x720, not on a phone.
-- **Mine direction** (owner: throw in any direction). Mines are now thrown at a random angle, 5-12 m from the car,
-  flying 0.4 s in an arc and arming on landing (same 0.4 s arming as before). In the boss arena they land on the
-  floor. Random, not aimed at enemies. Mines thrown backward can still end up off screen as the car drives on.
-  Renamed nothing; the description now says "Throws mines all around you."
-- **Boss dash direction** (owner: swipe right = dodge and keep driving right). The dash sets the circling direction
-  and it stays that way until the next dash, on both swipes and keyboard. The car turns instantly. The sweeping
-  beam now always starts against the car's current direction.
-- **Unavoidable ring burst** (owner: far gap impossible). Confirmed: a far gap could not be reached. Now the first gap
-  of an attack is placed within what the car can reach before the shots arrive, on either side, and each later
-  gap in that attack moves at most 0.3 rad from the last. Shot speed, count and gap size are unchanged. Tested with a
-  driving bot (no dash invulnerability): 0 of 36 bursts hit it, 36 of 36 hit a bot that doesn't steer.
-  Limitation: the gap no longer appears anywhere on the ring, only near you, so dodging may feel easier.
-- **Faster pace at higher levels** (owner: speed and enemy scaling together, so you can't outrun them). New passive
-  **Nitro Injector**, +6% vehicle speed per level (up to +30%); it has no evolution. Each stage adds +6% speed. Enemies
-  always get the same speed factor, so the speed difference between car and enemies stays the same in proportion.
-  Differs from the proposal: pace rises with stage and upgrades, not with player level, and enemy strength is not
-  part of this (that is item "Enemies should scale" in section 9). Boss shots do not get faster, so bursts get easier
-  to reach at high speed. Road length now adapts to the fastest possible speed.
-- **(suggested) Score save.** The score is now saved when you quit from the pause or stage-clear menu, once per run.
-  Bot runs (--autotest) no longer write to the leaderboard.
-- **(suggested) Skip to boss** now shows only in debug builds, such as Play in the editor. It will be missing from
-  release exports, which is what CI builds. Not checked in an actual release build.
-- **(suggested) Dash buffering.** A swipe during the 0.5 s cooldown is remembered and used when it ends; the latest
-  swipe wins.
-- **(suggested) Balance numbers moved to defs.gd.** Weapon levels, boss attacks, spawn director, arena and camera
-  numbers are now data. No gameplay change intended; weapon stats were copied value by value.
-- **(suggested) Armor is now a percentage.** Each armor point blocks 6% of a hit, capped at 60%, minimum 1 damage.
-  Was a flat reduction. Juggernaut starts at 12%, or 42% with full Armor Plating. Armor Plating text changed to match.
-- **(suggested) Seeded randomness.** All gameplay rolls use one generator and `--seed=<n>` sets it (bot/command line
-  only, no daily mode yet). Two 20 s runs with the same seed and `--fixed-fps 60` gave identical results. At normal
-  frame rates runs will not replay exactly, because timing varies; replays would need more work.
-- **Bug found and fixed (not requested).** Bullets knocked enemies slightly upward and the crowd-spacing code amplified
-  it until positions became infinite, causing thousands of engine errors in an Interceptor bot run. Enemies are now kept
-  on the ground, and all three classes ran with 0 errors. It may have made enemies invisible or weapons miss in
-  MG builds, which could be part of why Interceptor felt weak; not confirmed.
-- Bot results under normal rules after all of the above: Juggernaut clears the first boss; Interceptor and War Rig die
-  in that boss fight. The bot never dashes or switches rings, so this is not a measure of real balance.
-
-## 9. ALL IMPROVEMENTS PROPOSED SO FAR by owner (not counting ver 1.0 features)
+## 7. ALL IMPROVEMENTS PROPOSED SO FAR by owner
 **Owner, 2026-11-04, art style: Decided, low-poly pixel 3D** ("it has to be lowpoly 100%"; picked "Pixel 3D" after Claude described the owner's Pinterest board). Low-poly models with low-res pixel-art textures, chunky toy proportions, a spooky-but-cute mood, dark bodies with one glowing accent. Textures were undecided between little and more detail, and pixel art was the owner's own option. The owner makes the models with Meshy AI. The style guide, the rules from how the game draws things, and a prompt for every model the game has are in docs/ART.md. The creature designs in those prompts are **(suggested)**, and the theme is still open. No model is in the game yet.
 **Owner, 2026-11-04, about 10 tools and 10 boosts** ("i need ideas for new tools and boosts. I want to have about 10 of each"). There are 8 tools and 6 boosts now, so this means 2 more tools and 4 more boosts. Not picked or built yet. The ideas below are all **(suggested)**, to choose from:
 - Tools (suggested):
@@ -595,7 +356,7 @@ digging entries are the first ones in sections 8 and 9.
   - **Cryo Spray:** a cone of frost. Frozen rock breaks in one hit from anything, and frozen enemies slow down. It works with every other tool.
   - **Ore Hook:** shoots at the nearest ore you can see, breaking the cubes in the way, and pulls the gem back to you.
   - **Echo Pinger:** a ping that lights up the fog further for a moment and marks ore. It does a little damage.
-  - Claude's pick for the two: Runaway Cart and Dynamite Trail, the most different from the current tools and both easy to read on screen. Tesla Pick and Tunnel Worm (section 6) were left out because they overlap Spark Coil and Mole Pack.
+  - Claude's pick for the two: Runaway Cart and Dynamite Trail, the most different from the current tools and both easy to read on screen. Tesla Pick and Tunnel Worm (section 4) were left out because they overlap Spark Coil and Mole Pack.
 - Boosts (suggested), with the evolution each could unlock:
   - **Extra Hands:** +1 of whatever a tool throws: blades, bombs, moles, jumps (like VS's Duplicator), with few levels because it's strong. Saw Blades.
   - **Bright Lamp:** +15% light radius, and you can dig further into the fog. Mining Beam.
@@ -611,36 +372,15 @@ digging entries are the first ones in sections 8 and 9.
 
 **Owner, 2026-11-03, Frenzy feels too easy to set off** ("i kinda feel like its set off too easily"). Not changed yet: the owner asked when it starts, options are in the chat of that day.
 
-**Owner, 2026-11-01, plans for the digging game (a first version is built, see section 8; the rest of these stay open)**
+**Owner, 2026-11-01, plans for the digging game (a first version is built, see section 6; the rest of these stay open)**
 - Unlockables, as in VS, where you unlock characters that give items or abilities you didn't have before. Not decided yet whether there will be several characters or just tools. Test first, then iterate.
 - Theme still undecided, not picked for now. Some mechanics could come from choosing it.
 
-**Owner, 2026-10-31, the refocus (the prototype is built, see section 8; these are still open)**
-- After playing: the late game of the car prototype is pretty satisfying, so the VS formula is probably better. The raccoon's theme
-  wasn't bad, but being the hunter wasn't that satisfying. Games may need phases where you get surrounded and just shred through.
+**Owner, 2026-10-31, the refocus (the prototype is built, see section 6; these are still open)**
+- The VS formula is probably the better one. The raccoon's theme wasn't bad, but being the hunter wasn't that satisfying. Games
+  may need phases where you get surrounded and just shred through.
 - A digging game with the feel of popping bubble wrap. Keep top-down 3D for now. No threats for now: first make it very satisfying
   in sound and visuals. No theme yet, so no specific models.
 - Still open: start slow and find equipment in the map that unlocks forever, like VS. Skills that auto-dig. Start as a person and
   unlock vehicles, or only tools. Runs or a whole open underground world. Enemies or something else later. Ranged digging tools or
   weapons (Enter the Gungeon). A twist in gameplay and theme. Likes VS rewards, VFX and sounds, and Megabonk from its trailer.
-
-- Procedural levels: idea only, not to be implemented yet (see section 5).
-
-- Leaderboard: multiplayer entries with build, time, score and kills; whether permanent upgrades count is undecided (see section 6).
-- Burnout ring and roads as fast lanes: saved for later review (see section 6).
-
-**Future, not to be implemented yet (owner, 2026-10-30)**
-- Upgrades specific to each vehicle class, both in runs and in the permanent upgrades between runs.
-
-**Owner feedback after playing, 2026-10-30 (ideas only, nothing decided or implemented)**
-- Works: evolved minigun killing a lot of enemies; kills that make satisfying sounds, explode into bits and show damage
-  numbers, flashes and a colour-coded combo.
-- Boss maybe sooner: the owner reaches it at about level 25 and it dies in 5 seconds or less.
-- Dash in boss arenas is too strong. Either make it less strong, or drop arenas and spawn bosses in the world like VS (the
-  owner was going to do that for some or all bosses anyway), which also removes the dash.
-- Willing to change most of the game or start over for something addictive with some originality.
-- Twist idea: play a monster that attacks and absorbs NPCs, agar.io style. Bigger ones are fought by circling, VS style, with
-  auto attacks; the player picks when to absorb. Absorbing grows you; when strong enough you can destroy the environment.
-  Absorbed bosses change your appearance and give new attacks. People run, some fight back; this part needs more thought.
-- Theme ideas: a dragonfly eating insects and evolving (like Cell in DBZ or the ants in HxH); or something absurd, like a raccoon
-  in a garbage container whose food runs away, with other animals attacking, or a raccoon in a lab eating mutated animals.

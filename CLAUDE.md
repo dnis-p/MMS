@@ -1,9 +1,8 @@
 # DIG (working title)
 
 Top-down 3D digging prototype in Godot 4.7, GDScript only, placeholder art and sound. Repo `dnis-p/dig`, branch `main`.
-It started from a car game (MMS), which was retired on 2026-11-04: its last version is kept only as the tag `car-game`.
-See README.md for controls and layout. **Ideas and decisions are in docs/DESIGN.md: read the branch note at its top, and add any
-new idea or decision the owner gives you there (mark owner's words vs your suggestions).** How the game works right now (rules,
+See README.md for controls and layout. **Ideas and decisions are in docs/DESIGN.md: add any new idea or decision the owner
+gives you there (mark owner's words vs your suggestions).** How the game works right now (rules,
 formulas, scaling, what to edit for a tweak) is in docs/MECHANICS.md.
 
 ## Design goals (from the owner, keep these in mind for every change)
@@ -49,14 +48,14 @@ Parse errors that mention `Sfx` only occur when scripts are checked standalone (
 - Mouse aiming (hidden captured pointer, arrow on a ring) is untested with a real mouse, and the capture is untested in a browser. Gamepad play, including rumble, is tested only with simulated input, not a real controller.
 
 ## How we work (agreed with the owner)
-docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 = done list** (since v1.0).
-1. When an item from section 9 is completed, **move it to section 8** (remove it from 9).
-2. In section 8 write an accurate description of what was actually implemented and how it behaves.
+docs/DESIGN.md ends with two tracking sections: **7 = owner's to-do list**, **6 = done list**.
+1. When an item from section 7 is completed, **move it to section 6** (remove it from 7).
+2. In section 6 write an accurate description of what was actually implemented and how it behaves.
    If it differs from the proposal (different approach, changed number, dropped/added part, limitation),
    say so explicitly and say why. Keep the owner's original wording if it helps, then add what really happened.
 3. Describe real behavior, not intentions. Check the code; don't claim something works if it wasn't verified.
 4. If an item can't be done as proposed, don't silently change it: tell the owner, explain options, wait.
-5. New ideas/decisions the owner gives in chat go into docs/DESIGN.md (section 9 for improvements, plus the
+5. New ideas/decisions the owner gives in chat go into docs/DESIGN.md (section 7 for improvements, plus the
    relevant section for decisions), marked as the owner's. Claude's own suggestions are marked "(suggested)".
    Anything marked "Decided" stays unless the owner says otherwise.
 6. Update README.md and CLAUDE.md when something they describe changes (controls, content, commands, gaps).
@@ -78,5 +77,5 @@ docs/DESIGN.md ends with two tracking sections: **9 = owner's to-do list**, **8 
 - Android Studio is installed; the Android SDK and Java are set in the Godot editor, so APKs can be exported
   from the editor (Project > Export). `tools/android/build_apk.sh` and `tools/web/build_web.sh` call `godot`
   from PATH, so they need a `godot` alias/shim to the console exe in Git Bash (bash itself is available).
-- Saves are in `%APPDATA%/Dig` (`config/custom_user_dir_name`): `options.cfg`, and `profile.cfg` once a run is saved. Don't delete them without asking, and don't rename the folder without moving them. The owner plays mostly in the browser, where saves live in browser storage. `%APPDATA%/MMS-Dig` is the old folder (since 2026-11-04) and `%APPDATA%/MMS` the old car game's.
+- Saves are in `%APPDATA%/Dig` (`config/custom_user_dir_name`): `options.cfg`, and `profile.cfg` once a run is saved. Don't delete them without asking, and don't rename the folder without moving them. The owner plays mostly in the browser, where saves live in browser storage. `%APPDATA%/MMS-Dig` is the old folder (until 2026-11-04).
 - `icon.svg.import` shows as modified after imports (line endings); ignore it, don't commit it.
