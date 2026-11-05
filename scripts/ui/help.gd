@@ -95,7 +95,7 @@ static func sections() -> Array:
 		["Between runs", [
 			"Banked gems buy permanent upgrades in the Shop.",
 			"Goals unlock new tools, new characters and gems. They are checked at the end of each run, even one that ends in death.",
-			"The OBJECTIVES panel at the top left of a run shows the %d goals you are closest to, with this run counted in as you play. Gems you carry count as banked there, but dying keeps only part of them." % int(Defs.OBJECTIVES["shown"]),
+			"The OBJECTIVES panel at the top left of a run shows what finishes the map (the guardians, then the Heart) and the %d side goals you are closest to, with this run counted in as you play. Gems you carry count as banked there, but dying keeps only part of them." % int(Defs.OBJECTIVES["shown"]),
 			"Pick who digs on the main menu. Each character plays a little differently.",
 		]],
 		["For testers", [

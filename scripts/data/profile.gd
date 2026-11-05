@@ -97,12 +97,13 @@ static func goal_total(g: Dictionary, run_stats := {}) -> int:
 
 
 ## The unfinished goals nearest to done, by how much of each is met, counting `run_stats` if a run is on.
+## With `run_stats`, goals that run has already met are left out too (they were announced, and are paid at the end).
 ## Goals tied keep the order of Defs.GOALS, so the list doesn't shuffle from one look to the next.
 static func closest_goals(n: int, run_stats := {}) -> Array:
 	var open: Array = []
 	for i in Defs.GOALS.size():
 		var g: Dictionary = Defs.GOALS[i]
-		if not done.has(g["id"]):
+		if not done.has(g["id"]) and (run_stats.is_empty() or goal_total(g, run_stats) < g["need"]):
 			open.append([minf(float(goal_total(g, run_stats)) / g["need"], 1.0), i])
 	open.sort_custom(func(a, b): return a[0] > b[0] or (a[0] == b[0] and a[1] < b[1]))
 	return open.slice(0, n).map(func(o): return Defs.GOALS[o[1]])

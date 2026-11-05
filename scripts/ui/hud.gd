@@ -23,7 +23,8 @@ var _dash_ready := false
 var _goals_box: PanelContainer  # the objectives panel: the goals you are closest to, counting this run
 var _goal_rows: Array = []  # per row: [row, text label, count label, bar]
 var _goals_next := 0.0  # run time of the next refresh
-var _goals_any := false
+var _map_rows: Array = []  # the map rows: guardians and the Heart
+var _side_title: Label
 var _hint: Label
 var _fps_label: Label
 var _compass: Control
@@ -236,7 +237,8 @@ func _ready() -> void:
 	add_child(_hint)
 
 
-## The objectives panel, under the tool and boost boxes: a title, then a line and a thin bar per goal.
+## The objectives panel, under the tool and boost boxes. The top part is what finishes the map and is always
+## there: the guardians, then the Heart. Below it, the side goals nearest to done come and go.
 func _build_goals(parent: Control) -> void:
 	var o := Defs.OBJECTIVES
 	_goals_box = PanelContainer.new()
@@ -255,39 +257,66 @@ func _build_goals(parent: Control) -> void:
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_theme_constant_override("separation", 5)
 	_goals_box.add_child(box)
-	box.add_child(Ui.label("OBJECTIVES", 15, Color(1.0, 0.65, 0.2)))
+	box.add_child(Ui.label("MAIN GOALS", 15, o["map_color"]))
+	for i in 2:
+		_map_rows.append(_goal_row(box, o["map_color"]))
+	_side_title = Ui.label("SIDE GOALS", 15, Color(1.0, 0.65, 0.2))
+	box.add_child(_side_title)
 	for i in int(o["shown"]):
-		var row := VBoxContainer.new()
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_theme_constant_override("separation", 2)
-		var line := HBoxContainer.new()
-		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var text := Ui.label("", 18, Color(0.92, 0.9, 0.85))
-		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		text.clip_text = true
-		line.add_child(text)
-		var count := Ui.label("", 18, Color(1.0, 0.85, 0.35))
-		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		line.add_child(count)
-		row.add_child(line)
-		var bar := Ui.bar(Color(1.0, 0.75, 0.25), 8)
-		row.add_child(bar)
-		box.add_child(row)
-		_goal_rows.append([row, text, count, bar])
+		_goal_rows.append(_goal_row(box, Color(1.0, 0.75, 0.25)))
 	parent.add_child(_goals_box)
 
 
-## The goals nearest to done, counting this run so far, a few times a second. Hidden while the full map is
-## open, and when there is nothing left to do.
+## A line with the goal's text and its count, and a thin bar under it. Returns [row, text, count, bar].
+func _goal_row(parent: Control, fill: Color) -> Array:
+	var row := VBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 2)
+	var line := HBoxContainer.new()
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var text := Ui.label("", 18, Color(0.92, 0.9, 0.85))
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.clip_text = true
+	line.add_child(text)
+	var count := Ui.label("", 18, Color(1.0, 0.85, 0.35))
+	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	line.add_child(count)
+	row.add_child(line)
+	var bar := Ui.bar(fill, 8)
+	row.add_child(bar)
+	parent.add_child(row)
+	return [row, text, count, bar]
+
+
+func _set_goal_row(parts: Array, text: String, count: String, share: float) -> void:
+	if parts[1].text != text:
+		parts[1].text = text
+	if parts[2].text != count:
+		parts[2].text = count
+	parts[3].value = share
+
+
+## The map rows and the side goals nearest to done, counting this run so far, a few times a second. The side
+## goals leave the panel once this run has met them. The whole panel hides while the full map is open.
 func _refresh_goals(run: Node) -> void:
-	_goals_box.visible = _goals_any and not map_full.visible
+	_goals_box.visible = not map_full.visible
 	if run.run_time < _goals_next:
 		return
 	_goals_next = run.run_time + float(Defs.OBJECTIVES["every"])
+	var total: int = Defs.BOSSES.size()
+	var down: int = run.bosses.killed
+	_set_goal_row(_map_rows[0], "Defeat the guardians", "%d / %d" % [down, total], float(down) / total)
+	var heart := "Break the Heart"
+	if run.bosses.left() > 0:
+		_set_goal_row(_map_rows[1], heart, "SEALED", 0.0)
+	elif not run.heart_woken:
+		_set_goal_row(_map_rows[1], heart, "OPEN", 0.0)
+	else:
+		var hurt: float = 1.0 - run.mine.heart_left
+		_set_goal_row(_map_rows[1], heart, "%d%%" % roundi(hurt * 100.0), hurt)
 	var live: Dictionary = run.live_stats()
 	var goals := Profile.closest_goals(_goal_rows.size(), live)
-	_goals_any = not goals.is_empty()
-	_goals_box.visible = _goals_any and not map_full.visible
+	_side_title.visible = not goals.is_empty()
 	for i in _goal_rows.size():
 		var parts: Array = _goal_rows[i]
 		parts[0].visible = i < goals.size()
@@ -295,13 +324,8 @@ func _refresh_goals(run: Node) -> void:
 			continue
 		var g: Dictionary = goals[i]
 		var need := int(g["need"])
-		var total := mini(Profile.goal_total(g, live), need)
-		var count := "DONE" if total >= need else "%s / %s" % [_format(total), _format(need)]
-		if parts[1].text != g["text"]:
-			parts[1].text = g["text"]
-		if parts[2].text != count:
-			parts[2].text = count
-		parts[3].value = float(total) / need
+		var got := mini(Profile.goal_total(g, live), need)
+		_set_goal_row(parts, g["text"], "%s / %s" % [_format(got), _format(need)], float(got) / need)
 
 
 func show_hint(text: String, duration := 4.0) -> void:

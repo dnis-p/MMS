@@ -640,7 +640,7 @@ func _check_objectives(r: Run) -> void:
 	var stone: Dictionary = Defs.GOALS[2]
 	_check("a best-of stat takes the larger of this run and before, not the sum", Profile.goal_total(stone, r.live_stats()) == 4)
 	Profile.stats["band"] = 1
-	_check("a goal this run has met reads DONE", find.call("Reach the Stone layer")[1] == "DONE")
+	_check("a goal this run has met leaves the panel, to make room for the next", find.call("Reach the Stone layer").is_empty() and rows.call().size() == shown)
 	Profile.done["kills"] = true
 	_check("a goal already finished is not listed", not ids.call().has("kills"))
 	h.map_full.visible = true
@@ -652,7 +652,28 @@ func _check_objectives(r: Run) -> void:
 	for g in Defs.GOALS:
 		Profile.done[g["id"]] = true
 	rows.call()
-	_check("with every goal done there is no panel", Profile.closest_goals(shown, r.live_stats()).is_empty() and not h._goals_box.visible)
+	_check("with every side goal done only the map rows are left", Profile.closest_goals(shown, r.live_stats()).is_empty() and h._goals_box.visible and not h._side_title.visible and h._map_rows[0][0].visible)
+
+	# The map rows are always there, and follow the guardians and the Heart.
+	Profile.reset()
+	var map := func() -> Array:
+		h._goals_next = 0.0
+		h.refresh(r)
+		return [h._map_rows[0][1].text, h._map_rows[0][2].text, h._map_rows[1][1].text, h._map_rows[1][2].text, h._map_rows[1][3].value]
+	var guard: Array = map.call()
+	_check("the map rows start at 0 guardians with the Heart sealed (%s)" % str(guard), guard[1] == "0 / 2" and guard[3] == "SEALED" and guard[2] == "Break the Heart")
+	r.bosses.killed = 1
+	_check("a guardian down counts", map.call()[1] == "1 / 2")
+	r.bosses.killed = 2
+	_check("with both down the Heart reads OPEN", map.call()[3] == "OPEN")
+	var woke := r.heart_woken
+	var left := r.mine.heart_left
+	r.heart_woken = true
+	r.mine.heart_left = 0.75
+	_check("once woken it shows the damage done", map.call()[3] == "25%" and absf(map.call()[4] - 0.25) < 0.01)
+	r.heart_woken = woke
+	r.mine.heart_left = left
+	r.bosses.killed = 0
 
 	Profile.reset()
 	for id in counters:
