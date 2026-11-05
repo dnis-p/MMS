@@ -4,8 +4,8 @@ Living document. The owner's words and decisions come first; Claude's suggestion
 **(suggested)** and are only ideas until the owner says yes. Anything marked **Decided** should not be
 changed without asking. Add new ideas at the bottom of the right section, with the date if useful.
 
-**DIG:** a top-down 3D digging roguelite, on branch `main`. How it works right now is in docs/MECHANICS.md, the art
-style in docs/ART.md.
+**DIG:** a top-down 3D digging roguelite, on branch `main`. How it works right now is in docs/MECHANICS.md, how it fits
+together in docs/STRUCTURE.md (diagrams), the art style in docs/ART.md.
 
 ## 1. Vision (owner)
 - A digging game that feels like **popping bubble wrap**, with Vampire Survivors rewards: juicy visuals and sound come first
@@ -63,6 +63,10 @@ style in docs/ART.md.
 - Which of the section 4 ideas does the owner want first?
 
 ## 6. ALL IMPROVEMENTS IMPLEMENTED SO FAR
+**2026-11-05, structure diagrams** (owner: a diagram of the game's logic and structure that Claude can read and keep up to date)
+- `docs/STRUCTURE.md`, in Mermaid, which GitHub draws from text (suggested over draw.io, Excalidraw or Miro, which Claude can't edit well or at all). Five diagrams: the loop between runs, inside a run, a run's phases and endings, where your stats come from, and unlocks now and planned. Planned parts (owner's decisions not built yet) have dashed borders.
+- Drawn from what MECHANICS says, not from the owner's own picture of the plan, so the owner may want to change it. Checked by rendering every diagram with Mermaid 11.4 in a browser; not yet looked at on GitHub.
+
 **2026-11-05, the car game's leftovers removed** (owner: "delete everything from the car game that isn't needed for the dig game, whether it be code or info in the docs")
 - Code: floating damage numbers (40 hidden labels updated every frame, never shown in DIG) and four sounds nothing played (shot, saw, jackpot, slam). The web build's second, "packed" version is gone with its loading page, which still said Motorhead Madness Survival; nothing published it, as GitHub Pages and the itch.io zip use the standard build.
 - Docs: the car game's vision, boss arena, decisions, future features, ideas, open questions, its done entries (2026-10-30) and its to-do items. DESIGN now starts with DIG's own vision, feel principles and decisions, taken from what the owner said for DIG, and the sections are renumbered: 6 is the done list, 7 the to-do list.
